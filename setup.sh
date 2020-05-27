@@ -11,4 +11,4 @@ brew install zsh
 sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
 # symlink zshrc
-ln -s ~/.config/dotfiles/zshrc ~/.zshrc
+ln -s /home/$(whoami)/.config/dotfiles/zshrc ~/.zshrc
