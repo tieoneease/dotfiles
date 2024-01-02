@@ -30,7 +30,7 @@ brew services start spacebar
 11. [install nerdfonts](https://github.com/ryanoasis/nerd-fonts?tab=readme-ov-file#option-4-homebrew-fonts)
 
 ### Initialization
-Add these lines to your .zshrc:
+Add these lines to your .zshenv:
 ```
 export XDG_CONFIG_HOME="$HOME/.config"
 export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
