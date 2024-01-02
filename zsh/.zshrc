@@ -1,0 +1,11 @@
+alias ws="cd ~/Workspace/"
+alias pg="cd ~/Workspace/Playground"
+alias dl="cd ~/Downloads/"
+alias dotfiles="cd ~/.config/"
+alias zshconfig="nvim ~/.zshrc"
+alias tml="tmux ls"
+alias tma="tmux a -t"
+alias tmk="tmux kill-session -t"
+alias tmn="tmux new -s"
+
+eval "$(starship init zsh)"
