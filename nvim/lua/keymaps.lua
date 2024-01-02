@@ -47,3 +47,6 @@ vim.keymap.set('t', '<C-i>', '<C-\\><C-n><CMD>lua require("FTerm").toggle()<CR>'
 
 -- lazygit
 vim.keymap.set('n', '<leader>lg', ':LazyGit<CR>')
+
+-- noice dismiss
+vim.keymap.set('n', '<leader>nd', ':Noice dismiss<CR>')
