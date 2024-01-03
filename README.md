@@ -40,10 +40,16 @@ brew services start spacebar
   skhd --start-service
 ```
 11. [install nerdfonts](https://github.com/ryanoasis/nerd-fonts?tab=readme-ov-file#option-4-homebrew-fonts)
+12. [install lazygit](https://github.com/jesseduffield/lazygit#installation)
 
 ### Initialization
-Add these lines to your .zshenv:
+Add these lines to your ~/.zshenv:
 ```
 export XDG_CONFIG_HOME="$HOME/.config"
 export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
+```
+
+Add these lines to your ~/.zshrc:
+```
+eval "$(starship init zsh)"
 ```

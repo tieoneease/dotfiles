@@ -28,5 +28,3 @@ alias gr='git remote'
 alias grs='git remote show'
 alias glo='git log --pretty="oneline"'
 alias glol='git log --graph --oneline --decorate'
-
-eval "$(starship init zsh)"
