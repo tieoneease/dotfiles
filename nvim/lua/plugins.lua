@@ -22,6 +22,10 @@ local plugins = {
     "numToStr/FTerm.nvim",
     'tpope/vim-surround',
     {
+        "LintaoAmons/scratch.nvim",
+        event = "VeryLazy",
+    },
+    {
         "kdheepak/lazygit.nvim",
         -- optional for floating window border decoration
         dependencies = {
