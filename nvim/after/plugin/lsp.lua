@@ -14,7 +14,7 @@ cmp.setup({
     {name = 'buffer', keyword_length = 3},
   },
   mapping = cmp.mapping.preset.insert({
-    ['<CR>'] = cmp.mapping.confirm({select = true}),
+    ['<Tab>'] = cmp.mapping.confirm({select = true}),
     ['<C-Space>'] = cmp.mapping.complete(),
   }),
 })

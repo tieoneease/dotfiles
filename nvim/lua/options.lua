@@ -23,6 +23,7 @@ vim.opt.undofile = true
 -- highlights
 vim.opt.hlsearch = true
 vim.opt.incsearch = true
+vim.opt.ignorecase = true
 
 -- colors
 vim.opt.termguicolors = true

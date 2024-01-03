@@ -1,3 +1,5 @@
 configstore/
 gcloud/
 zsh/.zsh_history
+zsh/.zcompdump*
+lazygit/state.yml
