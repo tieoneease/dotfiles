@@ -104,4 +104,5 @@ shift + ctrl + alt - r :
 alt - f         : yabai -m window --toggle zoom-fullscreen
 shift + alt - f : yabai -m window --toggle native-fullscreen
 
+# Intercept hide window (the worst mac shortcut ever)
 cmd - h		: yabai -m window --focus west
