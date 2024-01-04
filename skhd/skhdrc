@@ -1,5 +1,5 @@
-# opens alacritty
-alt - return : open -na /Applications/kitty.app
+# opens kitty
+alt - return : /Applications/kitty.app/Contents/MacOS/kitty --single-instance -d ~
 alt - b : open /Applications/Google\ Chrome.app --new --args --new-window
 
 # Show system statistics
