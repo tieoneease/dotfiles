@@ -41,6 +41,7 @@ brew services start spacebar
 ```
 11. [install nerdfonts](https://github.com/ryanoasis/nerd-fonts?tab=readme-ov-file#option-4-homebrew-fonts)
 12. [install lazygit](https://github.com/jesseduffield/lazygit#installation)
+13. [install nvm](https://github.com/nvm-sh/nvm)
 
 ### Initialization
 Add these lines to your ~/.zshenv:
