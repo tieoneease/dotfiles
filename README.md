@@ -4,7 +4,7 @@ stow --target ~/.config .
 ```
 or
 ```
-git clone https://github.com/tieoneease/dotfiles.git ~/.config
+git clone git@github.com:tieoneease/dotfiles.git ~/.config
 ```
 
 
