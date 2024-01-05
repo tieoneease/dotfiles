@@ -50,3 +50,6 @@ vim.keymap.set('n', '<leader>lg', ':LazyGit<CR>')
 
 -- noice dismiss
 vim.keymap.set('n', '<leader>nd', ':Noice dismiss<CR>')
+
+-- emmett
+vim.g.user_emmet_leader_key = "<C-e>"

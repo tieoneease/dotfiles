@@ -21,15 +21,16 @@ local plugins = {
     "lewis6991/gitsigns.nvim",
     "numToStr/FTerm.nvim",
     'tpope/vim-surround',
-{
- "folke/trouble.nvim",
- dependencies = { "nvim-tree/nvim-web-devicons" },
- opts = {
-  -- your configuration comes here
-  -- or leave it empty to use the default settings
-  -- refer to the configuration section below
- },
-},
+    'mattn/emmet-vim',
+    {
+        "folke/trouble.nvim",
+        dependencies = { "nvim-tree/nvim-web-devicons" },
+        opts = {
+            -- your configuration comes here
+            -- or leave it empty to use the default settings
+            -- refer to the configuration section below
+        },
+    },
     {
         "LintaoAmons/scratch.nvim",
         event = "VeryLazy",
