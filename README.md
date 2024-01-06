@@ -42,6 +42,14 @@ brew services start spacebar
 11. [install nerdfonts](https://github.com/ryanoasis/nerd-fonts?tab=readme-ov-file#option-4-homebrew-fonts)
 12. [install lazygit](https://github.com/jesseduffield/lazygit#installation)
 13. [install nvm](https://github.com/nvm-sh/nvm)
+14. install rust
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+15. install tmux-sessionizer
+```
+cargo install tmux-sessionizer
+```
 
 ### Initialization
 Add these lines to your ~/.zshenv:
@@ -58,11 +66,16 @@ Symlink tmux:
 ```
 ln -s ~/.tmux/tmux.conf ~/.tmux.conf
 ```
+Setup sessionizer paths (use your own workspace paths):
+```
+tms config -p ~/Workspace ~/.config
+```
 
-Alternatively, run these commands:
+Alternatively, run these commands (handles all the above for you):
 ```
 echo "export XDG_CONFIG_HOME=\"\$HOME/.config\"" >> ~/.zshenv
 echo "export ZDOTDIR=\"\$XDG_CONFIG_HOME/zsh\"" >> ~/.zshenv
 echo "eval \"\$(starship init zsh)\"" >> ~/.zshrc
 ln -s ~/.tmux/tmux.conf ~/.tmux.conf
+tms config -p ~/Workspace ~/.config
 ```
