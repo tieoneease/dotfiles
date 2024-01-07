@@ -70,6 +70,10 @@ Setup sessionizer paths (use your own workspace paths):
 ```
 tms config -p ~/Workspace ~/.config
 ```
+My personal workspace:
+```
+mkdir ~/Workspace
+```
 
 Alternatively, run these commands (handles all the above for you):
 ```
@@ -77,6 +81,7 @@ echo "export XDG_CONFIG_HOME=\"\$HOME/.config\"" >> ~/.zshenv
 echo "export ZDOTDIR=\"\$XDG_CONFIG_HOME/zsh\"" >> ~/.zshenv
 echo "eval \"\$(starship init zsh)\"" >> ~/.zshrc
 ln -s ~/.tmux/tmux.conf ~/.tmux.conf
+mkdir ~/Workspace
 tms config -p ~/Workspace ~/.config
 ```
 
