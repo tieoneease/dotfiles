@@ -32,6 +32,7 @@ vim.keymap.set("n", "<C-S-PageDown>", ":tabmove +1<CR>",  {noremap = true, silen
 
 -- Tmux-Sessionizer
 vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux display-popup tms switch<CR>")
+vim.keymap.set("n", "<C-n>", "<cmd>silent !tmux display-popup tms<CR>")
 
 -- Clipboard
 vim.opt.clipboard = 'unnamedplus'
