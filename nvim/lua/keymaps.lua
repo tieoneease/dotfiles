@@ -2,7 +2,6 @@
 vim.g.mapleader = ","
 vim.keymap.set("n", ";", ":")
 vim.keymap.set("i", "jj", "<Esc>")
-vim.keymap.set("n", "<leader>w", "C-w")
 
 -- Special stuff
 -- Shifting stuff in visual mode
@@ -12,7 +11,6 @@ vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
 -- Pasting from the void
 vim.keymap.set("x", "<leader>p", [["_dP]])
 
---vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux neww tmux-sessionizer<CR>")
 vim.keymap.set("n", "<leader>s", [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]])
 vim.keymap.set("n", "<leader>x", "<cmd>!chmod +x %<CR>", { silent = true })
 
@@ -31,6 +29,9 @@ vim.keymap.set("n", "<C-S-tab>", ":tabp<CR>",  {noremap = true, silent = true})
 vim.keymap.set("n", "<C-tab>", ":tabn<CR>",  {noremap = true, silent = true})
 vim.keymap.set("n", "<C-S-PageUp>", ":tabmove -1<CR>",  {noremap = true, silent = true})
 vim.keymap.set("n", "<C-S-PageDown>", ":tabmove +1<CR>",  {noremap = true, silent = true})
+
+-- Tmux-Sessionizer
+vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux display-popup tms switch<CR>")
 
 -- Clipboard
 vim.opt.clipboard = 'unnamedplus'
