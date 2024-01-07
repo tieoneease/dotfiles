@@ -79,3 +79,17 @@ echo "eval \"\$(starship init zsh)\"" >> ~/.zshrc
 ln -s ~/.tmux/tmux.conf ~/.tmux.conf
 tms config -p ~/Workspace ~/.config
 ```
+
+### Nice to haves (have not integrated here)
+```
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+
+# in .zshrc
+plugins=(
+    git
+    zsh-syntax-highlighting
+    zsh-autosuggestions
+    extract
+)
+```
