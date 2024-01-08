@@ -75,6 +75,12 @@ My personal workspace:
 mkdir ~/Workspace
 ```
 
+My Fonts (mac):
+```
+brew tap homebrew/cask-fonts         # You only need to do this once!
+brew search '/font-.*-nerd-font/' | awk '{ print $1 }' | xargs -I{} brew install --cask {} || true
+```
+
 Alternatively, run these commands (handles all the above for you):
 ```
 echo "export XDG_CONFIG_HOME=\"\$HOME/.config\"" >> ~/.zshenv
