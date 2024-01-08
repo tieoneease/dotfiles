@@ -22,6 +22,7 @@ local plugins = {
     "numToStr/FTerm.nvim",
     'tpope/vim-surround',
     'mattn/emmet-vim',
+    'tpope/vim-fugitive',
     {
         "folke/trouble.nvim",
         dependencies = { "nvim-tree/nvim-web-devicons" },
