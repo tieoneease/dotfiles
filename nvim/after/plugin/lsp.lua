@@ -40,7 +40,13 @@ require('mason-lspconfig').setup({
             require('lspconfig').svelte.setup{}
         end,
         tsserver = function()
-            require('lspconfig').tsserver.setup{}
+            require('lspconfig').tsserver.setup({
+                settings = {
+                    completions = {
+                        completeFunctionCalls = true
+                    }
+                }
+            })
         end,
         cssls = function()
             require('lspconfig').cssls.setup{}
