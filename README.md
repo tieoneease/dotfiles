@@ -54,6 +54,11 @@ cargo install tmux-sessionizer
 ```
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 ```
+17. install waybar and hyprpaper
+```
+sudo pacman -S waybar
+sudo pacman -S hyprpaper
+```
 
 ### Initialization
 Add these lines to your ~/.zshenv:
