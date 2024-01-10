@@ -50,6 +50,10 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 cargo install tmux-sessionizer
 ```
+16. install nvm
+```
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+```
 
 ### Initialization
 Add these lines to your ~/.zshenv:
@@ -80,6 +84,10 @@ My Fonts (mac):
 brew tap homebrew/cask-fonts         # You only need to do this once!
 brew search '/font-.*-nerd-font/' | awk '{ print $1 }' | xargs -I{} brew install --cask {} || true
 ```
+Arch:
+```
+sudo pacman -S ttf-inconsolata-go-nerd
+```
 
 Alternatively, run these commands (handles all the above for you):
 ```
@@ -88,7 +96,7 @@ echo "export ZDOTDIR=\"\$XDG_CONFIG_HOME/zsh\"" >> ~/.zshenv
 echo "eval \"\$(starship init zsh)\"" >> ~/.zshrc
 ln -s ~/.tmux/tmux.conf ~/.tmux.conf
 mkdir ~/Workspace
-tms config -p ~/Workspace ~/.config
+tms config -p ~/Workspace ~/.config ~/dotfiles
 ```
 
 ### Nice to haves (have not integrated here)

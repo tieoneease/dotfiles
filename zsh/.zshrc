@@ -1,9 +1,10 @@
 alias ws="cd ~/Workspace/"
 alias pg="cd ~/Workspace/Playground"
 alias dl="cd ~/Downloads/"
-alias dotfiles="cd ~/.config/"
+alias dotfiles="cd ~/dotfiles/"
+alias config="cd ~/.config/"
 alias zshconfig="nvim ~/.zshrc"
-alias nvimconfig="cd ~/.config/nvim"
+alias nvimconfig="nvim ~/.config/nvim"
 alias tml="tmux ls"
 alias tma="tmux a -t"
 alias tmk="tmux kill-session -t"
@@ -28,8 +29,5 @@ alias gr='git remote'
 alias grs='git remote show'
 alias glo='git log --pretty="oneline"'
 alias glol='git log --graph --oneline --decorate'
-
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 source ~/.zshrc
