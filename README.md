@@ -117,3 +117,11 @@ plugins=(
     extract
 )
 ```
+
+
+
+# Arch/Hyprland
+```
+yay -S sddm-git sddm-sugar-candy-git python-pywal
+yay -S warpd-git
+```
