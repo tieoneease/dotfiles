@@ -87,7 +87,8 @@ mkdir ~/Workspace
 My Fonts (mac):
 ```
 brew tap homebrew/cask-fonts         # You only need to do this once!
-brew search '/font-.*-nerd-font/' | awk '{ print $1 }' | xargs -I{} brew install --cask {} || true
+#brew search '/font-.*-nerd-font/' | awk '{ print $1 }' | xargs -I{} brew install --cask {} || true
+brew install font-inconsolata-go-nerd-font
 ```
 Arch:
 ```
