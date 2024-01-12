@@ -131,3 +131,8 @@ plugins=(
 yay -S sddm-git sddm-sugar-candy-git python-pywal
 yay -S warpd-git
 ```
+
+
+### Ideas
+
+For mac, maybe migrate to [sketchybar](https://github.com/felixkratz/sketchybar)
