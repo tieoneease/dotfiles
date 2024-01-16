@@ -27,6 +27,10 @@ window#waybar {
     border-bottom: 3px solid #e5e9f0;
 }
 
+#workspaces button.active {
+    background: #8caaee;
+}
+
 #workspaces button.urgent {
     background-color: #bf616a;
 }
