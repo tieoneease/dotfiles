@@ -1,12 +1,8 @@
 ## Setup
 ```
+git clone git@github.com:tieoneease/dotfiles.git ~/
 stow --target ~/.config .
 ```
-or
-```
-git clone git@github.com:tieoneease/dotfiles.git ~/.config
-```
-
 
 ### Dependencies
 1. [install zsh](https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH)
@@ -77,7 +73,7 @@ ln -s ~/.tmux/tmux.conf ~/.tmux.conf
 ```
 Setup sessionizer paths (use your own workspace paths):
 ```
-tms config -p ~/Workspace ~/.config
+tms config -p ~/Workspace ~/dotfiles
 ```
 My personal workspace:
 ```
