@@ -9,8 +9,6 @@ stow --target ~/.config .
 1. [install zsh](https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH)
 2. install oh-my-zsh 
 ```
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-```
 3. [install ripgrep](https://github.com/BurntSushi/ripgrep?tab=readme-ov-file#installation)
 4. install kitty 
 ```
@@ -104,7 +102,7 @@ echo "export ZDOTDIR=\"\$XDG_CONFIG_HOME/zsh\"" >> ~/.zshenv
 echo "eval \"\$(starship init zsh)\"" >> ~/.zshrc
 ln -s ~/.tmux/tmux.conf ~/.tmux.conf
 mkdir ~/Workspace
-tms config -p ~/Workspace ~/.config ~/dotfiles
+tms config -p ~/Workspace ~/dotfiles
 ```
 
 ### Nice to haves (have not integrated here)

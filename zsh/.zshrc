@@ -9,6 +9,7 @@ alias tml="tmux ls"
 alias tma="tmux a -t"
 alias tmk="tmux kill-session -t"
 alias tmn="tmux new -s"
+alias todos="nvim ~/todos.todo"
 
 # git commands
 alias gs='git status'
