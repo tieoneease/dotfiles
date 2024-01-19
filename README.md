@@ -1,6 +1,7 @@
 ## Setup
 ```
-git clone git@github.com:tieoneease/dotfiles.git ~/
+git clone git@github.com:tieoneease/dotfiles.git ~/dotfiles
+cd ~/dotfiles
 stow --target ~/.config .
 ```
 
