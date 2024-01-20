@@ -8,7 +8,6 @@ stow --target ~/.config .
 ### Dependencies
 1. [install zsh](https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH)
 2. install oh-my-zsh 
-```
 3. [install ripgrep](https://github.com/BurntSushi/ripgrep?tab=readme-ov-file#installation)
 4. install kitty 
 ```
