@@ -128,5 +128,5 @@ yay -S warpd-git
 
 
 ### Ideas
-
+### bluetooth on arch with pipewire: https://bbs.archlinux.org/viewtopic.php?id=288398 
 For mac, maybe migrate to [sketchybar](https://github.com/felixkratz/sketchybar)
