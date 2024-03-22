@@ -53,6 +53,9 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 sudo pacman -S waybar
 sudo pacman -S hyprpaper
 ```
+18. MacOS Karabiner
+brew install --cask karabiner-elements
+
 
 ### Initialization
 Add these lines to your ~/.zshenv:
@@ -126,14 +129,6 @@ yay -S sddm-git sddm-sugar-candy-git python-pywal
 yay -S warpd-git
 ```
 
-# MacOSX Remap alt
-hidutil property --set '{"UserKeyMapping":
-    [{"HIDKeyboardModifierMappingSrc":0x7000000e7,
-      "HIDKeyboardModifierMappingDst":0x7000000e6},
-     {"HIDKeyboardModifierMappingSrc":0x7000000e6,
-      "HIDKeyboardModifierMappingDst":0x7000000e7}]
-}'
-brew install --cask karabiner-elements
 
 
 ### Ideas
