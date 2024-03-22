@@ -126,6 +126,14 @@ yay -S sddm-git sddm-sugar-candy-git python-pywal
 yay -S warpd-git
 ```
 
+# MacOSX Remap alt
+hidutil property --set '{"UserKeyMapping":
+    [{"HIDKeyboardModifierMappingSrc":0x7000000e7,
+      "HIDKeyboardModifierMappingDst":0x7000000e6},
+     {"HIDKeyboardModifierMappingSrc":0x7000000e6,
+      "HIDKeyboardModifierMappingDst":0x7000000e7}]
+}'
+
 
 ### Ideas
 ### bluetooth on arch with pipewire: https://bbs.archlinux.org/viewtopic.php?id=288398 
