@@ -133,6 +133,7 @@ hidutil property --set '{"UserKeyMapping":
      {"HIDKeyboardModifierMappingSrc":0x7000000e6,
       "HIDKeyboardModifierMappingDst":0x7000000e7}]
 }'
+brew install --cask karabiner-elements
 
 
 ### Ideas
