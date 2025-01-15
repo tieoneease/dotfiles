@@ -1,8 +1,8 @@
 # Dotfiles
 
-My personal dotfiles, now managed with Nix Home Manager.
+My personal dotfiles, now managed with Nix Home Manager and GNU Stow.
 
-## Quick Setup (Using Nix)
+## Quick Setup
 
 1. Clone the repository:
 ```bash
@@ -10,232 +10,71 @@ git clone git@github.com:tieoneease/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 ```
 
-2. Install Nix (if not already installed):
+2. Run the bootstrap script:
 ```bash
-curl -L https://nixos.org/nix/install | sh
-# Restart your shell or source the nix profile
-. ~/.nix-profile/etc/profile.d/nix.sh
+./bootstrap.sh
 ```
 
-3. Enable Flakes:
-```bash
-mkdir -p ~/.config/nix
-echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+3. Log out and log back in for all changes to take effect.
+
+After logging back in:
+- You'll be in zsh by default (if you changed your shell)
+- Home Manager's configuration will be loaded automatically
+- All your configured tools (starship, tmux, etc.) will be available
+
+## Project Structure
+
+```
+dotfiles/
+├── bootstrap.sh          # Main setup script
+└── nix/                  # Nix configuration
+    ├── setup.sh         # Nix-specific setup
+    └── .config/         # Stow-managed config directory
+        ├── nix/
+        │   └── nix.conf
+        └── home-manager/
+            ├── flake.nix
+            └── home.nix
 ```
 
-4. Install Home Manager:
-```bash
-nix run home-manager/master -- init --switch
-```
+## Configuration Management
 
-5. Apply the configuration:
-```bash
-cd ~/dotfiles/nix
-./setup.sh
-```
+This repository uses two main tools for configuration management:
 
-6. Set up Nix-managed zsh as default shell:
-```bash
-# Add Nix-managed zsh to valid login shells
-sudo sh -c "echo $(which zsh) >> /etc/shells"
+1. **GNU Stow**: Manages symlinks for configuration files
+2. **Home Manager**: Manages packages and their configurations through Nix
 
-# Change your default shell to zsh (choose one of these methods):
-chsh -s $(which zsh)  # If this fails with PAM error, use the following instead:
-sudo usermod -s $(which zsh) $USER
-```
+### Making Changes
 
-7. Log out and log back in for all changes to take effect. After logging back in:
-   - You'll be in zsh by default
-   - Home Manager's configuration will be loaded automatically
-   - All your configured tools (starship, tmux, etc.) will be available
+To modify configurations:
 
-That's it! Your dotfiles are now managed by Nix Home Manager.
+1. Edit the relevant files in the repository
+2. Run `home-manager switch` to apply changes
+3. Commit and push your changes
 
 ## Updating Configuration
 
 To update your configuration after making changes:
 
 ```bash
-cd ~/dotfiles/nix
-./setup.sh
+# Apply home-manager changes
+home-manager switch
+
+# Or run the setup script again
+./nix/setup.sh
 ```
 
-## Rolling Back
+## Components
 
-If something goes wrong, you can roll back to the previous generation:
+The following tools are configured and managed by this setup:
 
-```bash
-home-manager generations
-# Find the generation you want to roll back to
-home-manager switch --flake /nix/store/xxx-home-manager-generation
-```
+- **Shell**: zsh with custom configuration
+- **Terminal Multiplexer**: tmux with Vim-like keybindings and Catppuccin theme
+- **Editor**: Neovim
+- **Terminal**: Kitty
+- **Window Manager**: Hyprland with Waybar
+- **Prompt**: Starship
 
-## Configuration Structure
+## License
 
-- `nix/` - Contains all Nix-related configurations
-  - `flake.nix` - The main flake configuration
-  - `home-manager/home.nix` - The home-manager configuration
-
-## Additional Notes
-
-- The configuration uses relative paths to maintain portability
-- Some programs are managed by home-manager (zsh, starship)
-- Other configurations are symlinked from the dotfiles repository
-- All dependencies are automatically installed through Nix
-
-### Environment Variables
-
-These are now managed by home-manager in `home.nix`:
-```nix
-home.sessionVariables = {
-  XDG_CONFIG_HOME = "$HOME/.config";
-  ZDOTDIR = "$XDG_CONFIG_HOME/zsh";
-};
-```
-
-## Manual Setup (Legacy Method)
-
-If you prefer to use the traditional stow-based setup, follow these steps:
-
-### Setup
-```bash
-git clone git@github.com:tieoneease/dotfiles.git ~/dotfiles
-cd ~/dotfiles
-stow --target ~/.config .
-```
-
-### Dependencies
-1. [install zsh](https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH)
-2. install oh-my-zsh 
-3. [install ripgrep](https://github.com/BurntSushi/ripgrep?tab=readme-ov-file#installation)
-4. install kitty 
-```bash
-curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
-``` 
-5. install starship 
-```bash
-curl -sS https://starship.rs/install.sh | sh
-```
-6. [install tmux](https://github.com/tmux/tmux/wiki/Installing)
-7. [install neovim](https://github.com/neovim/neovim/blob/master/INSTALL.md)
-8. install yabai 
-```bash
-brew install koekeishiya/formulae/yabai
-``` 
-9. install spacebar 
-```bash
-brew install cmacrae/formulae/spacebar
-brew services start spacebar
-```
-10. install skhd 
-```bash
-  brew install koekeishiya/formulae/skhd
-  skhd --start-service
-```
-11. [install nerdfonts](https://github.com/ryanoasis/nerd-fonts?tab=readme-ov-file#option-4-homebrew-fonts)
-12. [install lazygit](https://github.com/jesseduffield/lazygit#installation)
-13. [install nvm](https://github.com/nvm-sh/nvm)
-14. install rust
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-15. install tmux-sessionizer
-```bash
-cargo install tmux-sessionizer
-```
-16. install nvm
-```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-```
-17. install waybar and hyprpaper
-```bash
-sudo pacman -S waybar
-sudo pacman -S hyprpaper
-```
-18. MacOS Karabiner
-brew install --cask karabiner-elements
-
-
-### Initialization
-Add these lines to your ~/.zshenv:
-```bash
-export XDG_CONFIG_HOME="$HOME/.config"
-export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
-```
-
-Add these lines to your ~/.zshrc:
-```bash
-eval "$(starship init zsh)"
-```
-Symlink tmux:
-```bash
-ln -s ~/.tmux/tmux.conf ~/.tmux.conf
-```
-Setup sessionizer paths (use your own workspace paths):
-```bash
-tms config -p ~/Workspace ~/dotfiles
-```
-My personal workspace:
-```bash
-mkdir ~/Workspace
-```
-
-My Fonts (mac):
-```bash
-brew tap homebrew/cask-fonts         # You only need to do this once!
-brew install font-inconsolata-go-nerd-font
-```
-
-Install all fonts if you want:
-```bash
-brew search '/font-.*-nerd-font/' | awk '{ print $1 }' | xargs -I{} brew install --cask {} || true
-```
-
-Arch:
-```bash
-sudo pacman -S ttf-inconsolata-go-nerd
-```
-
-Alternatively, run these commands (handles all the above for you):
-```bash
-echo "export XDG_CONFIG_HOME=\"\$HOME/.config\"" >> ~/.zshenv
-echo "export ZDOTDIR=\"\$XDG_CONFIG_HOME/zsh\"" >> ~/.zshenv
-echo "eval \"\$(starship init zsh)\"" >> ~/.zshrc
-ln -s ~/.tmux/tmux.conf ~/.tmux.conf
-mkdir ~/Workspace
-tms config -p ~/Workspace ~/dotfiles
-```
-
-### Nice to haves (have not integrated here)
-```bash
-git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-
-# in .zshrc
-plugins=(
-    git
-    zsh-syntax-highlighting
-    zsh-autosuggestions
-    extract
-)
-```
-
-
-
-# Arch/Hyprland
-```bash
-yay -S sddm-git sddm-sugar-candy-git python-pywal
-yay -S warpd-git
-```
-
-
-
-### Ideas
-### bluetooth on arch with pipewire: https://bbs.archlinux.org/viewtopic.php?id=288398 
-For mac, maybe migrate to [sketchybar](https://github.com/felixkratz/sketchybar)
-
-## My Personal Workspace
-```bash
-mkdir ~/Workspace
-
-```
+MIT
