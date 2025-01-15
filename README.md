@@ -30,11 +30,68 @@ nix run home-manager/master -- init --switch
 
 5. Apply the configuration:
 ```bash
-cd ~/dotfiles
-nix --extra-experimental-features "nix-command flakes" run home-manager/master -- switch --flake ./nix#chungsam
+cd ~/dotfiles/nix
+./setup.sh
 ```
 
+6. Set up Nix-managed zsh as default shell:
+```bash
+# Add Nix-managed zsh to valid login shells
+sudo sh -c "echo $(which zsh) >> /etc/shells"
+
+# Change your default shell to zsh (choose one of these methods):
+chsh -s $(which zsh)  # If this fails with PAM error, use the following instead:
+sudo usermod -s $(which zsh) $USER
+```
+
+7. Log out and log back in for all changes to take effect. After logging back in:
+   - You'll be in zsh by default
+   - Home Manager's configuration will be loaded automatically
+   - All your configured tools (starship, tmux, etc.) will be available
+
 That's it! Your dotfiles are now managed by Nix Home Manager.
+
+## Updating Configuration
+
+To update your configuration after making changes:
+
+```bash
+cd ~/dotfiles/nix
+./setup.sh
+```
+
+## Rolling Back
+
+If something goes wrong, you can roll back to the previous generation:
+
+```bash
+home-manager generations
+# Find the generation you want to roll back to
+home-manager switch --flake /nix/store/xxx-home-manager-generation
+```
+
+## Configuration Structure
+
+- `nix/` - Contains all Nix-related configurations
+  - `flake.nix` - The main flake configuration
+  - `home-manager/home.nix` - The home-manager configuration
+
+## Additional Notes
+
+- The configuration uses relative paths to maintain portability
+- Some programs are managed by home-manager (zsh, starship)
+- Other configurations are symlinked from the dotfiles repository
+- All dependencies are automatically installed through Nix
+
+### Environment Variables
+
+These are now managed by home-manager in `home.nix`:
+```nix
+home.sessionVariables = {
+  XDG_CONFIG_HOME = "$HOME/.config";
+  ZDOTDIR = "$XDG_CONFIG_HOME/zsh";
+};
+```
 
 ## Manual Setup (Legacy Method)
 
@@ -177,48 +234,8 @@ yay -S warpd-git
 ### bluetooth on arch with pipewire: https://bbs.archlinux.org/viewtopic.php?id=288398 
 For mac, maybe migrate to [sketchybar](https://github.com/felixkratz/sketchybar)
 
-## Updating Configuration
-
-To update your configuration after making changes:
-
-```bash
-cd ~/dotfiles
-nix --extra-experimental-features "nix-command flakes" run home-manager/master -- switch --flake ./nix#chungsam
-```
-
-## Rolling Back
-
-If something goes wrong, you can roll back to the previous generation:
-
-```bash
-home-manager generations
-# Find the generation you want to roll back to
-home-manager switch --flake /nix/store/xxx-home-manager-generation
-```
-
-## Configuration Structure
-
-- `nix/` - Contains all Nix-related configurations
-  - `flake.nix` - The main flake configuration
-  - `home-manager/home.nix` - The home-manager configuration
-
-## Additional Notes
-
-- The configuration uses relative paths to maintain portability
-- Some programs are managed by home-manager (zsh, starship)
-- Other configurations are symlinked from the dotfiles repository
-- All dependencies are automatically installed through Nix
-
-### Environment Variables
-
-These are now managed by home-manager in `home.nix`:
-```nix
-home.sessionVariables = {
-  XDG_CONFIG_HOME = "$HOME/.config";
-  ZDOTDIR = "$XDG_CONFIG_HOME/zsh";
-};
-```
-
-### My Personal Workspace
+## My Personal Workspace
 ```bash
 mkdir ~/Workspace
+
+```

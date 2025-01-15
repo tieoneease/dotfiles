@@ -1,6 +1,6 @@
 {config, pkgs, ...}: {
-  home.username = "chungsam";
-  home.homeDirectory = "/home/chungsam";
+  home.username = builtins.getEnv "USER";
+  home.homeDirectory = builtins.getEnv "HOME";
   home.stateVersion = "23.11";
 
   # Let home-manager manage itself
