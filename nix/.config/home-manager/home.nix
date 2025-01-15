@@ -193,6 +193,104 @@ in {
       };
     };
 
+    lazygit = {
+      enable = true;
+      settings = {
+        gui = {
+          theme = {
+            lightTheme = false;
+            activeBorderColor = ["#85c1dc" "bold"];
+            inactiveBorderColor = ["#a5adce"];
+            optionsTextColor = ["#85c1dc"];
+            selectedLineBgColor = ["#414559"];
+            selectedRangeBgColor = ["#414559"];
+            cherryPickedCommitBgColor = ["#51576d"];
+            cherryPickedCommitFgColor = ["#85c1dc"];
+            unstagedChangesColor = ["#e78284"];
+            defaultFgColor = ["#c6d0f5"];
+            searchingActiveBorderColor = ["#85c1dc"];
+          };
+          nerdFontsVersion = "3";
+          border = "rounded";
+          mouseEvents = true;
+          showFileTree = true;
+          showRandomTip = false;
+          showBottomLine = true;
+        };
+        git = {
+          paging = {
+            colorArg = "always";
+            useConfig = false;
+          };
+          commit = {
+            signOff = false;
+          };
+          merging = {
+            manualCommit = false;
+            args = "";
+          };
+          skipHookPrefix = "WIP";
+          autoFetch = true;
+          branchLogCmd = "git log --graph --color=always --abbrev-commit --decorate --date=relative --pretty=medium {{branchName}} --";
+          allBranchesLogCmd = "git log --graph --all --color=always --abbrev-commit --decorate --date=relative  --pretty=medium";
+          overrideGpg = false;
+          disableForcePushing = false;
+          parseEmoji = false;
+        };
+        update = {
+          method = "prompt";
+          days = 14;
+        };
+        confirmOnQuit = false;
+        quitOnTopLevelReturn = true;
+        keybinding = {
+          universal = {
+            quit = "q";
+            quit-alt1 = "<c-c>";
+            return = "<esc>";
+            quitWithoutChangingDirectory = "Q";
+            togglePanel = "<tab>";
+            prevItem = "<up>";
+            nextItem = "<down>";
+            prevPage = ",";
+            nextPage = ".";
+            gotoTop = "<";
+            gotoBottom = ">";
+            prevBlock = "<left>";
+            nextBlock = "<right>";
+            jumpToBlock = ["1" "2" "3" "4" "5"];
+            nextMatch = "n";
+            prevMatch = "N";
+            startSearch = "/";
+            optionMenu = "x";
+            edit = "e";
+            new = "n";
+            scrollUpMain = "<pgup>";
+            scrollDownMain = "<pgdown>";
+            scrollUpSelected = "<up>";
+            scrollDownSelected = "<down>";
+            refresh = "R";
+            optionMenu-alt1 = "?";
+            undo = "u";
+            redo = "<c-r>";
+            filteringMenu = "<c-s>";
+            diffingMenu = "<c-e>";
+            copyToClipboard = "y";
+            submitEditorText = "<enter>";
+            extrasMenu = "@";
+            toggleWhitespaceInDiffView = "<c-w>";
+            increaseContextInDiffView = "]";
+            decreaseContextInDiffView = "[";
+          };
+        };
+        os = {
+          editCommand = "nvim";
+          editCommandTemplate = "{{editor}} +{{line}} -- {{filename}}";
+          openCommand = "nvim";
+        };
+      };
+    };
+
     starship = {
       enable = true;
       enableZshIntegration = true;
