@@ -18,6 +18,11 @@ in {
     nodejs
     rustup
     tmux
+    zsh
+    starship
+    zsh-autosuggestions
+    zsh-syntax-highlighting
+    oh-my-zsh
 
     # Window manager and related
     waybar
@@ -135,17 +140,120 @@ in {
 
     zsh = {
       enable = true;
-      oh-my-zsh = {
-        enable = true;
-        plugins = ["git" "extract"];
-      };
-      initExtra = ''
+      dotDir = ".config/zsh";
+      enableCompletion = true;
+      autosuggestion.enable = true;
+      syntaxHighlighting.enable = true;
+      
+      initExtraFirst = ''
+        # Load oh-my-zsh
+        export ZSH=${pkgs.oh-my-zsh}/share/oh-my-zsh
+        source $ZSH/oh-my-zsh.sh
+
+        # Initialize Starship
         eval "$(starship init zsh)"
       '';
+
+      shellAliases = {
+        ws = "cd ~/Workspace/";
+        pg = "cd ~/Workspace/Playground";
+        dl = "cd ~/Downloads/";
+        dotfiles = "cd ~/dotfiles/";
+        config = "cd ~/.config/";
+        zshconfig = "nvim ~/.zshrc";
+        nvimconfig = "nvim ~/.config/nvim";
+        tml = "tmux ls";
+        tma = "tmux a -t";
+        tmk = "tmux kill-session -t";
+        tmn = "tmux new -s";
+        todos = "nvim ~/todos.todo";
+
+        gs = "git status";
+        ga = "git add";
+        gp = "git push";
+        gpo = "git push origin";
+        gtd = "git tag --delete";
+        gtdr = "git tag --delete origin";
+        gr = "git branch -r";
+        gplo = "git pull origin";
+        gb = "git branch";
+        gc = "git commit";
+        gcm = "git commit -m";
+        gd = "git diff";
+        gco = "git checkout";
+        gl = "git log";
+        grs = "git remote show";
+        glo = "git log --pretty=\"oneline\"";
+        glol = "git log --graph --oneline --decorate";
+      };
+
+      oh-my-zsh = {
+        enable = true;
+        plugins = [ "git" "z" ];
+      };
     };
 
     starship = {
       enable = true;
+      enableZshIntegration = true;
+      settings = {
+        add_newline = true;
+        palette = "catppuccin_frappe";
+        
+        character = {
+          success_symbol = "[[❯](sapphire) ](sapphire)";
+          error_symbol = "[[❯](red) ](red)";
+          vimcmd_symbol = "[❮](green)";
+        };
+
+        directory = {
+          truncation_length = 4;
+          style = "bold lavender";
+        };
+
+        git_branch = {
+          symbol = " ";
+          style = "bold mauve";
+        };
+
+        git_status = {
+          style = "bold red";
+        };
+
+        cmd_duration = {
+          min_time = 500;
+          format = "took [$duration](peach)";
+        };
+
+        palettes.catppuccin_frappe = {
+          rosewater = "#f2d5cf";
+          flamingo = "#eebebe";
+          pink = "#f4b8e4";
+          mauve = "#ca9ee6";
+          red = "#e78284";
+          maroon = "#ea999c";
+          peach = "#ef9f76";
+          yellow = "#e5c890";
+          green = "#a6d189";
+          teal = "#81c8be";
+          sky = "#99d1db";
+          sapphire = "#85c1dc";
+          blue = "#8caaee";
+          lavender = "#babbf1";
+          text = "#c6d0f5";
+          subtext1 = "#b5bfe2";
+          subtext0 = "#a5adce";
+          overlay2 = "#949cbb";
+          overlay1 = "#838ba7";
+          overlay0 = "#737994";
+          surface2 = "#626880";
+          surface1 = "#51576d";
+          surface0 = "#414559";
+          base = "#303446";
+          mantle = "#292c3c";
+          crust = "#232634";
+        };
+      };
     };
   };
 
@@ -155,14 +263,16 @@ in {
     ".config/waybar".source = config.lib.file.mkOutOfStoreSymlink ../../../waybar;
     ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink ../../../nvim;
     ".config/kitty".source = config.lib.file.mkOutOfStoreSymlink ../../../kitty;
-    ".config/starship/starship.toml".source = config.lib.file.mkOutOfStoreSymlink ../../../starship/starship.toml;
   };
 
   # Set environment variables
   home.sessionVariables = {
+    EDITOR = "nvim";
+    VISUAL = "nvim";
     XDG_CONFIG_HOME = "$HOME/.config";
-    ZDOTDIR = "$XDG_CONFIG_HOME/zsh";
-    # Ensure neovim can find its config
+    ZDOTDIR = "$HOME/.config/zsh";
+    NVM_DIR = "$HOME/.config/nvm";
+    SHELL = "${pkgs.zsh}/bin/zsh";
     NVIM_APPNAME = "nvim";
   };
 }
