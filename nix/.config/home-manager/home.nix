@@ -3,6 +3,10 @@ let
   username = builtins.getEnv "USER";
   homeDirectory = builtins.getEnv "HOME";
 in {
+  imports = [
+    ./neovim.nix
+  ];
+
   home.username = if username != "" then username else "chungsam";
   home.homeDirectory = if homeDirectory != "" then homeDirectory else "/home/chungsam";
   home.stateVersion = "23.11";
@@ -127,15 +131,6 @@ in {
           extraConfig = "";
         }
       ];
-    };
-
-    neovim = {
-      enable = true;
-      defaultEditor = true;
-      viAlias = true;
-      vimAlias = true;
-      withNodeJs = true;  # For plugins that need Node.js
-      withPython3 = true;  # For plugins that need Python
     };
 
     zsh = {
@@ -359,7 +354,6 @@ in {
   home.file = {
     ".config/hypr".source = config.lib.file.mkOutOfStoreSymlink ../../../hypr;
     ".config/waybar".source = config.lib.file.mkOutOfStoreSymlink ../../../waybar;
-    ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink ../../../nvim;
     ".config/kitty".source = config.lib.file.mkOutOfStoreSymlink ../../../kitty;
   };
 
