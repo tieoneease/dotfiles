@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Ghostty
+GenericName=Terminal Emulator
+Comment=A modern, GPU-accelerated terminal emulator
+Exec=nixGLIntel ghostty
+Icon=utilities-terminal
+Terminal=false
+Categories=System;TerminalEmulator;
+Keywords=shell;prompt;command;commandline;

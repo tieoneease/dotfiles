@@ -5,6 +5,7 @@ let
 in {
   imports = [
     ./neovim.nix
+    ./ghostty.nix
   ];
 
   home.username = if username != "" then username else "chungsam";
@@ -350,11 +351,26 @@ in {
     };
   };
 
+  # Create desktop entries
+  xdg.desktopEntries = {
+    ghostty = {
+      name = "Ghostty";
+      genericName = "Terminal Emulator";
+      exec = "ghostty";
+      icon = "utilities-terminal";
+      terminal = false;
+      categories = [ "System" "TerminalEmulator" ];
+      comment = "A modern, GPU-accelerated terminal emulator";
+      type = "Application";
+    };
+  };
+
   # Keep your existing dotfiles using relative paths
   home.file = {
     ".config/hypr".source = config.lib.file.mkOutOfStoreSymlink ../../../hypr;
     ".config/waybar".source = config.lib.file.mkOutOfStoreSymlink ../../../waybar;
     ".config/kitty".source = config.lib.file.mkOutOfStoreSymlink ../../../kitty;
+    ".local/share/applications/ghostty.desktop".source = ./ghostty.desktop;
   };
 
   # Set environment variables
