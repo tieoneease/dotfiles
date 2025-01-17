@@ -28,6 +28,8 @@ in {
     zsh-autosuggestions
     zsh-syntax-highlighting
     oh-my-zsh
+    direnv
+    nix-direnv
 
     # Window manager and related
     waybar
@@ -285,6 +287,11 @@ in {
           openCommand = "nvim";
         };
       };
+    };
+
+    direnv = {
+      enable = true;
+      nix-direnv.enable = true;
     };
 
     starship = {
