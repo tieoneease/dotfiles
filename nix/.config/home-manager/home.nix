@@ -41,6 +41,25 @@ in {
 
   # Program-specific configurations
   programs = {
+    ssh = {
+      enable = true;
+      matchBlocks = {
+        "github.com" = {
+          user = "git";
+          identityFile = "~/.ssh/id_ed25519";
+        };
+        "hetzner" = {
+          hostname = "5.78.120.78";
+          user = "root";
+          identityFile = "~/.ssh/id_ed25519";
+          port = 22;
+          extraOptions = {
+            "AddKeysToAgent" = "yes";
+          };
+        };
+      };
+    };
+
     tmux = {
       enable = true;
       escapeTime = 10;
