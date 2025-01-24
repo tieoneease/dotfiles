@@ -1,136 +1,80 @@
-## Setup
-```
+# Dotfiles
+
+My personal dotfiles, now managed with Nix Home Manager and GNU Stow.
+
+## Quick Setup
+
+1. Clone the repository:
+```bash
 git clone git@github.com:tieoneease/dotfiles.git ~/dotfiles
 cd ~/dotfiles
-stow --target ~/.config .
 ```
 
-### Dependencies
-1. [install zsh](https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH)
-2. install oh-my-zsh 
-3. [install ripgrep](https://github.com/BurntSushi/ripgrep?tab=readme-ov-file#installation)
-4. install kitty 
-```
-curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin
-``` 
-5. install starship 
-```
-curl -sS https://starship.rs/install.sh | sh
-```
-6. [install tmux](https://github.com/tmux/tmux/wiki/Installing)
-7. [install neovim](https://github.com/neovim/neovim/blob/master/INSTALL.md)
-8. install yabai 
-```
-brew install koekeishiya/formulae/yabai
-``` 
-9. install spacebar 
-```
-brew install cmacrae/formulae/spacebar
-brew services start spacebar
-```
-10. install skhd 
-```
-  brew install koekeishiya/formulae/skhd
-  skhd --start-service
-```
-11. [install nerdfonts](https://github.com/ryanoasis/nerd-fonts?tab=readme-ov-file#option-4-homebrew-fonts)
-12. [install lazygit](https://github.com/jesseduffield/lazygit#installation)
-13. [install nvm](https://github.com/nvm-sh/nvm)
-14. install rust
-```
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-15. install tmux-sessionizer
-```
-cargo install tmux-sessionizer
-```
-16. install nvm
-```
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-```
-17. install waybar and hyprpaper
-```
-sudo pacman -S waybar
-sudo pacman -S hyprpaper
-```
-18. MacOS Karabiner
-brew install --cask karabiner-elements
-
-
-### Initialization
-Add these lines to your ~/.zshenv:
-```
-export XDG_CONFIG_HOME="$HOME/.config"
-export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
+2. Run the bootstrap script:
+```bash
+./bootstrap.sh
 ```
 
-Add these lines to your ~/.zshrc:
+3. Log out and log back in for all changes to take effect.
+
+After logging back in:
+- You'll be in zsh by default (if you changed your shell)
+- Home Manager's configuration will be loaded automatically
+- All your configured tools (starship, tmux, etc.) will be available
+
+## Project Structure
+
 ```
-eval "$(starship init zsh)"
-```
-Symlink tmux:
-```
-ln -s ~/.tmux/tmux.conf ~/.tmux.conf
-```
-Setup sessionizer paths (use your own workspace paths):
-```
-tms config -p ~/Workspace ~/dotfiles
-```
-My personal workspace:
-```
-mkdir ~/Workspace
+dotfiles/
+├── bootstrap.sh          # Main setup script
+└── nix/                  # Nix configuration
+    ├── setup.sh         # Nix-specific setup
+    └── .config/         # Stow-managed config directory
+        ├── nix/
+        │   └── nix.conf
+        └── home-manager/
+            ├── flake.nix
+            └── home.nix
 ```
 
-My Fonts (mac):
-```
-brew tap homebrew/cask-fonts         # You only need to do this once!
-brew install font-inconsolata-go-nerd-font
+## Configuration Management
+
+This repository uses two main tools for configuration management:
+
+1. **GNU Stow**: Manages symlinks for configuration files
+2. **Home Manager**: Manages packages and their configurations through Nix
+
+### Making Changes
+
+To modify configurations:
+
+1. Edit the relevant files in the repository
+2. Run `home-manager switch` to apply changes
+3. Commit and push your changes
+
+## Updating Configuration
+
+To update your configuration after making changes:
+
+```bash
+# Apply home-manager changes
+home-manager switch
+
+# Or run the setup script again
+./nix/setup.sh
 ```
 
-Install all fonts if you want:
-```
-brew search '/font-.*-nerd-font/' | awk '{ print $1 }' | xargs -I{} brew install --cask {} || true
-```
+## Components
 
-Arch:
-```
-sudo pacman -S ttf-inconsolata-go-nerd
-```
+The following tools are configured and managed by this setup:
 
-Alternatively, run these commands (handles all the above for you):
-```
-echo "export XDG_CONFIG_HOME=\"\$HOME/.config\"" >> ~/.zshenv
-echo "export ZDOTDIR=\"\$XDG_CONFIG_HOME/zsh\"" >> ~/.zshenv
-echo "eval \"\$(starship init zsh)\"" >> ~/.zshrc
-ln -s ~/.tmux/tmux.conf ~/.tmux.conf
-mkdir ~/Workspace
-tms config -p ~/Workspace ~/dotfiles
-```
+- **Shell**: zsh with custom configuration
+- **Terminal Multiplexer**: tmux with Vim-like keybindings and Catppuccin theme
+- **Editor**: Neovim
+- **Terminal**: Kitty
+- **Window Manager**: Hyprland with Waybar
+- **Prompt**: Starship
 
-### Nice to haves (have not integrated here)
-```
-git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+## License
 
-# in .zshrc
-plugins=(
-    git
-    zsh-syntax-highlighting
-    zsh-autosuggestions
-    extract
-)
-```
-
-
-
-# Arch/Hyprland
-```
-yay -S sddm-git sddm-sugar-candy-git python-pywal
-yay -S warpd-git
-```
-
-
-
-### Ideas
-### bluetooth on arch with pipewire: https://bbs.archlinux.org/viewtopic.php?id=288398 
-For mac, maybe migrate to [sketchybar](https://github.com/felixkratz/sketchybar)
+MIT
