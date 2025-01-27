@@ -1,3 +1,6 @@
+# Nix
+if [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then . "$HOME/.nix-profile/etc/profile.d/nix.sh"; fi
+
 alias ws="cd ~/Workspace/"
 alias pg="cd ~/Workspace/Playground"
 alias dl="cd ~/Downloads/"
