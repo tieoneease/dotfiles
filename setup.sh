@@ -103,6 +103,23 @@ setup_dotfiles() {
     fi
 }
 
+# Function to change default shell to Nix zsh
+change_shell() {
+    NIX_ZSH="$HOME/.nix-profile/bin/zsh"
+    if [ "$SHELL" != "$NIX_ZSH" ]; then
+        echo "Changing default shell to Nix zsh..."
+        # Add Nix zsh to /etc/shells if it's not there
+        if ! grep -q "$NIX_ZSH" /etc/shells; then
+            echo "Adding Nix zsh to /etc/shells..."
+            echo "$NIX_ZSH" | sudo tee -a /etc/shells
+        fi
+        # Change shell
+        chsh -s "$NIX_ZSH"
+    else
+        echo "Shell is already Nix zsh"
+    fi
+}
+
 main() {
     echo "Starting setup..."
     
@@ -117,6 +134,9 @@ main() {
     
     # Setup dotfiles
     setup_dotfiles
+
+    # Change default shell
+    change_shell
     
     echo "Setup completed successfully!"
 }
