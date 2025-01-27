@@ -84,7 +84,6 @@ install_packages() {
         "kitty"
         "xclip"
         "libnotify"
-        "nvm"
     )
 
     for package in "${packages[@]}"; do
@@ -104,6 +103,17 @@ install_oh_my_zsh() {
     else
         echo "oh-my-zsh is already installed"
     fi
+}
+
+# Function to install nvm
+install_nvm() {
+    if [ -d "$HOME/.nvm" ]; then
+        echo "nvm is already installed"
+        return
+    fi
+
+    echo "Installing nvm..."
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 }
 
 # Function to setup dotfiles using stow
@@ -175,9 +185,12 @@ main() {
     # Install oh-my-zsh
     install_oh_my_zsh
     
+    # Install nvm
+    install_nvm
+    
     # Setup dotfiles
     setup_dotfiles
-
+    
     # Change default shell
     change_shell
     
