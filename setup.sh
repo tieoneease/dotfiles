@@ -76,7 +76,7 @@ needs_install() {
 
 # Function to install packages using Nix
 install_packages() {
-    packages=(
+    local packages=(
         "neovim"
         "tmux"
         "zsh"
@@ -84,6 +84,7 @@ install_packages() {
         "kitty"
         "xclip"
         "libnotify"
+        "nvm"
     )
 
     for package in "${packages[@]}"; do
@@ -109,6 +110,9 @@ install_oh_my_zsh() {
 setup_dotfiles() {
     # Create .config directory if it doesn't exist
     mkdir -p "$HOME/.config"
+
+    # Create NVM directory if it doesn't exist
+    mkdir -p "$HOME/.nvm"
 
     # Get the current directory
     DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
