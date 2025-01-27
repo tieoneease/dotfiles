@@ -1,20 +1,22 @@
-# Nix
-if [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then . "$HOME/.nix-profile/etc/profile.d/nix.sh"; fi
-
+# Aliases
+## Directory shortcuts
 alias ws="cd ~/Workspace/"
 alias pg="cd ~/Workspace/Playground"
 alias dl="cd ~/Downloads/"
 alias dotfiles="cd ~/dotfiles/"
 alias config="cd ~/.config/"
+
+## Editor
 alias zshconfig="nvim ~/.zshrc"
 alias nvimconfig="nvim ~/.config/nvim"
+
+## Tmux
 alias tml="tmux ls"
 alias tma="tmux a -t"
 alias tmk="tmux kill-session -t"
 alias tmn="tmux new -s"
-alias todos="nvim ~/todos.todo"
 
-# git commands
+## Git
 alias gs='git status'
 alias ga='git add'
 alias gp='git push'
@@ -33,3 +35,6 @@ alias gr='git remote'
 alias grs='git remote show'
 alias glo='git log --pretty="oneline"'
 alias glol='git log --graph --oneline --decorate'
+
+## Other
+alias todos="nvim ~/todos.todo"
