@@ -82,6 +82,8 @@ install_packages() {
         "zsh"
         "stow"
         "kitty"
+        "xclip"
+        "libnotify"
     )
 
     for package in "${packages[@]}"; do
@@ -137,8 +139,8 @@ change_shell() {
             echo "Adding Nix zsh to /etc/shells..."
             echo "$NIX_ZSH" | sudo tee -a /etc/shells
         fi
-        # Change shell using usermod
-        sudo usermod -s "$NIX_ZSH" "$USER"
+        # Change shell
+        sudo chsh -s "$NIX_ZSH" "$USER"
     else
         echo "Shell is already Nix zsh"
     fi
