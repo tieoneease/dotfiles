@@ -138,7 +138,7 @@ change_shell() {
             echo "$NIX_ZSH" | sudo tee -a /etc/shells
         fi
         # Change shell
-        chsh -s "$NIX_ZSH"
+        sudo chsh -s "$NIX_ZSH" "$USER"
     else
         echo "Shell is already Nix zsh"
     fi
