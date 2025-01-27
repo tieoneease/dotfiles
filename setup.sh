@@ -84,6 +84,7 @@ install_packages() {
         "kitty"
         "xclip"
         "libnotify"
+        "xdotool"
     )
 
     for package in "${packages[@]}"; do
@@ -131,6 +132,12 @@ install_nvm() {
 # Function to install Nerd Fonts
 install_fonts() {
     echo "Installing Nerd Fonts..."
+    # Get the current directory
+    local DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    
+    # Create fonts directory if it doesn't exist
+    mkdir -p "$HOME/.local/share/fonts"
+    
     FONTS_NIX="$DOTFILES_DIR/nix/config/fonts.nix"
     if [ -f "$FONTS_NIX" ]; then
         nix-env -f "$FONTS_NIX" -i
@@ -168,11 +175,13 @@ setup_dotfiles() {
 
     # Check if Hyprland is running
     if pgrep -x "Hyprland" > /dev/null; then
-        echo "Hyprland is running. Handling hyprland.conf separately..."
+        echo "Hyprland is running. Handling hyprland configs separately..."
         # Ensure hypr config directory exists
         mkdir -p "$HOME/.config/hypr"
         # Create symlink for hyprland config
         ln -sf "$DOTFILES_DIR/hypr/hyprland.conf" "$HOME/.config/hypr/hyprland.conf"
+        # Create symlink for hyprpaper config
+        ln -sf "$DOTFILES_DIR/hypr/hyprpaper.conf" "$HOME/.config/hypr/hyprpaper.conf"
         # Stow everything except hypr and zsh directories
         stow --ignore=hypr --ignore=zsh .
     else
