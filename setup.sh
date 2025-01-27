@@ -54,6 +54,26 @@ install_nix() {
     fi
 }
 
+# Function to check if package needs to be installed
+needs_install() {
+    local package="$1"
+    local current_version
+    current_version=$(nix-env -q "$package" 2>/dev/null)
+    if [ -z "$current_version" ]; then
+        return 0  # Package not installed
+    fi
+    
+    # Get the version that would be installed
+    local new_version
+    new_version=$(nix-env -qA "nixpkgs.$package" 2>/dev/null)
+    
+    # Compare versions
+    if [ "$current_version" != "$new_version" ]; then
+        return 0  # Different version
+    fi
+    return 1  # Same version
+}
+
 # Function to install packages using Nix
 install_packages() {
     packages=(
@@ -65,8 +85,12 @@ install_packages() {
     )
 
     for package in "${packages[@]}"; do
-        echo "Installing $package..."
-        nix-env -iA nixpkgs."$package"
+        if needs_install "$package"; then
+            echo "Installing $package..."
+            nix-env -iA nixpkgs."$package"
+        else
+            echo "Package $package is already at the latest version"
+        fi
     done
 }
 
