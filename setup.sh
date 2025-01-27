@@ -128,6 +128,19 @@ install_nvm() {
     npm install -g typescript
 }
 
+# Function to install Nerd Fonts
+install_fonts() {
+    echo "Installing Nerd Fonts..."
+    FONTS_NIX="$DOTFILES_DIR/nix/config/fonts.nix"
+    if [ -f "$FONTS_NIX" ]; then
+        nix-env -f "$FONTS_NIX" -i
+        echo "Nerd Fonts installed successfully"
+    else
+        echo "Error: fonts.nix not found at $FONTS_NIX"
+        exit 1
+    fi
+}
+
 # Function to setup dotfiles using stow
 setup_dotfiles() {
     # Create .config directory if it doesn't exist
@@ -193,6 +206,9 @@ main() {
     
     # Install packages
     install_packages
+    
+    # Install Nerd Fonts
+    install_fonts
     
     # Install oh-my-zsh
     install_oh_my_zsh
