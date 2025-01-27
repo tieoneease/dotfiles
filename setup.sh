@@ -114,6 +114,19 @@ setup_dotfiles() {
     DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     cd "$DOTFILES_DIR"
 
+    # Handle zsh files separately
+    echo "Setting up zsh configuration..."
+    # Set up .zshenv for Nix
+    ln -sf "$DOTFILES_DIR/zsh/.zshenv" "$HOME/.zshenv"
+    # Set up aliases
+    ln -sf "$DOTFILES_DIR/zsh/.zsh_aliases" "$HOME/.zsh_aliases"
+    # Set up .zshrc if it doesn't exist or backup if it does
+    if [ -f "$HOME/.zshrc" ]; then
+        echo "Backing up existing .zshrc to .zshrc.backup"
+        mv "$HOME/.zshrc" "$HOME/.zshrc.backup"
+    fi
+    cp "$DOTFILES_DIR/zsh/zshrc.template" "$HOME/.zshrc"
+
     # Check if Hyprland is running
     if pgrep -x "Hyprland" > /dev/null; then
         echo "Hyprland is running. Handling hyprland.conf separately..."
@@ -121,11 +134,11 @@ setup_dotfiles() {
         mkdir -p "$HOME/.config/hypr"
         # Create symlink for hyprland config
         ln -sf "$DOTFILES_DIR/hypr/hyprland.conf" "$HOME/.config/hypr/hyprland.conf"
-        # Stow everything except hypr directory
-        stow --ignore=hypr .
+        # Stow everything except hypr and zsh directories
+        stow --ignore=hypr --ignore=zsh .
     else
-        # If Hyprland is not running, stow everything
-        stow .
+        # If Hyprland is not running, stow everything except zsh
+        stow --ignore=zsh .
     fi
 }
 
