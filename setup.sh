@@ -105,15 +105,27 @@ install_oh_my_zsh() {
     fi
 }
 
-# Function to install nvm
+# Function to install nvm and node packages
 install_nvm() {
     if [ -d "$HOME/.nvm" ]; then
         echo "nvm is already installed"
-        return
+    else
+        echo "Installing nvm..."
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
     fi
 
-    echo "Installing nvm..."
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+    # Load nvm in the current shell
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+    # Install LTS version of Node.js and set as default
+    echo "Installing Node.js LTS..."
+    nvm install --lts
+    nvm alias default 'lts/*'
+
+    # Install global npm packages
+    echo "Installing global npm packages..."
+    npm install -g typescript
 }
 
 # Function to setup dotfiles using stow
