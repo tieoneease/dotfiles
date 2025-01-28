@@ -10,6 +10,3 @@ export PATH="$HOME/.nix-profile/bin:$PATH"
 # NVM environment variables
 export NVM_DIR="$HOME/.nvm"
 export NVM_NODEJS_ORG_MIRROR=https://nodejs.org/dist
-
-# Initialize starship prompt
-eval "$(starship init zsh)"
