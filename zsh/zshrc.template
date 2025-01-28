@@ -45,3 +45,14 @@ bindkey "^[[1;5D" backward-word
 
 # Source aliases if exists
 [[ -f ~/.zsh_aliases ]] && source ~/.zsh_aliases
+
+# Initialize starship prompt
+eval "$(starship init zsh)"
+
+# Tmux Sessionizer
+bindkey -s ^f "tmux-sessionizer\n"
+
+# Ensure tmux is running
+if [[ -z "$TMUX" && -z "$VIM" && -z "$EMACS" && -z "$VIM_TERMINAL" ]]; then
+    tmux new-session -A -s main
+fi

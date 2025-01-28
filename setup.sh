@@ -85,6 +85,8 @@ install_packages() {
         "xclip"
         "libnotify"
         "xdotool"
+        "starship"
+        "tmux-sessionizer"
     )
 
     for package in "${packages[@]}"; do
