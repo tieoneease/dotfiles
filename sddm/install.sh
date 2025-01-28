@@ -26,29 +26,25 @@ print_status "Creating SDDM configuration directory..."
 sudo mkdir -p /etc/sddm.conf.d/
 
 # Check if Sugar Candy theme is installed
-if [ ! -d "/usr/share/sddm/themes/sugar-candy" ]; then
+if [ ! -d "/usr/share/sddm/themes/Sugar-Candy" ]; then
     print_error "Sugar Candy theme not found. Please install it first with: paru -S sddm-theme-sugar-candy-git"
 fi
 
+# Copy main SDDM configuration
+print_status "Installing main SDDM configuration..."
+sudo cp sddm.conf /etc/sddm.conf.d/sddm.conf || print_error "Failed to copy SDDM configuration"
+
 # Copy theme configuration
 print_status "Installing Sugar Candy theme configuration..."
-sudo cp theme.conf /usr/share/sddm/themes/sugar-candy/theme.conf || print_error "Failed to copy theme configuration"
-
-# Set Sugar Candy as default theme
-print_status "Setting Sugar Candy as default theme..."
-echo "[Theme]
-Current=sugar-candy" | sudo tee /etc/sddm.conf.d/theme.conf || print_error "Failed to set default theme"
+sudo cp theme.conf /usr/share/sddm/themes/Sugar-Candy/theme.conf || print_error "Failed to copy theme configuration"
 
 # Update faillock configuration
 print_status "Updating faillock configuration..."
-echo "dir = /var/run/faillock
-deny = 5
-fail_interval = 300
-unlock_time = 60" | sudo tee /etc/security/faillock.conf || print_error "Failed to update faillock configuration"
+sudo cp faillock.conf /etc/security/faillock.conf || print_error "Failed to update faillock configuration"
 
 # Set permissions
-sudo chmod 644 /etc/sddm.conf.d/theme.conf
+sudo chmod 644 /etc/sddm.conf.d/sddm.conf
+sudo chmod 644 /usr/share/sddm/themes/Sugar-Candy/theme.conf
 sudo chmod 644 /etc/security/faillock.conf
 
-print_status "SDDM theme and faillock configuration updated successfully!"
-print_status "You may need to restart SDDM for changes to take effect."
+print_status "SDDM configuration completed successfully!"
