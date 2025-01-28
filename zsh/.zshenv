@@ -5,5 +5,8 @@ if [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then . "$HOME/.nix-profile/
 export NVM_DIR="$HOME/.nvm"
 export NVM_NODEJS_ORG_MIRROR=https://nodejs.org/dist
 
+# Add nix packages to PATH
+export PATH="$HOME/.nix-profile/bin:$PATH"
+
 # Initialize starship prompt
 eval "$(starship init zsh)"
