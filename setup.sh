@@ -84,7 +84,6 @@ install_packages() {
         "kitty"
         "xclip"
         "libnotify"
-        "xdotool"
         "starship"
         "tmux-sessionizer"
     )
