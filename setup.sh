@@ -86,6 +86,7 @@ install_packages() {
         "libnotify"
         "starship"
         "tmux-sessionizer"
+        "gh"
     )
 
     for package in "${packages[@]}"; do
