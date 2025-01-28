@@ -209,6 +209,17 @@ change_shell() {
     fi
 }
 
+# Function to configure tmux-sessionizer
+configure_tms() {
+    echo "Configuring tmux-sessionizer..."
+    
+    # Create Workspace directory if it doesn't exist
+    mkdir -p "$HOME/Workspace"
+    
+    # Configure tmux-sessionizer with default paths
+    tms config --paths "$HOME/dotfiles" "$HOME/Workspace"
+}
+
 main() {
     echo "Starting setup..."
     
@@ -229,6 +240,9 @@ main() {
     
     # Setup dotfiles
     setup_dotfiles
+    
+    # Configure tmux-sessionizer
+    configure_tms
     
     # Change default shell
     change_shell

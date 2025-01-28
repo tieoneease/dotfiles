@@ -37,6 +37,3 @@ alias glol='git log --graph --oneline --decorate'
 
 # Other
 alias todos="nvim ~/todos.todo"
-
-# Tmux Sessionizer
-alias tms="tmux-sessionizer"
