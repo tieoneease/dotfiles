@@ -48,5 +48,5 @@ bindkey "^[[1;5D" backward-word
 # Source aliases if exists
 [[ -f ~/.zsh_aliases ]] && source ~/.zsh_aliases
 
-# Initialize starship prompt
-eval "$(starship init zsh)"
+# Initialize starship prompt only in interactive shell
+[[ $- == *i* ]] && eval "$(starship init zsh)"
