@@ -84,9 +84,9 @@ install_packages() {
         "kitty"
         "xclip"
         "libnotify"
-        "starship"
         "tmux-sessionizer"
         "gh"
+        "grimblast"
     )
 
     for package in "${packages[@]}"; do
