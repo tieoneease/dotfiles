@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# Set up the defaults
+defaults write com.apple.SystemUIServer "NSStatusItem Visible com.apple.menuextra.clock" -bool false
+
+PLUGIN_DIR="$HOME/.config/sketchybar/plugins"
+
+# Bar Appearance
+sketchybar --bar \
+    height=32 \
+    position=top \
+    sticky=on \
+    topmost=on \
+    y_offset=0 \
+    margin=0 \
+    blur_radius=0 \
+    color=0xff1e1e2e \
+    padding_left=10 \
+    padding_right=10
+
+# Default Values
+sketchybar --default \
+    updates=when_shown \
+    drawing=on \
+    cache_scripts=on \
+    icon.font="Hack Nerd Font:Bold:16.0" \
+    icon.color=0xffffffff \
+    icon.highlight_color=0xffffffff \
+    label.font="Hack Nerd Font:Regular:13.0" \
+    label.color=0xffffffff
+
+# Add workspace event
+sketchybar --add event workspace_change aerospace_workspace_change
+
+# Left Side Items (Workspaces)
+SPACE_ICONS=("󰊯" "󰭹" "󰆍" "󰈙" "󰨞")
+
+for i in {1..5}; do
+    sketchybar --add item space.$i left \
+        --set space.$i \
+        icon="${SPACE_ICONS[$((i-1))]}" \
+        icon.padding_left=8 \
+        icon.padding_right=8 \
+        background.color=0x44ffffff \
+        background.corner_radius=5 \
+        background.height=24 \
+        background.drawing=off \
+        label.drawing=off \
+        click_script="aerospace focus-workspace $i" \
+        script="$PLUGIN_DIR/workspace.sh" \
+        --subscribe space.$i workspace_change
+done
+
+# Right Side Items
+sketchybar --add item time right \
+    --set time \
+        update_freq=1 \
+        script="$PLUGIN_DIR/time.sh" \
+        background.drawing=off \
+        padding_left=8 \
+        padding_right=8 \
+    --add item date right \
+    --set date \
+        update_freq=60 \
+        script="$PLUGIN_DIR/date.sh" \
+        background.drawing=off \
+        padding_left=8 \
+        padding_right=8 \
+    --add item battery right \
+    --set battery \
+        update_freq=5 \
+        script="$PLUGIN_DIR/battery.sh" \
+        background.drawing=off \
+        padding_left=8 \
+        padding_right=8 \
+    --add item wifi right \
+    --set wifi \
+        update_freq=5 \
+        script="$PLUGIN_DIR/wifi.sh" \
+        click_script="$PLUGIN_DIR/wifi_click.sh" \
+        background.drawing=off \
+        padding_left=8 \
+        padding_right=8
+
+# Finalize
+sketchybar --update

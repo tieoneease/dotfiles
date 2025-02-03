@@ -8,7 +8,10 @@ after-login-command = []
 # You can use it to add commands that run after AeroSpace startup.
 # 'after-startup-command' is run after 'after-login-command'
 # Available commands : https://nikitabobko.github.io/AeroSpace/commands
-after-startup-command = []
+after-startup-command = ['exec-and-forget sketchybar']
+
+# Notify Sketchybar about workspace change
+exec-on-workspace-change = ["/bin/bash", "-c", "sketchybar --trigger workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE"]
 
 # Start AeroSpace at login
 start-at-login = true
@@ -121,6 +124,9 @@ alt-8 = 'workspace 8'
 alt-9 = 'workspace 9'
 alt-n = 'workspace next'
 alt-p = 'workspace prev'
+
+# Fullscreen
+alt-shift-f = 'macos-native-fullscreen'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
 alt-shift-1 = 'move-node-to-workspace 1'
