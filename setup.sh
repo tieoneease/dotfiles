@@ -5,21 +5,15 @@ set -euo pipefail
 # Function to detect OS
 detect_os() {
     case "$(uname -s)" in
-        Linux*)
-            if grep -q "arch" /etc/os-release; then
-                echo "arch"
-            elif grep -q "Ubuntu" /etc/os-release && grep -q "microsoft" /proc/version; then
-                echo "wsl-ubuntu"
-            else
-                echo "unknown-linux"
-            fi
-            ;;
-        Darwin*)
-            if [[ $(uname -m) == 'arm64' ]]; then
+        Darwin)
+            if [ "$(uname -m)" = "arm64" ]; then
                 echo "macos-arm"
             else
                 echo "macos-intel"
             fi
+            ;;
+        Linux)
+            echo "linux"
             ;;
         *)
             echo "unknown"
@@ -76,27 +70,45 @@ needs_install() {
 
 # Function to install packages using Nix
 install_packages() {
-    local packages=(
+    # Common packages for all platforms
+    local common_packages=(
         "neovim"
         "tmux"
         "zsh"
         "stow"
-        "kitty"
-        "xclip"
-        "libnotify"
         "tmux-sessionizer"
         "gh"
+    )
+
+    # Linux-specific packages
+    local linux_packages=(
+        "xclip"
+        "libnotify"
         "grimblast"
     )
 
-    for package in "${packages[@]}"; do
-        if needs_install "$package"; then
-            echo "Installing $package..."
-            nix-env -iA nixpkgs."$package"
-        else
-            echo "Package $package is already at the latest version"
-        fi
+    # Install common packages
+    for package in "${common_packages[@]}"; do
+        echo "Installing $package..."
+        nix-env -iA "nixpkgs.$package" || echo "Failed to install $package"
     done
+
+    # Install OS-specific packages
+    OS=$(detect_os)
+    case "$OS" in
+        linux)
+            for package in "${linux_packages[@]}"; do
+                echo "Installing $package..."
+                nix-env -iA "nixpkgs.$package" || echo "Failed to install $package"
+            done
+            ;;
+        macos-arm|macos-intel)
+            echo "Skipping Linux-specific packages on macOS"
+            ;;
+        *)
+            echo "Unknown OS, skipping OS-specific packages"
+            ;;
+    esac
 }
 
 # Function to install oh-my-zsh
@@ -150,6 +162,65 @@ install_fonts() {
     fi
 }
 
+# Function to setup fonts and font cache
+setup_fonts() {
+    echo "Setting up fonts..."
+    
+    # Install fontconfig if not already installed
+    if ! command -v fc-cache >/dev/null 2>&1; then
+        echo "Installing fontconfig..."
+        nix-env -iA nixpkgs.fontconfig
+    fi
+
+    # Install fonts
+    install_fonts
+
+    # Get OS type
+    OS=$(detect_os)
+
+    # macOS-specific font setup
+    if [[ "$OS" == "macos-arm" || "$OS" == "macos-intel" ]]; then
+        echo "Setting up fonts for macOS..."
+        
+        # Ensure font directories exist
+        mkdir -p "$HOME/Library/Fonts"
+
+        # Link all Nix-managed fonts to macOS Font Book location
+        echo "Linking Nix fonts to Font Book..."
+        NIX_FONTS_DIR="$HOME/.nix-profile/share/fonts"
+        
+        # Function to create symlinks recursively
+        link_fonts() {
+            local src_dir="$1"
+            find "$src_dir" -type f \( -name "*.ttf" -o -name "*.otf" \) -print0 | while IFS= read -r -d '' font; do
+                local font_name=$(basename "$font")
+                # Remove existing symlink if it exists
+                rm -f "$HOME/Library/Fonts/$font_name"
+                # Create new symlink
+                ln -sf "$font" "$HOME/Library/Fonts/$font_name"
+            done
+        }
+
+        # Link all fonts from Nix store
+        if [ -d "$NIX_FONTS_DIR" ]; then
+            echo "Linking fonts from $NIX_FONTS_DIR..."
+            link_fonts "$NIX_FONTS_DIR"
+        fi
+    else
+        # Linux font setup
+        mkdir -p "$HOME/.local/share/fonts"
+        mkdir -p "$HOME/.cache/fontconfig"
+    fi
+
+    # Update font cache
+    echo "Updating font cache..."
+    fc-cache -f -v
+
+    # Verify fonts are installed
+    echo "Verifying font installation..."
+    fc-list | grep -i "InconsolataGo"
+}
+
 # Function to setup dotfiles using stow
 setup_dotfiles() {
     # Create .config directory if it doesn't exist
@@ -169,11 +240,20 @@ setup_dotfiles() {
     # Set up aliases
     ln -sf "$DOTFILES_DIR/zsh/.zsh_aliases" "$HOME/.zsh_aliases"
     # Set up .zshrc if it doesn't exist or backup if it does
-    if [ -f "$HOME/.zshrc" ]; then
+    if [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ]; then
         echo "Backing up existing .zshrc to .zshrc.backup"
         mv "$HOME/.zshrc" "$HOME/.zshrc.backup"
     fi
     cp "$DOTFILES_DIR/zsh/zshrc.template" "$HOME/.zshrc"
+
+    # Handle karabiner configuration
+    KARABINER_CONFIG="$HOME/.config/karabiner/karabiner.json"
+    if [ -f "$KARABINER_CONFIG" ] && [ ! -L "$KARABINER_CONFIG" ]; then
+        echo "Backing up existing karabiner.json to karabiner.json.backup"
+        mkdir -p "$HOME/.config/karabiner/backup"
+        cp "$KARABINER_CONFIG" "$HOME/.config/karabiner/backup/karabiner.json.backup"
+        rm "$KARABINER_CONFIG"
+    fi
 
     # Check if Hyprland is running
     if pgrep -x "Hyprland" > /dev/null; then
@@ -220,33 +300,37 @@ configure_tms() {
     tms config --paths "$HOME/dotfiles" "$HOME/Workspace"
 }
 
+# Main function
 main() {
     echo "Starting setup..."
-    
-    # Install Nix
+
+    # Install Nix package manager
     install_nix
-    
+
     # Install packages
     install_packages
-    
+
     # Install Nerd Fonts
-    install_fonts
-    
+    # install_fonts
+
     # Install oh-my-zsh
     install_oh_my_zsh
-    
-    # Install nvm
+
+    # Install nvm and node packages
     install_nvm
-    
-    # Setup dotfiles
+
+    # Setup fonts and font cache
+    setup_fonts
+
+    # Setup dotfiles using stow
     setup_dotfiles
-    
+
     # Configure tmux-sessionizer
     configure_tms
-    
-    # Change default shell
+
+    # Change default shell to Nix zsh
     change_shell
-    
+
     echo "Setup completed successfully!"
 }
 
