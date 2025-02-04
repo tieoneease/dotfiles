@@ -1,14 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Get the current workspace number
-FOCUSED_WORKSPACE=$(/opt/homebrew/bin/aerospace list-workspaces --focused)
+# make sure it's executable with:
+# chmod +x ~/.config/sketchybar/plugins/workspace.sh
 
-# Extract the workspace number from the item name
-SPACE=${NAME#space.}
-
-if [ "$SPACE" = "$FOCUSED_WORKSPACE" ]; then
+if [ "$1" = "$FOCUSED_WORKSPACE" ]; then
     sketchybar --set $NAME \
         icon.color=0xffffffff \
+        background.color=0x44ffffff \
         background.drawing=on
 else
     sketchybar --set $NAME \
