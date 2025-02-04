@@ -6,7 +6,6 @@ PLUGIN_DIR="$HOME/.config/sketchybar/plugins"
 sketchybar --bar \
     height=32 \
     position=top \
-    topmost=on \
     y_offset=10 \
     margin=10 \
     corner_radius=10 \

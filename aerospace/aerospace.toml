@@ -73,6 +73,9 @@ outer.right =      10
 # Fallback value (if you omit the key): mode.main.binding = {}
 [mode.main.binding]
 
+# Toggle window to fill screen (non-native fullscreen)
+alt-f = 'fullscreen --no-outer-gaps'
+
 # All possible keys:
 # - Letters.        a, b, c, ..., z
 # - Numbers.        0, 1, 2, ..., 9
@@ -126,9 +129,6 @@ alt-8 = 'workspace 8'
 alt-9 = 'workspace 9'
 alt-n = 'workspace next'
 alt-p = 'workspace prev'
-
-# Fullscreen
-alt-shift-f = 'macos-native-fullscreen'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
 alt-shift-1 = 'move-node-to-workspace 1'
