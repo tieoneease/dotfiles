@@ -10,8 +10,10 @@ after-login-command = []
 # Available commands : https://nikitabobko.github.io/AeroSpace/commands
 after-startup-command = ['exec-and-forget sketchybar']
 
+
 # Notify Sketchybar about workspace change
-exec-on-workspace-change = ["/bin/bash", "-c", "sketchybar --trigger workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE"]
+exec-on-workspace-change = ["/bin/bash", "-c", "sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE"]
+
 
 # Start AeroSpace at login
 start-at-login = true
@@ -62,7 +64,7 @@ inner.horizontal = 10
 inner.vertical =   10
 outer.left =       10
 outer.bottom =     10
-outer.top =        10
+outer.top =        52
 outer.right =      10
 
 # 'main' binding mode declaration
@@ -90,7 +92,7 @@ outer.right =      10
 # You can uncomment the following lines to open up terminal with alt + enter shortcut (like in i3)
 
 alt-enter = 'exec-and-forget kitty'
-alt-b = 'exec-and-forget open -n /Applications/Google Chrome.app'
+alt-b = 'exec-and-forget open -na "Google Chrome" --args --new-window'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#layout
 alt-slash = 'layout tiles horizontal vertical'

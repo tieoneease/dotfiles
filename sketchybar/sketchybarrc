@@ -1,18 +1,15 @@
 #!/bin/bash
 
-# Set up the defaults
-defaults write com.apple.SystemUIServer "NSStatusItem Visible com.apple.menuextra.clock" -bool false
-
 PLUGIN_DIR="$HOME/.config/sketchybar/plugins"
 
 # Bar Appearance
 sketchybar --bar \
     height=32 \
     position=top \
-    sticky=on \
     topmost=on \
-    y_offset=0 \
-    margin=0 \
+    y_offset=10 \
+    margin=10 \
+    corner_radius=10 \
     blur_radius=0 \
     color=0xff1e1e2e \
     padding_left=10 \
@@ -30,15 +27,16 @@ sketchybar --default \
     label.color=0xffffffff
 
 # Add workspace event
-sketchybar --add event workspace_change aerospace_workspace_change
+sketchybar --add event aerospace_workspace_change
 
 # Left Side Items (Workspaces)
 SPACE_ICONS=("󰊯" "󰭹" "󰆍" "󰈙" "󰨞")
 
-for i in {1..5}; do
-    sketchybar --add item space.$i left \
-        --set space.$i \
-        icon="${SPACE_ICONS[$((i-1))]}" \
+for sid in $(aerospace list-workspaces --all); do
+    sketchybar --add item space.$sid left \
+        --subscribe space.$sid aerospace_workspace_change \
+        --set space.$sid \
+        icon="${SPACE_ICONS[$((sid-1))]}" \
         icon.padding_left=8 \
         icon.padding_right=8 \
         background.color=0x44ffffff \
@@ -46,9 +44,8 @@ for i in {1..5}; do
         background.height=24 \
         background.drawing=off \
         label.drawing=off \
-        click_script="aerospace focus-workspace $i" \
-        script="$PLUGIN_DIR/workspace.sh" \
-        --subscribe space.$i workspace_change
+        click_script="aerospace workspace $sid" \
+        script="$PLUGIN_DIR/workspace.sh $sid"
 done
 
 # Right Side Items
