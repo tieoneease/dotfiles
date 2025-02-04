@@ -29,7 +29,7 @@ sketchybar --default \
 sketchybar --add event aerospace_workspace_change
 
 # Left Side Items (Workspaces)
-SPACE_ICONS=("󰊯" "󰭹" "󰆍" "󰈙" "")
+SPACE_ICONS=("󰊯" "󰭹" "󰆍" "󰈙" "" "󰄨" "")
 
 for sid in $(aerospace list-workspaces --all); do
     sketchybar --add item space.$sid left \
