@@ -1,11 +1,18 @@
 require("noice").setup({
     routes = {
+        -- Disable notifications
         {
             filter = {
                 event = "notify",
-                min_height = 15
             },
-            view = 'split'
+            opts = { skip = true },
+        },
+        {
+            filter = {
+                event = "msg_show",
+                kind = "notify",
+            },
+            opts = { skip = true },
         },
     },
     lsp = {

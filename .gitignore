@@ -5,3 +5,5 @@ zsh/.zcompdump*
 lazygit/state.yml
 htop/
 karabiner/automatic_backups/
+.aider*
+.env
