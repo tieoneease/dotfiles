@@ -60,6 +60,10 @@ fc-cache -f -v
 echo "Installing karabiner-elements..."
 brew install --cask karabiner-elements
 
+# Install Raycast
+echo "Installing Raycast..."
+brew install --cask raycast
+
 # Add aerospace tap and install
 echo "Adding aerospace tap..."
 brew tap nikitabobko/tap
