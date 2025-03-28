@@ -1,80 +1,7 @@
-# Path to your oh-my-zsh installation.
-export ZSH="$HOME/.oh-my-zsh"
+# ZSH Configuration
+# Use Starship prompt instead of oh-my-zsh
 
-# Theme - Catppuccin theme for Oh-My-Zsh
-ZSH_THEME="catppuccin"
-
-# Install catppuccin theme for oh-my-zsh if not already installed
-if [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/catppuccin" ]]; then
-    git clone https://github.com/catppuccin/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/catppuccin
-fi
-
-# Theme customization - using frappe flavor to match nvim
-export CATPPUCCIN_FLAVOR="frappe" # latte, frappe, macchiato, mocha
-
-# Disable tmux autostart
-ZSH_TMUX_AUTOSTART=false
-
-# Enhanced plugins
-plugins=(
-    git
-    docker
-    docker-compose
-    kubectl
-    history
-    z
-    nvm
-    gcloud
-    virtualenv
-    node
-    zsh-autosuggestions
-    zsh-syntax-highlighting
-    fzf
-    brew
-    macos
-)
-
-# Install zsh-autosuggestions if not already installed
-if [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" ]]; then
-    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-fi
-
-# Install zsh-syntax-highlighting if not already installed
-if [[ ! -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting" ]]; then
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-fi
-
-# Custom prompt segments for agnoster-like functionality
-# Show node.js version
-prompt_node() {
-    local node_version="$(node -v 2>/dev/null)"
-    if [[ -n $node_version ]]; then
-        echo "%F{green}󰎙 ${node_version:1}%f "
-    fi
-}
-
-# Show Python virtualenv
-prompt_virtualenv() {
-    if [[ -n $VIRTUAL_ENV ]]; then
-        echo "%F{blue}󰌠 $(basename $VIRTUAL_ENV)%f "
-    fi
-}
-
-# Show GCP project
-prompt_gcloud() {
-    local active_config="$(gcloud config get-value project 2>/dev/null)"
-    if [[ -n $active_config ]]; then
-        echo "%F{yellow}󱇶 $active_config%f "
-    fi
-}
-
-# Define custom prompt - integrate with oh-my-zsh theme
-export PROMPT='$(prompt_node)$(prompt_virtualenv)$(prompt_gcloud)$PROMPT'
-
-# Source oh-my-zsh
-source $ZSH/oh-my-zsh.sh
-
-# History
+# Basic environment setup
 HISTFILE=~/.zsh_history
 HISTSIZE=10000
 SAVEHIST=10000
@@ -90,14 +17,32 @@ zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
 
 # Key bindings
-bindkey '^[[A' history-substring-search-up
-bindkey '^[[B' history-substring-search-down
+bindkey '^[[A' history-beginning-search-backward
+bindkey '^[[B' history-beginning-search-forward
 bindkey "^[[1;5C" forward-word
 bindkey "^[[1;5D" backward-word
 
+# Plugin management - clone these repositories if you use them
+# zsh-autosuggestions
+if [[ ! -d "$HOME/.zsh/zsh-autosuggestions" ]]; then
+    git clone https://github.com/zsh-users/zsh-autosuggestions "$HOME/.zsh/zsh-autosuggestions"
+fi
+
+# zsh-syntax-highlighting
+if [[ ! -d "$HOME/.zsh/zsh-syntax-highlighting" ]]; then
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting "$HOME/.zsh/zsh-syntax-highlighting"
+fi
+
+# Source plugins
+[[ -f "$HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] && source "$HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh"
+[[ -f "$HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] && source "$HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+
 # Initialize NVM
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+[[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[[ -s "$NVM_DIR/bash_completion" ]] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# Initialize Starship prompt
+command -v starship >/dev/null && eval "$(starship init zsh)"
 
 # Source aliases if exists
 [[ -f ~/.zsh_aliases ]] && source ~/.zsh_aliases

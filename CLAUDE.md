@@ -1,10 +1,9 @@
 # Claude Guidelines for Dotfiles Repository
 
 ## Commands
-- **Setup:** `./setup.sh` (main setup script)
-- **Apply changes:** `home-manager switch` or `./nix/setup.sh`
+- **macOS Setup:** `./macos_setup.sh` (installs required software for macOS)
+- **Stow dotfiles:** `./stow/stow_dotfiles.sh` (symlinks all config files)
 - **Font cache refresh:** `fc-cache -f -v`
-- **Stow dotfiles:** `stow --ignore=zsh .`
 
 ## Code Style
 - **Indentation:** 4 spaces (tabs expanded)
@@ -18,6 +17,13 @@
 - **Lua style:** Follow existing patterns in nvim config (see options.lua, plugins.lua)
 
 ## Environment Management
-- Package manager: Nix/Home Manager
+- Package manager: Homebrew (for macOS)
 - Symlink manager: GNU Stow
 - Do not modify system files directly, use appropriate config files
+
+## Main Components
+- **Shell:** Zsh with Starship prompt
+- **Terminal:** Kitty
+- **Editor:** Neovim
+- **Multiplexer:** Tmux
+- **macOS Tools:** Sketchybar, Aerospace, Karabiner-Elements

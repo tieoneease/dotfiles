@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+set -euo pipefail
 
 echo "Setting up macOS-specific configurations..."
 
@@ -10,7 +12,38 @@ fi
 
 # Install applications via Homebrew
 echo "Installing applications via Homebrew..."
+
+# Install kitty terminal
+echo "Installing kitty terminal..."
 brew install --cask kitty
+
+# Install neovim
+echo "Installing neovim..."
+brew install neovim
+
+# Install tmux
+echo "Installing tmux..."
+brew install tmux
+
+# Install tmux-sessionizer
+echo "Installing tmux-sessionizer..."
+brew install fzf
+mkdir -p ~/.local/bin
+curl -o ~/.local/bin/tmux-sessionizer https://raw.githubusercontent.com/ThePrimeagen/tmux-sessionizer/master/tmux-sessionizer
+chmod +x ~/.local/bin/tmux-sessionizer
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+
+# Install nvm (Node Version Manager)
+echo "Installing nvm..."
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
+# Install uv (Python package manager)
+echo "Installing uv..."
+brew install uv
+
+# Install karabiner-elements
+echo "Installing karabiner-elements..."
+brew install --cask karabiner-elements
 
 # Add aerospace tap and install
 echo "Adding aerospace tap..."
@@ -24,11 +57,6 @@ brew install sketchybar
 
 # Create Sketchybar config directory
 mkdir -p ~/.config/sketchybar
-
-# Link Sketchybar config
-ln -sf "$PWD/sketchybar/sketchybarrc" ~/.config/sketchybar/
-ln -sf "$PWD/sketchybar/colors.sh" ~/.config/sketchybar/
-ln -sf "$PWD/sketchybar/plugins" ~/.config/sketchybar/
 
 # Start Sketchybar
 brew services start felixkratz/formulae/sketchybar
