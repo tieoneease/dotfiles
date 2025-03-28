@@ -41,6 +41,21 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 echo "Installing uv..."
 brew install uv
 
+# Install fontconfig
+echo "Installing fontconfig..."
+brew install fontconfig
+
+# Install Nerd Fonts
+echo "Installing Nerd Fonts..."
+brew install font-hack-nerd-font font-inconsolata-go-nerd-font font-jetbrains-mono-nerd-font \
+    font-meslo-lg-nerd-font font-fira-code-nerd-font font-sauce-code-pro-nerd-font \
+    font-roboto-mono-nerd-font font-ubuntu-mono-nerd-font font-droid-sans-mono-nerd-font \
+    font-inconsolata-nerd-font font-inconsolata-lgc-nerd-font
+
+# Refresh font cache
+echo "Refreshing font cache..."
+fc-cache -f -v
+
 # Install karabiner-elements
 echo "Installing karabiner-elements..."
 brew install --cask karabiner-elements
