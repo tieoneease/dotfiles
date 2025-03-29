@@ -29,7 +29,7 @@ backup_existing_files() {
     fi
     
     # Check for other common config directories that might exist
-    for dir in nvim kitty hypr waybar; do
+    for dir in nvim kitty hypr waybar tms; do
         if [ -d "${TARGET_DIR}/$dir" ] && [ ! -L "${TARGET_DIR}/$dir" ]; then
             echo "Backing up $dir configuration..."
             cp -r "${TARGET_DIR}/$dir" "$BACKUP_DIR/"

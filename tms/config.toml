@@ -1,0 +1,7 @@
+[[search_dirs]]
+path = "~/Workspace"
+depth = 10
+
+[[search_dirs]]
+path = "~/dotfiles"
+depth = 10
