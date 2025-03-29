@@ -29,6 +29,8 @@ vim.keymap.set("n", "<C-S-tab>", ":tabp<CR>",  {noremap = true, silent = true})
 vim.keymap.set("n", "<C-tab>", ":tabn<CR>",  {noremap = true, silent = true})
 vim.keymap.set("n", "<C-S-PageUp>", ":tabmove -1<CR>",  {noremap = true, silent = true})
 vim.keymap.set("n", "<C-S-PageDown>", ":tabmove +1<CR>",  {noremap = true, silent = true})
+vim.keymap.set("n", "<S-J>", ":tabp<CR>",  {noremap = true, silent = true})
+vim.keymap.set("n", "<S-K>", ":tabn<CR>",  {noremap = true, silent = true})
 
 -- Tmux-Sessionizer
 vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux display-popup tms switch<CR>")
