@@ -43,7 +43,7 @@ install_packages stow git zsh neovim tmux wget curl direnv fzf ripgrep fd unzip 
 # Install Window Manager and related packages
 echo "Installing Hyprland and related packages..."
 install_packages hyprland waybar wofi wl-clipboard xdg-desktop-portal-hyprland \
-    qt5-wayland qt6-wayland polkit-kde-agent grim slurp swappy
+    qt5-wayland qt6-wayland polkit-kde-agent grim slurp swappy hyprpaper
 
 # Install terminal emulator
 echo "Installing kitty terminal..."
