@@ -36,8 +36,8 @@
 
     "battery": {
         "format": "{capacity}% {icon}",
-        "format-icons": ["🔋", "🔋", "🔋", "🔋", "🔋"],
-        "format-charging": "{capacity}% ⚡",
+        "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+        "format-charging": "{capacity}% 󰂄",
         "interval": 30,
         "states": {
             "warning": 30,
@@ -58,15 +58,15 @@
         "scroll-step": 5,
         "format": "{volume}% {icon}",
         "format-bluetooth": "{volume}% {icon}",
-        "format-muted": "🔇",
+        "format-muted": "󰖁",
         "format-icons": {
-            "headphone": "🎧",
-            "hands-free": "🎧",
-            "headset": "🎧",
-            "phone": "📱",
-            "portable": "📱",
-            "car": "🚗",
-            "default": ["🔈", "🔉", "🔊"]
+            "headphone": "󰋋",
+            "hands-free": "󰋎",
+            "headset": "󰋎",
+            "phone": "󰏲",
+            "portable": "󰄝",
+            "car": "󰄋",
+            "default": ["󰕿", "󰖀", "󰕾"]
         },
         "on-click": "pavucontrol"
     }
