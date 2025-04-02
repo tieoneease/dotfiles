@@ -20,6 +20,7 @@
 - Package manager: Homebrew (for macOS), Pacman (for Arch Linux)
 - Symlink manager: GNU Stow
 - Do not modify system files directly, use appropriate config files
+- Config paths follow XDG Base Directory spec (e.g., ~/.config/)
 
 ## Main Components
 - **Shell:** Zsh with Starship prompt

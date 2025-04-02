@@ -29,13 +29,20 @@ backup_existing_files() {
     fi
     
     # Check for other common config directories that might exist
-    for dir in nvim kitty hypr waybar tms; do
+    for dir in nvim kitty hypr waybar tms tmux; do
         if [ -d "${TARGET_DIR}/$dir" ] && [ ! -L "${TARGET_DIR}/$dir" ]; then
             echo "Backing up $dir configuration..."
             cp -r "${TARGET_DIR}/$dir" "$BACKUP_DIR/"
             rm -rf "${TARGET_DIR}/$dir"
         fi
     done
+    
+    # Check for legacy tmux config in home directory
+    if [ -f "$HOME/.tmux.conf" ] && [ ! -L "$HOME/.tmux.conf" ]; then
+        echo "Backing up legacy tmux configuration from home directory..."
+        cp "$HOME/.tmux.conf" "$BACKUP_DIR/"
+        rm -f "$HOME/.tmux.conf"
+    fi
     
     echo "Backup completed at $BACKUP_DIR"
 }
@@ -89,6 +96,25 @@ stow_dotfiles() {
     
     # Stow everything except zsh directory and .DS_Store files
     stow --target="$TARGET_DIR" --verbose --ignore=zsh --ignore=.DS_Store .
+    
+    # No need to create a symbolic link since tmux 3.2+ natively supports XDG paths
+    # Remove any existing legacy symlink if it exists
+    if [ -L "$HOME/.tmux.conf" ]; then
+        echo "Removing legacy tmux.conf symlink..."
+        rm -f "$HOME/.tmux.conf"
+    fi
+    
+    # Ensure tmux plugins are properly installed
+    echo "Setting up tmux plugins..."
+    mkdir -p "$TARGET_DIR/tmux/plugins"
+    if [ ! -d "$TARGET_DIR/tmux/plugins/tpm" ]; then
+        echo "Installing TPM (Tmux Plugin Manager)..."
+        git clone https://github.com/tmux-plugins/tpm "$TARGET_DIR/tmux/plugins/tpm"
+    fi
+    if [ ! -d "$TARGET_DIR/tmux/plugins/catppuccin" ]; then
+        echo "Installing Catppuccin theme..."
+        git clone https://github.com/catppuccin/tmux.git "$TARGET_DIR/tmux/plugins/catppuccin"
+    fi
     
     echo "Dotfiles stowed successfully!"
 }
