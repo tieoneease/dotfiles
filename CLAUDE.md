@@ -17,7 +17,7 @@
 - **Lua style:** Follow existing patterns in nvim config (see options.lua, plugins.lua)
 
 ## Environment Management
-- Package manager: Homebrew (for macOS)
+- Package manager: Homebrew (for macOS), Pacman (for Arch Linux)
 - Symlink manager: GNU Stow
 - Do not modify system files directly, use appropriate config files
 
@@ -27,3 +27,9 @@
 - **Editor:** Neovim
 - **Multiplexer:** Tmux
 - **macOS Tools:** Sketchybar, Aerospace, Karabiner-Elements
+- **Arch Linux Tools:** Hyprland, Waybar, Dunst
+
+## Arch Linux Setup
+- **Setup script:** `./arch_setup.sh` (installs required packages)
+- Hyprland configuration with custom keybindings
+- Waybar status bar with state indicators
