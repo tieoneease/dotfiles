@@ -35,5 +35,11 @@ alias grs='git remote show'
 alias glo='git log --pretty="oneline"'
 alias glol='git log --graph --oneline --decorate'
 
+# llm
+alias ppx='llm -m sonar-deep-research'
+alias ppq='llm -m sonar'
+alias csn='llm -m claude-3.7-sonnet'
+alias cmd='llm cmd -m claude-3.7-sonnet'
+
 # Other
 alias todos="nvim ~/todos.todo"

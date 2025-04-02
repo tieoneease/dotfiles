@@ -9,7 +9,12 @@
 
     "modules-left": ["hyprland/workspaces"],
     "modules-center": ["clock"],
-    "modules-right": ["pulseaudio", "network", "battery"],
+    "modules-right": ["hyprland/submap", "pulseaudio", "network", "battery"],
+    
+    "hyprland/submap": {
+        "format": "󰌐",
+        "tooltip": true
+    },
 
     "hyprland/workspaces": {
         "disable-scroll": true,

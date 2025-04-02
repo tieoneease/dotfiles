@@ -38,7 +38,8 @@ window#waybar {
 #clock,
 #battery,
 #network,
-#pulseaudio {
+#pulseaudio,
+#submap {
     background: rgba(255, 255, 255, 0.05);
     padding: 0 12px;
     margin: 4px 2px;
@@ -74,6 +75,12 @@ window#waybar {
 
 #network.disconnected {
     color: #eb4d4b;
+}
+
+#submap {
+    color: #f5c542;
+    font-weight: bold;
+    animation: blink 1s infinite alternate;
 }
 
 tooltip {
