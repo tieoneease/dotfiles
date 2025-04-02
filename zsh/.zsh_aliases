@@ -6,7 +6,7 @@ alias dotfiles="cd ~/dotfiles/"
 alias config="cd ~/.config/"
 
 # Editor
-alias zshconfig="nvim ~/.zshrc"
+alias zshconfig="nvim ~/.zshrc.local"
 alias nvimconfig="nvim ~/.config/nvim"
 
 # Tmux

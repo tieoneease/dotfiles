@@ -46,3 +46,6 @@ command -v starship >/dev/null && eval "$(starship init zsh)"
 
 # Source aliases if exists
 [[ -f ~/.zsh_aliases ]] && source ~/.zsh_aliases
+
+# Source local config if exists
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
