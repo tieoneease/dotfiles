@@ -36,6 +36,11 @@ if ! command -v paru &> /dev/null; then
     cd -
 fi
 
+# Configure sudoers for paru to use pacman without password
+echo "Configuring sudoers for passwordless pacman..."
+echo "$USER ALL=(ALL) NOPASSWD: /usr/bin/pacman" | sudo tee /etc/sudoers.d/99-paru-pacman > /dev/null
+sudo chmod 440 /etc/sudoers.d/99-paru-pacman
+
 # Install essential packages
 echo "Installing essential packages..."
 install_packages stow git zsh neovim tmux wget curl direnv fzf ripgrep fd unzip fontconfig dunst
@@ -43,7 +48,7 @@ install_packages stow git zsh neovim tmux wget curl direnv fzf ripgrep fd unzip 
 # Install Window Manager and related packages
 echo "Installing Hyprland and related packages..."
 install_packages hyprland waybar wofi wl-clipboard xdg-desktop-portal-hyprland \
-    qt5-wayland qt6-wayland polkit-kde-agent grim slurp swappy hyprpaper
+    qt5-wayland qt6-wayland polkit-kde-agent grim slurp swappy hyprpaper brightnessctl
 
 # Install terminal emulator
 echo "Installing kitty terminal..."
@@ -82,6 +87,26 @@ chmod +x ~/.local/bin/tmux-sessionizer
 if ! grep -q "tmux-sessionizer" ~/.zshrc 2>/dev/null; then
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
 fi
+
+# Install PipeWire and sound packages
+echo "Installing and configuring PipeWire for sound..."
+install_packages pipewire pipewire-pulse wireplumber pipewire-alsa sof-firmware
+
+# Configure backlight permissions
+echo "Configuring backlight permissions for ThinkPad..."
+sudo tee /etc/udev/rules.d/90-backlight.rules &>/dev/null <<EOF
+ACTION=="add", SUBSYSTEM=="backlight", KERNEL=="intel_backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness"
+ACTION=="add", SUBSYSTEM=="backlight", KERNEL=="intel_backlight", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"
+EOF
+
+# Add user to video group for brightness control
+echo "Adding user to video group for brightness control..."
+sudo usermod -aG video $USER
+
+# Reload udev rules
+echo "Reloading udev rules..."
+sudo udevadm control --reload
+sudo udevadm trigger
 
 # Enable services
 echo "Enabling necessary services..."
