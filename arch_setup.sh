@@ -57,7 +57,12 @@ install_packages kitty
 # Install font packages
 echo "Installing fonts..."
 install_packages ttf-hack-nerd ttf-jetbrains-mono-nerd ttf-fira-code-nerd \
-    ttf-iosevka-nerd ttf-cascadia-code-nerd ttf-sourcecodepro-nerd
+    ttf-iosevka-nerd ttf-cascadia-code-nerd ttf-sourcecodepro-nerd ttf-inter
+
+# Install dark mode theme packages
+echo "Installing dark mode theme packages..."
+install_packages adwaita-icon-theme gnome-themes-extra qt5ct qt6ct \
+    qt5-styleplugins qt6-styleplugins adwaita-qt5 adwaita-qt6 kvantum
 
 # Refresh font cache
 echo "Refreshing font cache..."
@@ -117,6 +122,18 @@ systemctl --user enable --now pipewire-pulse.service
 # Ensure SDDM is disabled since we're using ly
 echo "Ensuring SDDM is disabled (using ly instead)..."
 sudo systemctl disable sddm 2>/dev/null || true
+
+# Apply Arch-specific configurations
+echo "Applying Arch-specific configurations..."
+mkdir -p "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0" "$HOME/.config/qt5ct" "$HOME/.config/qt6ct"
+cp -f "$HOME/dotfiles/arch/gtk-3.0/settings.ini" "$HOME/.config/gtk-3.0/"
+cp -f "$HOME/dotfiles/arch/gtk-4.0/settings.ini" "$HOME/.config/gtk-4.0/"
+cp -f "$HOME/dotfiles/arch/qt5ct/qt5ct.conf" "$HOME/.config/qt5ct/"
+cp -f "$HOME/dotfiles/arch/qt6ct/qt6ct.conf" "$HOME/.config/qt6ct/"
+cp -f "$HOME/dotfiles/arch/hyprland-dark-mode.conf" "$HOME/.config/hypr/"
+mkdir -p "$HOME/.local/bin"
+cp -f "$HOME/dotfiles/arch/scripts/toggle_dark_mode.sh" "$HOME/.local/bin/"
+chmod +x "$HOME/.local/bin/toggle_dark_mode.sh"
 
 # Run stow script to link dotfiles
 echo "Running stow script to link dotfiles..."
