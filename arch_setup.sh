@@ -56,7 +56,7 @@ install_packages xremap-hypr-bin
 # Install Window Manager and related packages
 echo "Installing Hyprland and related packages..."
 install_packages hyprland waybar wofi wl-clipboard xdg-desktop-portal-hyprland \
-    qt5-wayland qt6-wayland polkit-kde-agent grim slurp swappy hyprpaper brightnessctl
+    qt5-wayland qt6-wayland polkit-kde-agent grim slurp swappy hyprpaper brightnessctl grimblast
 
 # Install terminal emulator
 echo "Installing kitty terminal..."
