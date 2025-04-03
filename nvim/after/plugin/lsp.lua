@@ -30,29 +30,29 @@ lsp.set_sign_icons({
 require('mason').setup({})
 require('mason-lspconfig').setup({
     ensure_installed = { 'tsserver', 'rust_analyzer', 'svelte', 'html', 'cssls' },
-    handlers = {
-        lsp.default_setup,
-        lua_ls = function()
-            local lua_opts = lsp.nvim_lua_ls()
-            require('lspconfig').lua_ls.setup(lua_opts)
-        end,
-        svelte = function()
-            require('lspconfig').svelte.setup{}
-        end,
-        tsserver = function()
-            require('lspconfig').tsserver.setup({
-                settings = {
-                    completions = {
-                        completeFunctionCalls = true
-                    }
-                }
-            })
-        end,
-        cssls = function()
-            require('lspconfig').cssls.setup{}
-        end
+})
+
+-- Fix for tsserver and other language servers
+local lspconfig = require('lspconfig')
+
+-- Manually set up each language server
+lspconfig.lua_ls.setup(lsp.nvim_lua_ls())
+
+lspconfig.svelte.setup({})
+
+lspconfig.tsserver.setup({
+    settings = {
+        completions = {
+            completeFunctionCalls = true
+        }
     }
 })
+
+lspconfig.cssls.setup({})
+
+lspconfig.html.setup({})
+
+lspconfig.rust_analyzer.setup({})
 
 local cmp = require('cmp')
 local cmp_select = { behavior = cmp.SelectBehavior.Select }
