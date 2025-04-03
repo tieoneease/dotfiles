@@ -52,6 +52,7 @@ window#waybar {
 
 #clock {
     font-weight: bold;
+    min-width: 160px; /* Give it enough space for the date and time */
 }
 
 #battery.charging {

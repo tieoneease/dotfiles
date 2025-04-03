@@ -38,8 +38,8 @@
     },
 
     "clock": {
-        "format": "{:%I:%M %p}",
-        "format-alt": "{:%Y-%m-%d}"
+        "format": "{:%a %b %d, %I:%M %p}",
+        "tooltip-format": "{:%Y-%m-%d | %H:%M:%S}"
     },
 
     "battery": {
