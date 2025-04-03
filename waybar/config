@@ -59,7 +59,7 @@
         "format-ethernet": "󰈀",
         "format-disconnected": "󰤭",
         "tooltip-format": "{essid} ({signalStrength}%)",
-        "on-click": "networkmanager_dmenu"
+        "on-click": "$HOME/.config/waybar/scripts/network_menu.sh"
     },
 
     "pulseaudio": {

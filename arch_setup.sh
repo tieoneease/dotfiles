@@ -45,6 +45,10 @@ sudo chmod 440 /etc/sudoers.d/99-paru-pacman
 echo "Installing essential packages..."
 install_packages stow git zsh neovim tmux wget curl direnv fzf ripgrep fd unzip fontconfig dunst
 
+# Install network management tools
+echo "Installing network management tools..."
+install_packages networkmanager network-manager-applet
+
 # Install xremap for keyboard remapping
 echo "Installing xremap for keyboard remapping..."
 install_packages xremap-hypr-bin
@@ -139,6 +143,10 @@ echo "Enabling necessary services..."
 systemctl --user enable --now wireplumber.service
 systemctl --user enable --now pipewire.service
 systemctl --user enable --now pipewire-pulse.service
+
+# Enable NetworkManager
+echo "Enabling NetworkManager service..."
+sudo systemctl enable --now NetworkManager.service
 
 # Ensure SDDM is disabled since we're using ly
 echo "Ensuring SDDM is disabled (using ly instead)..."
