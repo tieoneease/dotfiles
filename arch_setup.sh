@@ -96,12 +96,21 @@ if [[ "$SHELL" != *"zsh"* ]]; then
     sudo chsh -s /usr/bin/zsh $USER
 fi
 
-# Install tmux-sessionizer
+# Install Rust
+if ! command -v rustup &> /dev/null; then
+    echo "Installing Rust..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    source "$HOME/.cargo/env"
+fi
+
+# Install tmux-sessionizer through cargo
 echo "Installing tmux-sessionizer..."
-mkdir -p ~/.local/bin
-curl -o ~/.local/bin/tmux-sessionizer https://raw.githubusercontent.com/ThePrimeagen/tmux-sessionizer/master/tmux-sessionizer
-chmod +x ~/.local/bin/tmux-sessionizer
-if ! grep -q "tmux-sessionizer" ~/.zshrc 2>/dev/null; then
+if ! command -v tms &> /dev/null; then
+    cargo install tms
+fi
+
+# Ensure local bin directory is in PATH
+if ! grep -q "\.local/bin" ~/.zshrc 2>/dev/null; then
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
 fi
 
