@@ -13,6 +13,9 @@ setopt HIST_IGNORE_SPACE
 # Add ~/.local/bin to PATH if it exists
 [[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
 
+# Add Cargo bin directory to PATH if it exists
+[[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:$PATH"
+
 # Completion
 autoload -Uz compinit
 compinit
