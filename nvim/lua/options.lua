@@ -13,7 +13,14 @@ vim.opt.shiftwidth = 4
 vim.opt.expandtab = true
 vim.opt.smartindent = true
 
-vim.opt.wrap = false
+-- Text wrapping configuration 
+vim.opt.wrap = true  -- Enable line wrapping
+vim.opt.linebreak = true  -- Break lines at word boundaries
+vim.opt.breakindent = true  -- Preserve indentation in wrapped lines
+vim.opt.showbreak = "↪ "  -- Show a nice symbol at the start of wrapped lines
+vim.opt.textwidth = 100  -- Wrap at 100 characters
+vim.opt.colorcolumn = "100"  -- Show a vertical line at the wrap point
+vim.opt.formatoptions = vim.opt.formatoptions + "j"  -- Remove comment leader when joining lines
 
 -- backups and swaps
 vim.opt.swapfile = false

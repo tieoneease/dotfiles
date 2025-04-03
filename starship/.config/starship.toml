@@ -66,6 +66,9 @@ style = "bold dimmed green"
 [rust]
 symbol = " "
 
+[python]
+symbol = "󱔎"
+
 [time]
 disabled = false
 format = '[\[ $time \]]($style) '
