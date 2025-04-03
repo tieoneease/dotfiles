@@ -115,10 +115,19 @@ sudo usermod -aG video $USER
 # Add user to input group for xremap
 echo "Adding user to input group for xremap..."
 sudo usermod -aG input $USER
+sudo gpasswd -a $USER input
 
 # Configure uinput permissions for xremap
 echo "Configuring uinput permissions for xremap..."
 echo 'KERNEL=="uinput", GROUP="input", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/99-input.rules > /dev/null
+
+# Configure uinput kernel module to load at boot
+echo "Configuring uinput kernel module to load at boot..."
+echo "uinput" | sudo tee /etc/modules-load.d/uinput.conf > /dev/null
+
+# Load uinput module immediately
+echo "Loading uinput kernel module..."
+sudo modprobe uinput
 
 # Reload udev rules
 echo "Reloading udev rules..."

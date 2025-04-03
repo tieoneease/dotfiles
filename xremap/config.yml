@@ -1,11 +1,17 @@
+# Use all available keyboard devices
+devices:
+  - device_name: .*
+    # Or specify by event:
+    # - device_file: /dev/input/event3
+
 keymap:
   - name: Global
     remap:
-      Alt_L+Alt_R+H: LEFT
-      Alt_L+Alt_R+J: DOWN
-      Alt_L+Alt_R+K: UP
-      Alt_L+Alt_R+L: RIGHT
-      Alt_L+Alt_R+Shift+H: Shift+LEFT  # For text selection
-      Alt_L+Alt_R+Shift+J: Shift+DOWN
-      Alt_L+Alt_R+Shift+K: Shift+UP
-      Alt_L+Alt_R+Shift+L: Shift+RIGHT
+      Alt_L-Alt_R-H: Left
+      Alt_L-Alt_R-J: Down
+      Alt_L-Alt_R-K: Up
+      Alt_L-Alt_R-L: Right
+      Alt_L-Alt_R-Shift_L-H: Shift_L-Left  # For text selection
+      Alt_L-Alt_R-Shift_L-J: Shift_L-Down
+      Alt_L-Alt_R-Shift_L-K: Shift_L-Up
+      Alt_L-Alt_R-Shift_L-L: Shift_L-Right
