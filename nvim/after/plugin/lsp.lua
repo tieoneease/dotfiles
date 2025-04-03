@@ -29,10 +29,10 @@ lsp.set_sign_icons({
 
 require('mason').setup({})
 require('mason-lspconfig').setup({
-    ensure_installed = { 'tsserver', 'rust_analyzer', 'svelte', 'html', 'cssls' },
+    ensure_installed = { 'ts_ls', 'rust_analyzer', 'svelte', 'html', 'cssls' },
 })
 
--- Fix for tsserver and other language servers
+-- Fix for language servers
 local lspconfig = require('lspconfig')
 
 -- Manually set up each language server
@@ -40,7 +40,7 @@ lspconfig.lua_ls.setup(lsp.nvim_lua_ls())
 
 lspconfig.svelte.setup({})
 
-lspconfig.tsserver.setup({
+lspconfig.ts_ls.setup({
     settings = {
         completions = {
             completeFunctionCalls = true
