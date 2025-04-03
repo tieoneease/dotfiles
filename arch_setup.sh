@@ -45,6 +45,10 @@ sudo chmod 440 /etc/sudoers.d/99-paru-pacman
 echo "Installing essential packages..."
 install_packages stow git zsh neovim tmux wget curl direnv fzf ripgrep fd unzip fontconfig dunst
 
+# Install xremap for keyboard remapping
+echo "Installing xremap for keyboard remapping..."
+install_packages xremap-hypr-bin
+
 # Install Window Manager and related packages
 echo "Installing Hyprland and related packages..."
 install_packages hyprland waybar wofi wl-clipboard xdg-desktop-portal-hyprland \
@@ -104,9 +108,17 @@ ACTION=="add", SUBSYSTEM=="backlight", KERNEL=="intel_backlight", RUN+="/bin/chg
 ACTION=="add", SUBSYSTEM=="backlight", KERNEL=="intel_backlight", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"
 EOF
 
-# Add user to video group for brightness control
+# Add user to video and input groups
 echo "Adding user to video group for brightness control..."
 sudo usermod -aG video $USER
+
+# Add user to input group for xremap
+echo "Adding user to input group for xremap..."
+sudo usermod -aG input $USER
+
+# Configure uinput permissions for xremap
+echo "Configuring uinput permissions for xremap..."
+echo 'KERNEL=="uinput", GROUP="input", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/99-input.rules > /dev/null
 
 # Reload udev rules
 echo "Reloading udev rules..."

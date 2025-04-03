@@ -1,0 +1,11 @@
+keymap:
+  - name: Global
+    remap:
+      Alt_L+Alt_R+H: LEFT
+      Alt_L+Alt_R+J: DOWN
+      Alt_L+Alt_R+K: UP
+      Alt_L+Alt_R+L: RIGHT
+      Alt_L+Alt_R+Shift+H: Shift+LEFT  # For text selection
+      Alt_L+Alt_R+Shift+J: Shift+DOWN
+      Alt_L+Alt_R+Shift+K: Shift+UP
+      Alt_L+Alt_R+Shift+L: Shift+RIGHT
