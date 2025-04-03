@@ -10,6 +10,9 @@ setopt SHARE_HISTORY
 setopt HIST_IGNORE_DUPS
 setopt HIST_IGNORE_SPACE
 
+# Add ~/.local/bin to PATH if it exists
+[[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
+
 # Completion
 autoload -Uz compinit
 compinit
