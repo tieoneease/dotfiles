@@ -47,7 +47,7 @@ install_packages stow git zsh neovim tmux wget curl direnv fzf ripgrep fd unzip 
 
 # Install network management tools
 echo "Installing network management tools..."
-install_packages networkmanager network-manager-applet
+install_packages iwd
 
 # Install xremap for keyboard remapping
 echo "Installing xremap for keyboard remapping..."
@@ -57,6 +57,10 @@ install_packages xremap-hypr-bin
 echo "Installing Hyprland and related packages..."
 install_packages hyprland waybar wofi wl-clipboard xdg-desktop-portal-hyprland \
     qt5-wayland qt6-wayland polkit-kde-agent grim slurp swappy hyprpaper brightnessctl grimblast
+
+# Install GNOME keyring for credential management
+echo "Installing GNOME keyring for credential management..."
+install_packages gnome-keyring libsecret seahorse
 
 # Install tools
 echo "Installing Hyprland and related packages..."
@@ -157,13 +161,37 @@ systemctl --user enable --now wireplumber.service
 systemctl --user enable --now pipewire.service
 systemctl --user enable --now pipewire-pulse.service
 
-# Enable NetworkManager
-echo "Enabling NetworkManager service..."
-sudo systemctl enable --now NetworkManager.service
+# Network is configured with iwd/systemd-networkd
+
+# Install and configure ly display manager
+echo "Installing ly display manager..."
+install_packages ly
+
+# Enable ly service
+echo "Enabling ly service..."
+sudo systemctl enable ly.service
 
 # Ensure SDDM is disabled since we're using ly
 echo "Ensuring SDDM is disabled (using ly instead)..."
 sudo systemctl disable sddm 2>/dev/null || true
+
+# Configure GNOME keyring for PAM authentication
+echo "Configuring GNOME keyring PAM authentication..."
+if ! grep -q pam_gnome_keyring.so /etc/pam.d/login 2>/dev/null; then
+    echo "auth       optional     pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/login > /dev/null
+    echo "session    optional     pam_gnome_keyring.so auto_start" | sudo tee -a /etc/pam.d/login > /dev/null
+fi
+
+if ! grep -q pam_gnome_keyring.so /etc/pam.d/passwd 2>/dev/null; then
+    echo "password   optional     pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/passwd > /dev/null
+fi
+
+# Configure ly with PAM for GNOME keyring unlock
+echo "Configuring ly PAM for GNOME keyring unlock..."
+if ! grep -q pam_gnome_keyring.so /etc/pam.d/ly 2>/dev/null; then
+    echo "auth       optional     pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/ly > /dev/null
+    echo "session    optional     pam_gnome_keyring.so auto_start" | sudo tee -a /etc/pam.d/ly > /dev/null
+fi
 
 # Apply Arch-specific configurations
 echo "Applying Arch-specific configurations..."
