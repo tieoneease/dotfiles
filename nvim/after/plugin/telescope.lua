@@ -1,6 +1,11 @@
 local builtin = require('telescope.builtin')
 local frappe = require("catppuccin.palettes").get_palette "frappe"
-vim.keymap.set('n', '<C-p>', builtin.git_files, {})
+vim.keymap.set('n', '<C-p>', function()
+    local ok = pcall(builtin.git_files, {})
+    if not ok then
+        builtin.find_files({})
+    end
+end, {})
 vim.keymap.set('n', '<leader>ff', builtin.find_files, {})
 vim.keymap.set('n', '<leader>fa', builtin.live_grep, {})
 vim.keymap.set('n', '<leader>fw', builtin.grep_string, {})

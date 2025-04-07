@@ -50,6 +50,9 @@ fi
 # Initialize Starship prompt
 command -v starship >/dev/null && eval "$(starship init zsh)"
 
+# Initialize direnv
+command -v direnv >/dev/null && eval "$(direnv hook zsh)"
+
 # Source aliases if exists
 [[ -f ~/.zsh_aliases ]] && source ~/.zsh_aliases
 
