@@ -15,7 +15,7 @@ echo "Installing applications via Homebrew..."
 
 # Install essential CLI tools
 echo "Installing essential CLI tools..."
-brew install docker direnv fontconfig fzf neovim sketchybar sqlite starship tmux tmux-sessionizer uv
+brew install docker direnv fontconfig fzf neovim sketchybar sqlite starship superwhisper tmux tmux-sessionizer uv
 
 # Install kitty terminal
 echo "Installing kitty terminal..."
