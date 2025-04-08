@@ -4,6 +4,7 @@
 # chmod +x ~/.config/sketchybar/plugins/workspace.sh
 
 WORKSPACE_ID="$1"
+NAME="space.$WORKSPACE_ID"
 
 # Get current workspace from aerospace directly if $FOCUSED_WORKSPACE is empty
 if [ -z "$FOCUSED_WORKSPACE" ]; then
