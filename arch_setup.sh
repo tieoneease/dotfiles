@@ -58,9 +58,7 @@ echo "Installing Hyprland and related packages..."
 install_packages hyprland waybar wofi wl-clipboard xdg-desktop-portal-hyprland \
     qt5-wayland qt6-wayland polkit-kde-agent grim slurp swappy hyprpaper brightnessctl grimblast
 
-# Install GNOME keyring for credential management
-echo "Installing GNOME keyring for credential management..."
-install_packages gnome-keyring libsecret seahorse
+# No longer using GNOME keyring
 
 # Install tools
 echo "Installing Hyprland and related packages..."
@@ -73,7 +71,8 @@ install_packages kitty
 # Install font packages
 echo "Installing fonts..."
 install_packages ttf-hack-nerd ttf-jetbrains-mono-nerd ttf-fira-code-nerd \
-    ttf-iosevka-nerd ttf-cascadia-code-nerd ttf-sourcecodepro-nerd ttf-inter
+    ttf-iosevka-nerd ttf-cascadia-code-nerd ttf-sourcecodepro-nerd ttf-inter \
+    ttf-inconsolata-go-nerd
 
 # Install dark mode theme packages
 echo "Installing dark mode theme packages..."
@@ -175,24 +174,6 @@ sudo systemctl enable ly.service
 echo "Ensuring SDDM is disabled (using ly instead)..."
 sudo systemctl disable sddm 2>/dev/null || true
 
-# Configure GNOME keyring for PAM authentication
-echo "Configuring GNOME keyring PAM authentication..."
-if ! grep -q pam_gnome_keyring.so /etc/pam.d/login 2>/dev/null; then
-    echo "auth       optional     pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/login > /dev/null
-    echo "session    optional     pam_gnome_keyring.so auto_start" | sudo tee -a /etc/pam.d/login > /dev/null
-fi
-
-if ! grep -q pam_gnome_keyring.so /etc/pam.d/passwd 2>/dev/null; then
-    echo "password   optional     pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/passwd > /dev/null
-fi
-
-# Configure ly with PAM for GNOME keyring unlock
-echo "Configuring ly PAM for GNOME keyring unlock..."
-if ! grep -q pam_gnome_keyring.so /etc/pam.d/ly 2>/dev/null; then
-    echo "auth       optional     pam_gnome_keyring.so" | sudo tee -a /etc/pam.d/ly > /dev/null
-    echo "session    optional     pam_gnome_keyring.so auto_start" | sudo tee -a /etc/pam.d/ly > /dev/null
-fi
-
 # Apply Arch-specific configurations
 echo "Applying Arch-specific configurations..."
 mkdir -p "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0" "$HOME/.config/qt5ct" "$HOME/.config/qt6ct"
@@ -203,6 +184,7 @@ cp -f "$HOME/dotfiles/arch/qt6ct/qt6ct.conf" "$HOME/.config/qt6ct/"
 cp -f "$HOME/dotfiles/arch/hyprland-dark-mode.conf" "$HOME/.config/hypr/"
 mkdir -p "$HOME/.local/bin"
 cp -f "$HOME/dotfiles/arch/scripts/toggle_dark_mode.sh" "$HOME/.local/bin/"
+cp -f "$HOME/dotfiles/arch/scripts/keyring_fix.sh" "$HOME/.local/bin/"
 chmod +x "$HOME/.local/bin/toggle_dark_mode.sh"
 
 # Run stow script to link dotfiles
