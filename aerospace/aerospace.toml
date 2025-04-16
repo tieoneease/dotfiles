@@ -86,10 +86,11 @@ outer.right =      15
 # Fallback value (if you omit the key): mode.main.binding = {}
 [mode.main.binding]
 
-# Toggle window to fill screen with outer gaps
+# Toggle window to fill screen with no outer gaps (AeroSpace's fullscreen)
 alt-f = 'fullscreen --no-outer-gaps'
 
-# Toggle window to completely fill screen with no gaps
+# Toggle window to macOS native fullscreen (green button, creates new space)
+alt-shift-f = 'macos-native-fullscreen'
 
 # All possible keys:
 # - Letters.        a, b, c, ..., z
