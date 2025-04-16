@@ -7,3 +7,4 @@ htop/
 karabiner/automatic_backups/
 .aider*
 .env
+.DS_Store

@@ -6,6 +6,11 @@
 WORKSPACE_ID="$1"
 NAME="space.$WORKSPACE_ID"
 
+# Only process numeric workspace IDs
+if ! [[ "$WORKSPACE_ID" =~ ^[0-9]+$ ]]; then
+    exit 0
+fi
+
 # Get current workspace from aerospace directly if $FOCUSED_WORKSPACE is empty
 if [ -z "$FOCUSED_WORKSPACE" ]; then
     CURRENT_WORKSPACE=$(aerospace get -space-current)
