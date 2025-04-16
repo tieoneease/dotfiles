@@ -1,0 +1,10 @@
+# Hostname-specific configuration for MacBook 15" (midnight15)
+# This file only contains the specific settings that differ from the base config
+
+[gaps]
+inner.horizontal = 10
+inner.vertical = 10
+outer.left = 15
+outer.bottom = 15
+outer.top = 26    # Reduced top gap for sketchybar
+outer.right = 15

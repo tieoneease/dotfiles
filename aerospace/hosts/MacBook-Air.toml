@@ -1,0 +1,10 @@
+# Hostname-specific configuration for MacBook Air 13"
+# This file only contains the specific settings that differ from the base config
+
+[gaps]
+inner.horizontal = 10
+inner.vertical = 10
+outer.left = 10
+outer.bottom = 10
+outer.top = 52    # Default gap for sketchybar
+outer.right = 10
