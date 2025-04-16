@@ -86,8 +86,10 @@ outer.right =      15
 # Fallback value (if you omit the key): mode.main.binding = {}
 [mode.main.binding]
 
-# Toggle window to fill screen (non-native fullscreen)
+# Toggle window to fill screen with outer gaps
 alt-f = 'fullscreen --no-outer-gaps'
+
+# Toggle window to completely fill screen with no gaps
 
 # All possible keys:
 # - Letters.        a, b, c, ..., z

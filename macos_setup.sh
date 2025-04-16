@@ -96,10 +96,14 @@ defaults write -g ApplePressAndHoldEnabled -bool false
 # Set window animation speed to be nearly instant
 defaults write -g NSWindowResizeTime -float 0.001
 
+# Disable workspace switch animations
+defaults write com.apple.dock workspaces-edge-delay -float 0
+defaults write com.apple.dock expose-animation-duration -float 0
+
 # Kill affected applications
 echo "Restarting affected applications..."
-for app in "Finder" "SystemUIServer"; do
-    killall "${app}" &> /dev/null
+for app in "Finder" "SystemUIServer" "Dock"; do
+    killall "${app}" &> /dev/null || true
 done
 
 echo "macOS setup completed! Please log out and back in for all changes to take effect."
