@@ -56,7 +56,7 @@ for sid in $(aerospace list-workspaces --all | grep -E '^[0-9]+$'); do
 done
 
 # Force update workspace items with current workspace
-sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$(aerospace get -space-current)
+sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$(aerospace list-workspaces --focused)
 
 # Right Side Items
 sketchybar --add item time right \

@@ -13,7 +13,7 @@ fi
 
 # Get current workspace from aerospace directly if $FOCUSED_WORKSPACE is empty
 if [ -z "$FOCUSED_WORKSPACE" ]; then
-    CURRENT_WORKSPACE=$(aerospace get -space-current)
+    CURRENT_WORKSPACE=$(aerospace list-workspaces --focused)
 else
     CURRENT_WORKSPACE="$FOCUSED_WORKSPACE"
 fi
