@@ -31,6 +31,19 @@ sketchybar --add event aerospace_workspace_change
 # Left Side Items (Workspaces)
 SPACE_ICONS=("󰊯" "󰭹" "󰆍" "󰈙" "" "󰄨" "" "" "󰳪")
 
+# Create a mapping of workspaces to their monitor's NSScreen ID
+# This ensures workspace items only appear on their assigned monitor
+declare -A workspace_to_display
+
+# Get all monitors and their workspaces
+monitor_count=0
+for monitor_id in $(aerospace list-monitors --format "%{monitor-appkit-nsscreen-screens-id}"); do
+    monitor_count=$((monitor_count + 1))
+    for ws in $(aerospace list-workspaces --monitor "$monitor_count"); do
+        workspace_to_display[$ws]=$monitor_id
+    done
+done
+
 # Get numeric workspaces only
 for sid in $(aerospace list-workspaces --all | grep -E '^[0-9]+$'); do
     icon_index=$((sid-1))
@@ -39,7 +52,10 @@ for sid in $(aerospace list-workspaces --all | grep -E '^[0-9]+$'); do
     else
         icon="$sid"
     fi
-    
+
+    # Get the display ID for this workspace (default to 1 if not found)
+    display_id="${workspace_to_display[$sid]:-1}"
+
     sketchybar --add item space.$sid left \
         --subscribe space.$sid aerospace_workspace_change \
         --set space.$sid \
@@ -51,6 +67,7 @@ for sid in $(aerospace list-workspaces --all | grep -E '^[0-9]+$'); do
         background.height=24 \
         background.drawing=off \
         label.drawing=off \
+        display="$display_id" \
         click_script="aerospace workspace $sid" \
         script="$PLUGIN_DIR/workspace.sh $sid"
 done

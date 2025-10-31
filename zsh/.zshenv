@@ -7,3 +7,4 @@ export NVM_NODEJS_ORG_MIRROR=https://nodejs.org/dist
 if [[ -f "$HOME/.zshenv.local" ]]; then
   source "$HOME/.zshenv.local"
 fi
+. "$HOME/.cargo/env"
