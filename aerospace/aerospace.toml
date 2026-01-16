@@ -79,7 +79,7 @@ inner.horizontal = [{ monitor."Gigabyte.*" = 15 }, { monitor."Built-in.*" = 8 },
 inner.vertical =   [{ monitor."Gigabyte.*" = 15 }, { monitor."Built-in.*" = 8 }, 10]
 outer.left =       [{ monitor."Gigabyte.*" = 20 }, { monitor."Built-in.*" = 12 }, 15]
 outer.bottom =     [{ monitor."Gigabyte.*" = 20 }, { monitor."Built-in.*" = 12 }, 15]
-outer.top =        [{ monitor."Gigabyte.*" = 50 }, { monitor."Built-in.*" = 40 }, 45]
+outer.top =        [{ monitor."Gigabyte.*" = 48 }, { monitor."Built-in.*" = 48 }, 48]
 outer.right =      [{ monitor."Gigabyte.*" = 20 }, { monitor."Built-in.*" = 12 }, 15]
 
 # 'main' binding mode declaration
@@ -172,6 +172,10 @@ alt-tab = 'workspace-back-and-forth'
 # See: https://nikitabobko.github.io/AeroSpace/commands#move-workspace-to-monitor
 alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
 
+# See: https://nikitabobko.github.io/AeroSpace/commands#balance-sizes
+# Rebalance window sizes when they get messed up from too many windows
+alt-shift-b = 'balance-sizes'
+
 # See: https://nikitabobko.github.io/AeroSpace/commands#mode
 alt-shift-semicolon = 'mode service'
 
@@ -180,6 +184,7 @@ alt-shift-semicolon = 'mode service'
 [mode.service.binding]
 esc = ['reload-config', 'mode main']
 r = ['flatten-workspace-tree', 'mode main'] # reset layout
+b = ['balance-sizes', 'mode main'] # rebalance all window sizes
 f = ['layout floating tiling', 'mode main'] # Toggle between floating and tiling layout
 backspace = ['close-all-windows-but-current', 'mode main']
 

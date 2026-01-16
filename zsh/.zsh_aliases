@@ -4,6 +4,7 @@ alias pg="cd ~/Workspace/Playground"
 alias dl="cd ~/Downloads/"
 alias dotfiles="cd ~/dotfiles/"
 alias config="cd ~/.config/"
+alias brain="cd ~/Documents/Brain/"
 
 # Editor
 alias zshconfig="nvim ~/.zshrc.local"
@@ -40,6 +41,8 @@ alias ppx='llm -m sonar-deep-research'
 alias ppq='llm -m sonar'
 alias csn='llm -m claude-3.7-sonnet'
 alias cmd='llm cmd -m claude-3.7-sonnet'
+alias claude='claude --chrome'
+alias code='claude --chrome --dangerously-skip-permissions'
 
 # Other
 alias todos="nvim ~/todos.todo"
