@@ -16,6 +16,9 @@ setopt HIST_IGNORE_SPACE
 # Add Cargo bin directory to PATH if it exists
 [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:$PATH"
 
+# Nix profile packages (installed via nix profile install)
+[[ -d "$HOME/.nix-profile/bin" ]] && export PATH="$HOME/.nix-profile/bin:$PATH"
+
 # Completion
 autoload -Uz compinit
 compinit

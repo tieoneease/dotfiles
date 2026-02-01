@@ -43,6 +43,7 @@ alias csn='llm -m claude-3.7-sonnet'
 alias cmd='llm cmd -m claude-3.7-sonnet'
 alias claude='claude --chrome'
 alias code='claude --chrome --dangerously-skip-permissions'
+alias sonnet='code --model sonnet'
 
 # Other
 alias todos="nvim ~/todos.todo"

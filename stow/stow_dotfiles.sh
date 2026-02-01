@@ -29,13 +29,19 @@ backup_existing_files() {
     fi
     
     # Check for other common config directories that might exist
-    for dir in nvim kitty hypr waybar tms tmux gtk-3.0 gtk-4.0 qt5ct qt6ct xremap wofi; do
+    for dir in nvim kitty hypr waybar tms tmux gtk-3.0 gtk-4.0 qt5ct qt6ct xremap wofi nix; do
         if [ -d "${TARGET_DIR}/$dir" ] && [ ! -L "${TARGET_DIR}/$dir" ]; then
             echo "Backing up $dir configuration..."
             cp -r "${TARGET_DIR}/$dir" "$BACKUP_DIR/"
             rm -rf "${TARGET_DIR}/$dir"
         fi
     done
+
+    # Clean up old nested nix structure if it exists
+    if [ -d "${TARGET_DIR}/nix/nix" ]; then
+        echo "Cleaning up old nested nix structure..."
+        rm -rf "${TARGET_DIR}/nix"
+    fi
     
     # Check for legacy tmux config in home directory
     if [ -f "$HOME/.tmux.conf" ] && [ ! -L "$HOME/.tmux.conf" ]; then
@@ -80,7 +86,7 @@ unstow_if_needed() {
     # Check if directory is already stowed
     if [ -L "${TARGET_DIR}/nvim" ] || [ -L "${TARGET_DIR}/sketchybar" ]; then
         echo "Unstowing existing files..."
-        cd "$DOTFILES_DIR" && stow --target="$TARGET_DIR" --delete --verbose --ignore=zsh --ignore=.DS_Store .
+        cd "$DOTFILES_DIR" && stow --target="$TARGET_DIR" --delete --verbose --ignore=zsh --ignore=nix-derivations --ignore=stow --ignore=.DS_Store .
     fi
 }
 
@@ -94,8 +100,8 @@ stow_dotfiles() {
     # Change to dotfiles directory
     cd "$DOTFILES_DIR"
     
-    # Stow everything except zsh directory and .DS_Store files
-    stow --target="$TARGET_DIR" --verbose --ignore=zsh --ignore=.DS_Store .
+    # Stow everything except zsh directory, nix-derivations, stow scripts, and .DS_Store files
+    stow --target="$TARGET_DIR" --verbose --ignore=zsh --ignore=nix-derivations --ignore=stow --ignore=.DS_Store .
     
     # No need to create a symbolic link since tmux 3.2+ natively supports XDG paths
     # Remove any existing legacy symlink if it exists
