@@ -33,15 +33,27 @@ dotfiles/
 ├── macos_setup.sh        # macOS setup script
 ├── stow/
 │   └── stow_dotfiles.sh  # Stow script for symlinking configs
+├── direnv/               # direnv + nix-direnv configuration
 ├── kitty/                # Terminal configuration
+├── nix/                  # Nix configuration
 ├── nvim/                 # Neovim configuration
 ├── tmux/                 # Tmux configuration
 ├── zsh/                  # Zsh configuration
-├── karabiner/            # Karabiner configuration 
+├── karabiner/            # Karabiner configuration
 ├── sketchybar/           # Status bar for macOS
 ├── starship/             # Starship prompt configuration
 └── wallpapers/           # Wallpapers
 ```
+
+## Nix + direnv Setup
+
+For projects using Nix flakes, install nix-direnv for cached environments:
+
+```bash
+nix profile install nixpkgs#nix-direnv
+```
+
+This caches Nix flake evaluations, making `direnv` loads instant after the first build.
 
 ## Configuration Management
 
@@ -70,6 +82,8 @@ The following tools are configured and managed by this setup:
   - Karabiner-Elements (keyboard customization)
   - Aerospace (window manager)
 - **CLI Tools**:
+  - Nix with flakes
+  - direnv + nix-direnv (cached dev environments)
   - NVM (Node Version Manager)
   - UV (Python package manager)
   - FZF (Fuzzy finder)
