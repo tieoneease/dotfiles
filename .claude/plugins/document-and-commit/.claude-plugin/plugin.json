@@ -1,0 +1,9 @@
+{
+  "name": "document-and-commit",
+  "version": "0.1.0",
+  "description": "Document changes and create intelligent commits with CLAUDE.md updates",
+  "author": {
+    "name": "chungsam",
+    "email": "noreply@example.com"
+  }
+}

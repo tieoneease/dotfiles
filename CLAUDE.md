@@ -2,8 +2,9 @@
 
 ## Commands
 - **macOS Setup:** `./macos_setup.sh` (installs required software for macOS)
-- **Stow dotfiles:** `./stow/stow_dotfiles.sh` (symlinks all config files)
+- **Stow dotfiles:** `./stow/stow_dotfiles.sh` (symlinks all config files to ~/.config and Claude plugins to ~/.claude)
 - **Font cache refresh:** `fc-cache -f -v`
+- **Document and commit:** `/dc` (custom Claude skill - analyzes changes, groups commits logically, updates CLAUDE.md when relevant)
 
 ## Code Style
 - **Indentation:** 4 spaces (tabs expanded)
@@ -21,6 +22,7 @@
 - Symlink manager: GNU Stow
 - Do not modify system files directly, use appropriate config files
 - Config paths follow XDG Base Directory spec (e.g., ~/.config/)
+- Claude plugins stored in `.claude/plugins/` directory, stowed to `~/.claude/plugins/`
 
 ## Main Components
 - **Shell:** Zsh with Starship prompt
@@ -34,3 +36,6 @@
 - **Setup script:** `./arch_setup.sh` (installs required packages)
 - Hyprland configuration with custom keybindings
 - Waybar status bar with state indicators
+
+## Custom Claude Skills
+- **document-and-commit** (`/dc`): Analyzes modified files, groups changes logically, proposes CLAUDE.md updates (with approval), and creates descriptive commits following repository style. Does NOT include Co-Authored-By footer.
