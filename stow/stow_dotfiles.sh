@@ -82,26 +82,52 @@ setup_zsh() {
 # Function to unstow existing files
 unstow_if_needed() {
     echo "Checking for existing stowed files..."
-    
+
     # Check if directory is already stowed
     if [ -L "${TARGET_DIR}/nvim" ] || [ -L "${TARGET_DIR}/sketchybar" ]; then
-        echo "Unstowing existing files..."
-        cd "$DOTFILES_DIR" && stow --target="$TARGET_DIR" --delete --verbose --ignore=zsh --ignore=nix-derivations --ignore=stow --ignore=.DS_Store .
+        echo "Unstowing existing files from ~/.config..."
+        cd "$DOTFILES_DIR" && stow --target="$TARGET_DIR" --delete --verbose --ignore=zsh --ignore=.claude --ignore=nix-derivations --ignore=stow --ignore=.DS_Store .
+    fi
+
+    # Check if Claude plugins are already stowed
+    if [ -L "$HOME/.claude/document-and-commit" ]; then
+        echo "Unstowing existing Claude plugins..."
+        cd "$DOTFILES_DIR" && stow --target="$HOME/.claude" --delete --verbose .claude
+    fi
+}
+
+# Function to setup Claude plugins
+setup_claude_plugins() {
+    echo "Setting up Claude plugins..."
+
+    # Stow .claude directory to ~/.claude
+    if [ -d "$DOTFILES_DIR/.claude" ]; then
+        # Ensure target directory exists
+        mkdir -p "$HOME/.claude"
+
+        # Change to dotfiles directory for stow
+        cd "$DOTFILES_DIR"
+
+        # Stow .claude contents to ~/.claude
+        stow --target="$HOME/.claude" --verbose .claude
+        echo "Claude plugins stowed successfully!"
+    else
+        echo "No .claude directory found, skipping Claude plugin setup."
     fi
 }
 
 # Function to stow dotfiles
 stow_dotfiles() {
     echo "Stowing dotfiles..."
-    
+
     # Ensure target directory exists
     mkdir -p "$TARGET_DIR"
-    
+
     # Change to dotfiles directory
     cd "$DOTFILES_DIR"
-    
-    # Stow everything except zsh directory, nix-derivations, stow scripts, and .DS_Store files
-    stow --target="$TARGET_DIR" --verbose --ignore=zsh --ignore=nix-derivations --ignore=stow --ignore=.DS_Store .
+
+    # Stow everything except zsh directory, .claude, nix-derivations, stow scripts, and .DS_Store files
+    stow --target="$TARGET_DIR" --verbose --ignore=zsh --ignore=.claude --ignore=nix-derivations --ignore=stow --ignore=.DS_Store .
     
     # No need to create a symbolic link since tmux 3.2+ natively supports XDG paths
     # Remove any existing legacy symlink if it exists
@@ -128,19 +154,22 @@ stow_dotfiles() {
 # Main function
 main() {
     echo "Starting dotfiles setup..."
-    
+
     # Backup existing files
     backup_existing_files
-    
+
     # Unstow if needed
     unstow_if_needed
-    
+
     # Stow dotfiles
     stow_dotfiles
-    
+
+    # Setup Claude plugins
+    setup_claude_plugins
+
     # Setup zsh
     setup_zsh
-    
+
     echo "Dotfiles setup completed successfully!"
     echo ""
     echo "To apply the changes to your zsh configuration, please restart your terminal or run:"
