@@ -30,6 +30,7 @@ Each package mirrors the home directory:
 - `nvim/.config/nvim/` → `~/.config/nvim/`
 - `zsh/.zshenv` → `~/.zshenv`
 - `zsh/.config/zsh/base.zsh` → `~/.config/zsh/base.zsh`
+- `claude/.claude/settings.json` → `~/.claude/settings.json`
 
 ## Main Components
 - **Shell:** Zsh with Starship prompt (layered: .zshenv + base.zsh + aliases.zsh)
@@ -40,6 +41,7 @@ Each package mirrors the home directory:
 - **Desktop Shell:** Noctalia Shell (bar, launcher, notifications, theming)
 - **Keyboard:** keyd (tap-hold layers, system-level)
 - **Login:** greetd + tuigreet → niri-session
+- **Claude Code:** Settings + statusline script (stow package targeting `~/.claude/`)
 - **macOS Tools:** Aerospace, Sketchybar, Karabiner-Elements
 
 ## Theming (Noctalia + matugen)

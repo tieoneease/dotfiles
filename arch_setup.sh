@@ -140,12 +140,6 @@ if ! command -v claude &> /dev/null; then
     curl -fsSL https://claude.ai/install.sh | bash
 fi
 
-echo "Copying Claude Code config..."
-mkdir -p "$HOME/.claude"
-cp -f "$DOTFILES_DIR/claude/settings.json" "$HOME/.claude/settings.json"
-cp -f "$DOTFILES_DIR/claude/statusline-command.sh" "$HOME/.claude/statusline-command.sh"
-chmod +x "$HOME/.claude/statusline-command.sh"
-
 # Passwordless sudo for Claude Code (it cannot handle interactive password prompts)
 if [ ! -f "/etc/sudoers.d/$USER" ]; then
     echo ""
@@ -160,6 +154,10 @@ if [ ! -f "/etc/sudoers.d/$USER" ]; then
         echo "Skipped. Claude Code may prompt for sudo password interactively."
     fi
 fi
+
+# --- Workspace directory ---
+
+mkdir -p "$HOME/Workspace"
 
 # --- Stow dotfiles ---
 

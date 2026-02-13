@@ -14,6 +14,9 @@ context_remaining=$(echo "$input" | jq -r '.context_window.remaining_percentage 
 project_dir=$(echo "$input" | jq -r '.workspace.project_dir // .workspace.current_dir')
 project_name=$(basename "$project_dir")
 
+# Extract model display name
+model_name=$(echo "$input" | jq -r '.model.display_name // .model.id')
+
 # Get git branch/worktree info (skip optional locks for performance)
 if [ -d "$project_dir/.git" ]; then
     cd "$project_dir" 2>/dev/null || true
@@ -36,7 +39,7 @@ else
 fi
 
 # Build the status line
-status="[$user@$host $project_name"
+status="[$user@$host $project_name | $model_name"
 
 if [ -n "$branch" ]; then
     status="$status ($branch)"

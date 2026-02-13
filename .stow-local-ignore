@@ -4,7 +4,6 @@
 \.stow-local-ignore
 ^stow$
 ^etc$
-^claude$
 ^README\.md$
 ^CLAUDE\.md$
 ^NIRI-SETUP\.md$
