@@ -1,10 +1,9 @@
-local frappe = require("catppuccin.palettes").get_palette "frappe"
 require('lualine').setup {
   options = {
     icons_enabled = true,
-    theme = 'catppuccin-frappe',
-    component_separators = { left = '', right = ''},
-    section_separators = { left = '', right = ''},
+    theme = 'auto',
+    component_separators = { left = '', right = ''},
+    section_separators = { left = '', right = ''},
     disabled_filetypes = {
       statusline = {},
       winbar = {},
@@ -25,7 +24,6 @@ require('lualine').setup {
         {
             require("noice").api.statusline.mode.get,
             cond = require("noice").api.statusline.mode.has,
-            color = { fg = frappe.pink },
         }
     },
     lualine_x = {},

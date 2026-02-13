@@ -101,7 +101,7 @@ local plugins = {
         lazy = false,
     },
     { "alexghergh/nvim-tmux-navigation" },
-    { "catppuccin/nvim",                  name = "catppuccin", priority = 1000 },
+    { "RRethy/base16-nvim",                priority = 1000 },
     { 'williamboman/mason.nvim' },
     { 'williamboman/mason-lspconfig.nvim' },
     { 'VonHeikemen/lsp-zero.nvim',        branch = 'v3.x' },

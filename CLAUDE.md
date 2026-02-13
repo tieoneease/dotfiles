@@ -34,7 +34,7 @@ Each package mirrors the home directory:
 ## Main Components
 - **Shell:** Zsh with Starship prompt (layered: .zshenv + base.zsh + aliases.zsh)
 - **Terminals:** Alacritty (primary), Kitty
-- **Editor:** Neovim
+- **Editor:** Neovim (base16-nvim for dynamic theming)
 - **Multiplexer:** Tmux with tmux-sessionizer
 - **Compositor:** Niri (scrollable tiling Wayland)
 - **Desktop Shell:** Noctalia Shell (bar, launcher, notifications, theming)
@@ -42,8 +42,17 @@ Each package mirrors the home directory:
 - **Login:** greetd + tuigreet → niri-session
 - **macOS Tools:** Aerospace, Sketchybar, Karabiner-Elements
 
+## Theming (Noctalia + matugen)
+Dynamic Material Design 3 colors generated from the current wallpaper:
+- **Engine:** matugen extracts colors from wallpaper, Noctalia Shell triggers generation
+- **Templates:** `noctalia/.config/noctalia/templates/` — input templates per app
+- **User config:** `noctalia/.config/noctalia/user-templates.toml` — maps templates to output paths + post-hooks
+- **Generated files (gitignored):** `colors.kdl` (niri), `noctalia_colors.lua` (nvim), `colors.conf` (tmux), `current-theme.conf` (kitty), `colors.toml` (alacritty)
+- **Wallpapers:** `wallpapers/` contains defaults, copied to `~/Pictures/Wallpapers/` by setup script (not stowed — directory holds user content)
+
 ## Arch Linux / EndeavourOS Setup
-- **Setup script:** `./arch_setup.sh` (yay packages, keyd, greetd, stow)
+- **Setup script:** `./arch_setup.sh` (yay packages, keyd, greetd, sudoers, stow)
 - Niri compositor with dynamic Material Design 3 colors via Noctalia/matugen
+- Passwordless sudo setup for Claude Code (opt-in with confirmation prompt)
 - keyd keyboard layers (numpad, nav, media)
 - See `NIRI-SETUP.md` for detailed architecture docs

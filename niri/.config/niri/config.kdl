@@ -558,5 +558,5 @@ binds {
     ISO_Level3_Shift+Shift+R { move-column-to-workspace 9; }
 }
 
-// Dynamic colors from matugen/Noctalia
+// Dynamic colors from matugen/Noctalia (generated on first wallpaper selection)
 include "./colors.kdl"

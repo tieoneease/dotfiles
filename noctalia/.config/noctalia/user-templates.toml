@@ -6,3 +6,17 @@ post_hook = "niri msg action load-config-file"
 [alacritty]
 input_path = "~/.config/noctalia/templates/alacritty-colors.toml"
 output_path = "~/.config/alacritty/colors.toml"
+
+[nvim]
+input_path = "~/.config/noctalia/templates/nvim-colors.lua"
+output_path = "~/.config/nvim/lua/noctalia_colors.lua"
+post_hook = "pkill -SIGUSR1 nvim"
+
+[tmux]
+input_path = "~/.config/noctalia/templates/tmux-colors.conf"
+output_path = "~/.config/tmux/colors.conf"
+post_hook = "tmux source-file ~/.config/tmux/tmux.conf"
+
+[kitty]
+input_path = "~/.config/noctalia/templates/kitty-colors.conf"
+output_path = "~/.config/kitty/current-theme.conf"

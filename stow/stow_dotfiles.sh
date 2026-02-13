@@ -26,7 +26,6 @@ fi
 backup_existing_files() {
     echo "Checking for existing configurations to back up..."
 
-    BACKUP_DIR="${HOME}/.config_backup/$(date +%Y%m%d_%H%M%S)"
     local backed_up=false
 
     for pkg in "${PACKAGES[@]}"; do
@@ -64,7 +63,7 @@ stow_packages() {
     echo "All packages stowed."
 }
 
-# Install tmux plugins (TPM + catppuccin theme)
+# Install tmux plugins (TPM)
 setup_tmux_plugins() {
     echo "Setting up tmux plugins..."
     local tmux_plugin_dir="${HOME}/.config/tmux/plugins"
@@ -75,11 +74,6 @@ setup_tmux_plugins() {
         git clone https://github.com/tmux-plugins/tpm "$tmux_plugin_dir/tpm"
     fi
 
-    if [ ! -d "$tmux_plugin_dir/catppuccin" ]; then
-        echo "Installing Catppuccin theme..."
-        git clone https://github.com/catppuccin/tmux.git "$tmux_plugin_dir/catppuccin"
-    fi
-
     # Remove legacy ~/.tmux.conf symlink if it exists
     if [ -L "$HOME/.tmux.conf" ]; then
         echo "Removing legacy tmux.conf symlink..."
@@ -87,10 +81,24 @@ setup_tmux_plugins() {
     fi
 }
 
+# Backup top-level dotfiles that stow packages may conflict with
+backup_toplevel_dotfiles() {
+    local toplevel_files=(".zshenv")
+    for f in "${toplevel_files[@]}"; do
+        if [ -f "$HOME/$f" ] && [ ! -L "$HOME/$f" ]; then
+            mkdir -p "$BACKUP_DIR"
+            echo "Backing up ~/$f..."
+            mv "$HOME/$f" "$BACKUP_DIR/$f"
+        fi
+    done
+}
+
 main() {
     echo "Starting dotfiles setup..."
 
+    BACKUP_DIR="${HOME}/.config_backup/$(date +%Y%m%d_%H%M%S)"
     backup_existing_files
+    backup_toplevel_dotfiles
     stow_packages
     setup_tmux_plugins
 
