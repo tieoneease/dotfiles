@@ -1,0 +1,21 @@
+{
+  "id": "lte-status",
+  "name": "LTE Status",
+  "version": "1.0.0",
+  "author": "chungsam",
+  "description": "Displays LTE/cellular modem status in the bar and control center using ModemManager",
+  "entryPoints": {
+    "main": "Main.qml",
+    "barWidget": "BarWidget.qml",
+    "controlCenterWidget": "ControlCenterWidget.qml"
+  },
+  "metadata": {
+    "tags": ["Network", "Indicator", "Bar"],
+    "displayMode": "alwaysShow",
+    "iconColor": "",
+    "textColor": "",
+    "defaultSettings": {
+      "pollingInterval": 10000
+    }
+  }
+}

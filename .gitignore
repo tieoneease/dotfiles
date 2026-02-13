@@ -4,7 +4,7 @@ zsh/.zsh_history
 zsh/.zcompdump*
 lazygit/state.yml
 htop/
-karabiner/automatic_backups/
+karabiner/.config/karabiner/automatic_backups/
 .aider*
 .env
 .DS_Store

@@ -1,0 +1,20 @@
+{
+  "name": "LTE Status",
+  "tooltip": {
+    "no-modem": "No modem detected",
+    "disconnected": "Cellular disconnected"
+  },
+  "toast": {
+    "title": "Cellular",
+    "details": "{operator} — {tech} {signal}%",
+    "no-modem": "No modem detected",
+    "disconnected": "Modem disconnected"
+  },
+  "state": {
+    "connected": "Connected",
+    "registered": "Registered",
+    "searching": "Searching",
+    "disabled": "Disabled",
+    "unknown": "Unknown"
+  }
+}

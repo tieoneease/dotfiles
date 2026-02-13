@@ -1,8 +1,9 @@
 # Claude Guidelines for Dotfiles Repository
 
 ## Commands
+- **Arch/EndeavourOS Setup:** `./arch_setup.sh` (installs packages, configures system, stows dotfiles)
 - **macOS Setup:** `./macos_setup.sh` (installs required software for macOS)
-- **Stow dotfiles:** `./stow/stow_dotfiles.sh` (symlinks all config files)
+- **Stow dotfiles:** `./stow/stow_dotfiles.sh` (symlinks all config files per-package)
 - **Font cache refresh:** `fc-cache -f -v`
 
 ## Code Style
@@ -15,22 +16,34 @@
 - **Error handling:** Check command existence before using, provide fallbacks
 - **Comments:** Add descriptive comments for non-obvious configurations
 - **Lua style:** Follow existing patterns in nvim config (see options.lua, plugins.lua)
+- **KDL style:** Follow existing patterns in niri config (config.kdl)
+- **QML style:** Follow existing patterns in noctalia plugins (lte-status/)
 
 ## Environment Management
-- Package manager: Homebrew (for macOS), Pacman (for Arch Linux)
-- Symlink manager: GNU Stow
-- Do not modify system files directly, use appropriate config files
+- Package manager: Homebrew (for macOS), yay (for EndeavourOS/Arch)
+- Symlink manager: GNU Stow (target=$HOME, per-package)
+- System configs in `etc/` are copied by setup script (not stowed)
 - Config paths follow XDG Base Directory spec (e.g., ~/.config/)
 
-## Main Components
-- **Shell:** Zsh with Starship prompt
-- **Terminal:** Kitty
-- **Editor:** Neovim
-- **Multiplexer:** Tmux
-- **macOS Tools:** Sketchybar, Aerospace, Karabiner-Elements
-- **Arch Linux Tools:** Hyprland, Waybar, Dunst
+## Stow Structure
+Each package mirrors the home directory:
+- `nvim/.config/nvim/` → `~/.config/nvim/`
+- `zsh/.zshenv` → `~/.zshenv`
+- `zsh/.config/zsh/base.zsh` → `~/.config/zsh/base.zsh`
 
-## Arch Linux Setup
-- **Setup script:** `./arch_setup.sh` (installs required packages)
-- Hyprland configuration with custom keybindings
-- Waybar status bar with state indicators
+## Main Components
+- **Shell:** Zsh with Starship prompt (layered: .zshenv + base.zsh + aliases.zsh)
+- **Terminals:** Alacritty (primary), Kitty
+- **Editor:** Neovim
+- **Multiplexer:** Tmux with tmux-sessionizer
+- **Compositor:** Niri (scrollable tiling Wayland)
+- **Desktop Shell:** Noctalia Shell (bar, launcher, notifications, theming)
+- **Keyboard:** keyd (tap-hold layers, system-level)
+- **Login:** greetd + tuigreet → niri-session
+- **macOS Tools:** Aerospace, Sketchybar, Karabiner-Elements
+
+## Arch Linux / EndeavourOS Setup
+- **Setup script:** `./arch_setup.sh` (yay packages, keyd, greetd, stow)
+- Niri compositor with dynamic Material Design 3 colors via Noctalia/matugen
+- keyd keyboard layers (numpad, nav, media)
+- See `NIRI-SETUP.md` for detailed architecture docs
