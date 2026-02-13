@@ -21,7 +21,7 @@
         "showCategories": true,
         "showIconBackground": false,
         "sortByMostUsed": true,
-        "terminalCommand": "alacritty -e",
+        "terminalCommand": "kitty -e",
         "useApp2Unit": false,
         "viewMode": "list"
     },
@@ -392,8 +392,8 @@
         "nightTemp": "4000"
     },
     "notifications": {
-        "backgroundOpacity": 1,
-        "criticalUrgencyDuration": 15,
+        "backgroundOpacity": 0.7000000000000001,
+        "criticalUrgencyDuration": 5,
         "enableBatteryToast": true,
         "enableKeyboardLayoutToast": true,
         "enableMediaToast": false,
@@ -402,7 +402,7 @@
         "lowUrgencyDuration": 3,
         "monitors": [
         ],
-        "normalUrgencyDuration": 8,
+        "normalUrgencyDuration": 3,
         "overlayLayer": true,
         "respectExpireTimeout": false,
         "saveToHistory": {
@@ -446,27 +446,45 @@
         "powerOptions": [
             {
                 "action": "lock",
-                "enabled": true
+                "command": "",
+                "countdownEnabled": true,
+                "enabled": true,
+                "keybind": ""
             },
             {
                 "action": "suspend",
-                "enabled": true
+                "command": "",
+                "countdownEnabled": true,
+                "enabled": true,
+                "keybind": ""
             },
             {
                 "action": "hibernate",
-                "enabled": true
+                "command": "",
+                "countdownEnabled": true,
+                "enabled": true,
+                "keybind": ""
             },
             {
                 "action": "reboot",
-                "enabled": true
+                "command": "",
+                "countdownEnabled": true,
+                "enabled": true,
+                "keybind": ""
             },
             {
                 "action": "logout",
-                "enabled": true
+                "command": "",
+                "countdownEnabled": true,
+                "enabled": true,
+                "keybind": ""
             },
             {
                 "action": "shutdown",
-                "enabled": true
+                "command": "",
+                "countdownEnabled": true,
+                "enabled": true,
+                "keybind": ""
             }
         ],
         "showHeader": true,
@@ -504,8 +522,20 @@
     },
     "templates": {
         "activeTemplates": [
+            {
+                "enabled": true,
+                "id": "niri"
+            },
+            {
+                "enabled": true,
+                "id": "kitty"
+            },
+            {
+                "enabled": true,
+                "id": "yazi"
+            }
         ],
-        "enableUserTheming": false
+        "enableUserTheming": true
     },
     "ui": {
         "bluetoothDetailsViewMode": "grid",
@@ -516,7 +546,7 @@
         "fontFixed": "monospace",
         "fontFixedScale": 1,
         "networkPanelView": "wifi",
-        "panelBackgroundOpacity": 0.93,
+        "panelBackgroundOpacity": 0.81,
         "panelsAttachedToBar": true,
         "settingsPanelMode": "attached",
         "tooltipsEnabled": true,

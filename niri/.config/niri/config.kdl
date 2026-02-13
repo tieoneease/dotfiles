@@ -227,6 +227,14 @@ window-rule {
     open-floating true
 }
 
+// Kitty terminal — draw focus ring around the window edge instead of as a
+// solid rectangle behind it. Prevents the active focus-ring color from
+// bleeding through kitty's transparent background (background_opacity 0.85).
+window-rule {
+    match app-id="kitty"
+    draw-border-with-background false
+}
+
 // Example: block out two password managers from screen capture.
 // (This example rule is commented out with a "/-" in front.)
 /-window-rule {
@@ -558,5 +566,6 @@ binds {
     ISO_Level3_Shift+Shift+R { move-column-to-workspace 9; }
 }
 
-// Dynamic colors from matugen/Noctalia (generated on first wallpaper selection)
-include "./colors.kdl"
+// Dynamic colors from Noctalia built-in template (generated on wallpaper selection)
+include "./noctalia.kdl"
+
