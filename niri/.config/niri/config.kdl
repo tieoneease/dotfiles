@@ -173,6 +173,7 @@ layout {
 
 // Waybar removed — using noctalia-shell via systemd user service instead.
 spawn-at-startup "nm-applet" "--indicator"
+spawn-at-startup "fcitx5"
 spawn-sh-at-startup "swayidle -w timeout 300 'niri msg action power-off-monitors' resume 'niri msg action power-on-monitors'"
 spawn-sh-at-startup "~/.config/niri/zenbook-duo-dock.sh"
 
@@ -314,8 +315,8 @@ binds {
     // Example brightness key mappings for brightnessctl.
     // You can use regular spawn with multiple arguments too (to avoid going through "sh"),
     // but you need to manually put each argument in separate "" quotes.
-    XF86MonBrightnessUp allow-when-locked=true { spawn "~/.config/niri/brightness.sh" "+10%"; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn "~/.config/niri/brightness.sh" "10%-"; }
+    XF86MonBrightnessUp allow-when-locked=true { spawn "~/.config/niri/brightness.sh" "+5%"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "~/.config/niri/brightness.sh" "5%-"; }
 
     // Open/close the Overview: a zoomed-out view of workspaces and windows.
     // You can also move the mouse into the top-left hot corner,
