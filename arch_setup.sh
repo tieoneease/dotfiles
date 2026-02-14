@@ -59,6 +59,10 @@ echo "Installing desktop utilities..."
 install_packages swayidle playerctl network-manager-applet brightnessctl wl-clipboard bluez bluez-utils \
     xdg-desktop-portal xdg-desktop-portal-gtk wlsunset
 
+# Input method framework (Chinese Traditional Pinyin)
+echo "Installing input method framework..."
+install_packages fcitx5 fcitx5-gtk fcitx5-qt fcitx5-chinese-addons fcitx5-configtool noto-fonts-cjk
+
 # Browser
 echo "Installing browser..."
 install_packages google-chrome
@@ -93,6 +97,11 @@ echo "Configuring bluetooth..."
 sudo mkdir -p /etc/bluetooth
 sudo cp -f "$DOTFILES_DIR/etc/bluetooth/main.conf" /etc/bluetooth/main.conf
 
+# Copy modules-load.d configs (uhid for BT keyboard/trackpad input)
+echo "Configuring kernel modules..."
+sudo mkdir -p /etc/modules-load.d
+sudo cp -f "$DOTFILES_DIR/etc/modules-load.d/bluetooth.conf" /etc/modules-load.d/bluetooth.conf
+
 # Copy portal config
 echo "Configuring xdg-desktop-portal..."
 sudo mkdir -p /etc/xdg-desktop-portal
@@ -103,6 +112,7 @@ echo "Setting system environment variables..."
 sudo tee /etc/environment > /dev/null << 'EOF'
 EDITOR=nvim
 BROWSER=google-chrome-stable
+XMODIFIERS=@im=fcitx
 EOF
 
 # Enable services
