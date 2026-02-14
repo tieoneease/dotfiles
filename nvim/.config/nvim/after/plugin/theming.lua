@@ -1,20 +1,16 @@
 -- Noctalia/matugen auto-theming via base16-nvim
 -- Colors are generated from wallpaper -> Material Design 3 tokens -> base16 palette
 
+require("base16-colorscheme").with_config({
+    telescope = true,
+    telescope_borders = false,
+})
+
+local colors_file = vim.fn.stdpath("config") .. "/lua/noctalia_colors.lua"
+
 local function apply_colors()
-    local ok, colors = pcall(require, "noctalia_colors")
-    if not ok then return end
-    package.loaded["noctalia_colors"] = nil
-
-    require("base16-colorscheme").with_config({
-        telescope = true,
-        telescope_borders = false,
-    })
-    require("base16-colorscheme").setup(colors)
-    vim.api.nvim_exec_autocmds("ColorScheme", {})
-
-    vim.api.nvim_set_hl(0, "Comment", { italic = true, fg = colors.base03 })
-    vim.api.nvim_set_hl(0, "Conditional", { italic = true })
+    if vim.fn.filereadable(colors_file) == 0 then return end
+    dofile(colors_file)
 end
 
 apply_colors()

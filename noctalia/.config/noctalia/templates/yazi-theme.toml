@@ -105,7 +105,7 @@ rules = [
     { mime = "video/*", fg = "{{colors.secondary.default.hex}}" },
 
     # Audio
-    { mime = "audio/*", fg = "{{colors.primary.default.hex | darken: 10.0}}" },
+    { mime = "audio/*", fg = "{{colors.primary.default.hex | lighten: -10.0}}" },
 
     # Archives
     { mime = "application/*zip", fg = "{{colors.error.default.hex | lighten: 10.0}}" },
