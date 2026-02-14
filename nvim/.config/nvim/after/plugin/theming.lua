@@ -6,7 +6,12 @@ local function apply_colors()
     if not ok then return end
     package.loaded["noctalia_colors"] = nil
 
+    require("base16-colorscheme").with_config({
+        telescope = true,
+        telescope_borders = false,
+    })
     require("base16-colorscheme").setup(colors)
+    vim.api.nvim_exec_autocmds("ColorScheme", {})
 
     vim.api.nvim_set_hl(0, "Comment", { italic = true, fg = colors.base03 })
     vim.api.nvim_set_hl(0, "Conditional", { italic = true })
