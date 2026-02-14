@@ -27,7 +27,8 @@ Wayland-native tiling setup on Arch Linux.
 │ keyd (system-level, /etc/keyd/default.conf)         │
 │  ├── LeftAlt tap-hold → numpad layer                │
 │  ├── RightAlt tap-hold → nav layer (tab mgmt)       │
-│  └── Both Alts → arrows + Home/End/PgUp/PgDn        │
+│  ├── Both Alts → arrows + Home/End/PgUp/PgDn        │
+│  └── RightCtrl tap-hold → control (vol/brightness)  │
 ├─────────────────────────────────────────────────────┤
 │ Noctalia Shell (systemd user service)               │
 │  ├── Kanagawa color scheme                          │
@@ -117,6 +118,17 @@ This is a composite layer that activates when both LeftAlt and RightAlt are held
 | `m` | PageDown |
 | `,` | PageUp |
 | `.` | End |
+
+#### `[control]` — RightCtrl held (volume and brightness)
+
+Tap RightCtrl = RightCtrl. Hold RightCtrl + key = media/brightness control.
+
+| Key | Output |
+|-----|--------|
+| `a` | Volume down |
+| `s` | Volume up |
+| `d` | Brightness down |
+| `f` | Brightness up |
 
 ### Why keyd over XKB
 
