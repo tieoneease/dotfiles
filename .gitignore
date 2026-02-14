@@ -14,4 +14,6 @@ niri/.config/niri/colors.kdl
 nvim/.config/nvim/lua/noctalia_colors.lua
 tmux/.config/tmux/colors.conf
 kitty/.config/kitty/current-theme.conf
+kitty/.config/kitty/themes/
+kitty/.config/kitty/*.bak
 alacritty/.config/alacritty/colors.toml
