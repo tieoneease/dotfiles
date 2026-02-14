@@ -51,6 +51,8 @@ Each package mirrors the home directory:
 - **macOS Tools:** Aerospace, Sketchybar, Karabiner-Elements
 
 ## Theming (Noctalia + matugen)
+**Documentation:** Consult https://docs.noctalia.dev/ for Noctalia Shell configuration, features, and theming details.
+
 Dynamic Material Design 3 colors generated from the current wallpaper:
 - **Engine:** matugen extracts colors from wallpaper, Noctalia Shell triggers generation
 - **Templates:** `noctalia/.config/noctalia/templates/` — input templates per app
