@@ -1,5 +1,11 @@
 # Claude Guidelines for Dotfiles Repository
 
+## Primary Platform
+- **OS:** EndeavourOS (Arch Linux)
+- **Compositor:** Niri (scrollable tiling Wayland compositor)
+- **Desktop Shell:** Noctalia Shell (status bar, app launcher, notifications, wallpaper/theming)
+- **Secondary platform:** macOS (Aerospace, Sketchybar, Karabiner-Elements)
+
 ## Commands
 - **Arch/EndeavourOS Setup:** `./arch_setup.sh` (installs packages, configures system, stows dotfiles)
 - **macOS Setup:** `./macos_setup.sh` (installs required software for macOS)
