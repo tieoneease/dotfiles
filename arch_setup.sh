@@ -110,6 +110,12 @@ echo "Configuring kernel modules..."
 sudo mkdir -p /etc/modules-load.d
 sudo cp -f "$DOTFILES_DIR/etc/modules-load.d/bluetooth.conf" /etc/modules-load.d/bluetooth.conf
 
+# Patch Noctalia workspace text ratio for Nerd Font glyphs
+# (textRatio 0.50 → 0.75 so icons fill more of the pill; OSD is unaffected)
+echo "Patching Noctalia workspace text ratio..."
+sudo sed -i 's/readonly property real textRatio: 0\.50/readonly property real textRatio: 0.75/' \
+    /etc/xdg/quickshell/noctalia-shell/Modules/Bar/Widgets/Workspace.qml
+
 # Copy portal config
 echo "Configuring xdg-desktop-portal..."
 sudo mkdir -p /etc/xdg-desktop-portal

@@ -562,7 +562,7 @@
         "fontDefault": "Sans Serif",
         "fontDefaultScale": 1,
         "fontFixed": "JetBrainsMono Nerd Font Mono",
-        "fontFixedScale": 1.5,
+        "fontFixedScale": 1,
         "networkPanelView": "wifi",
         "panelBackgroundOpacity": 0.81,
         "panelsAttachedToBar": true,
