@@ -185,13 +185,11 @@ if [ ! -f "$HOME/.config/niri/colors.kdl" ]; then
     touch "$HOME/.config/niri/colors.kdl"
 fi
 
-# Copy default wallpapers if directory is empty or missing
-if [ ! -d "$HOME/Pictures/Wallpapers" ] || [ -z "$(ls -A "$HOME/Pictures/Wallpapers" 2>/dev/null)" ]; then
-    echo "Copying default wallpapers..."
-    mkdir -p "$HOME/Pictures/Wallpapers"
-    cp "$DOTFILES_DIR/wallpapers/"*.jpg "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
-    cp "$DOTFILES_DIR/wallpapers/"*.png "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
-fi
+# Sync default wallpapers (add new ones without overwriting existing)
+echo "Syncing default wallpapers..."
+mkdir -p "$HOME/Pictures/Wallpapers"
+cp -n "$DOTFILES_DIR/wallpapers/"*.jpg "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
+cp -n "$DOTFILES_DIR/wallpapers/"*.png "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
 
 # --- Done ---
 
