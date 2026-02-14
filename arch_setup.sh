@@ -122,6 +122,18 @@ if [ ! -f "$HOME/.zshrc" ]; then
 ZSHRC
 fi
 
+# --- Git config ---
+
+if ! git config --global user.name &> /dev/null || ! git config --global user.email &> /dev/null; then
+    echo ""
+    echo "Git identity not configured."
+    read -rp "Git user name: " git_name
+    read -rp "Git email: " git_email
+    git config --global user.name "$git_name"
+    git config --global user.email "$git_email"
+    echo "Git identity set to $git_name <$git_email>"
+fi
+
 # --- Rust + cargo tools ---
 
 if ! command -v rustup &> /dev/null; then
