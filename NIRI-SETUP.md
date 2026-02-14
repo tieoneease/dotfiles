@@ -193,7 +193,7 @@ Workspaces 1–9 are declared with `workspace "1"` through `workspace "9"`.
 | `Mod+T` | Terminal (kitty) |
 | `Alt+Space` | Fuzzel launcher |
 | `Super+B` | Chrome |
-| `Super+Alt+L` | Lock (swaylock) |
+| `Super+Alt+L` | Turn off screen (DPMS) |
 | `Mod+Q` | Close window |
 | `Alt+H/J/K/L` | Focus left/down/up/right |
 | `Alt+Shift+H/J/K/L` | Move window left/down/up/right |
