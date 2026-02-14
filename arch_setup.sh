@@ -67,6 +67,10 @@ install_packages fcitx5 fcitx5-gtk fcitx5-qt fcitx5-chinese-addons fcitx5-config
 echo "Installing browser..."
 install_packages google-chrome
 
+# Productivity applications
+echo "Installing productivity applications..."
+install_packages obsidian
+
 # Zsh plugins (system-wide, sourced from /usr/share/zsh/plugins/)
 echo "Installing zsh plugins..."
 install_packages zsh-autosuggestions zsh-syntax-highlighting
@@ -205,12 +209,43 @@ echo "the dual-screen layout for niri."
 read -rp "Enable ASUS Zenbook Duo setup? [y/N] " response
 if [[ "$response" =~ ^[Yy]$ ]]; then
     echo "Installing ASUS Zenbook Duo packages..."
-    install_packages asusctl wev
+    install_packages asusctl wev dkms linux-headers
+
+    # Install DKMS module for Zenbook Duo detachable keyboard (BT/USB)
+    # The stock hid-asus driver lacks device IDs 0x1b2c (USB) / 0x1b2d (BT)
+    DKMS_PKG="hid-asus-zenbook-duo"
+    DKMS_VER="1.0"
+    DKMS_SRC="/usr/src/${DKMS_PKG}-${DKMS_VER}"
+    if ! dkms status "$DKMS_PKG/$DKMS_VER" 2>/dev/null | grep -q "installed"; then
+        echo "Installing hid-asus DKMS module for Zenbook Duo keyboard..."
+        sudo mkdir -p "$DKMS_SRC"
+        sudo cp -f "$DOTFILES_DIR/etc/dkms/$DKMS_PKG/"* "$DKMS_SRC/"
+        sudo chmod +x "$DKMS_SRC/prepare.sh"
+        sudo dkms install "$DKMS_PKG/$DKMS_VER"
+        echo "  - DKMS module installed. Reboot or run: sudo modprobe -r hid_asus && sudo modprobe hid_asus"
+    else
+        echo "  - DKMS module $DKMS_PKG/$DKMS_VER already installed"
+    fi
+
+    # Override bluetooth-pair.py to use KeyboardDisplay agent capability
+    # (forces Passkey Entry for BLE keyboards instead of Numeric Comparison)
+    PAIR_SCRIPT="/etc/xdg/quickshell/noctalia-shell/Scripts/python/src/network/bluetooth-pair.py"
+    if [ -f "$PAIR_SCRIPT" ]; then
+        echo "Patching bluetooth-pair.py for Zenbook Duo keyboard pairing..."
+        sudo cp -f "$DOTFILES_DIR/etc/noctalia-shell/bluetooth-pair.py" "$PAIR_SCRIPT"
+    fi
+
+    # Install pacman hook to re-apply override after noctalia-shell-git updates
+    echo "Installing noctalia bluetooth-pair pacman hook..."
+    sudo mkdir -p /etc/pacman.d/hooks
+    sudo cp -f "$DOTFILES_DIR/etc/pacman.d/hooks/noctalia-bt-pair.hook" /etc/pacman.d/hooks/
 
     echo "ASUS Zenbook Duo setup complete."
     echo "  - asusctl manages fn keys, keyboard backlight, and platform profiles"
     echo "  - wev can diagnose function key issues (run 'wev' and press keys)"
     echo "  - Dock/undock script auto-toggles eDP-2 on keyboard attach/detach"
+    echo "  - hid-asus DKMS module adds Zenbook Duo BT keyboard support"
+    echo "  - bluetooth-pair.py patched for BLE keyboard passkey entry"
 fi
 
 # --- Stow dotfiles ---
