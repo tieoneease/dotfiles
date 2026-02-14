@@ -314,8 +314,8 @@ binds {
     // Example brightness key mappings for brightnessctl.
     // You can use regular spawn with multiple arguments too (to avoid going through "sh"),
     // but you need to manually put each argument in separate "" quotes.
-    XF86MonBrightnessUp allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "set" "+10%"; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "set" "10%-"; }
+    XF86MonBrightnessUp allow-when-locked=true { spawn "~/.config/niri/brightness.sh" "+10%"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "~/.config/niri/brightness.sh" "10%-"; }
 
     // Open/close the Overview: a zoomed-out view of workspaces and windows.
     // You can also move the mouse into the top-left hot corner,
@@ -328,10 +328,10 @@ binds {
     Mod+Down  { focus-window-down; }
     Mod+Up    { focus-window-up; }
     Mod+Right { focus-column-right; }
-    Alt+H     { focus-column-or-monitor-left; }
+    Alt+H     { focus-column-left; }
     Alt+J     { focus-window-or-workspace-down; }
     Alt+K     { focus-window-or-workspace-up; }
-    Alt+L     { focus-column-or-monitor-right; }
+    Alt+L     { focus-column-right; }
 
     Mod+Ctrl+Left  { move-column-left; }
     Mod+Ctrl+Down  { move-window-down; }
