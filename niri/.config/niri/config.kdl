@@ -69,13 +69,17 @@ input {
 // Find more information on the wiki:
 // https://yalter.github.io/niri/Configuration:-Outputs
 // Remember to uncomment the node by removing "/-"!
-output "Japan Display Inc. GPD1001H 0x00000001" {
+// ASUS Zenbook Duo 2024 — primary OLED (top screen)
+output "eDP-1" {
     scale 1.75
+    position x=0 y=0
 }
 
-output "PNP(JMI) FlipAction16 P05162024" {
-    scale 1.5
-    position x=-122 y=-1066
+// ASUS Zenbook Duo 2024 — screenpad (bottom screen, below primary)
+// Niri uses ceil(1800/1.75) = 1029 for overlap detection, so y must be ≥ 1029
+output "eDP-2" {
+    scale 1.75
+    position x=0 y=1029
 }
 
 // Settings that influence how windows are positioned and sized.
@@ -169,6 +173,8 @@ layout {
 
 // Waybar removed — using noctalia-shell via systemd user service instead.
 spawn-at-startup "nm-applet" "--indicator"
+spawn-sh-at-startup "swayidle -w timeout 300 'swaylock -f' timeout 600 'niri msg action power-off-monitors' resume 'niri msg action power-on-monitors' before-sleep 'swaylock -f'"
+spawn-sh-at-startup "~/.config/niri/zenbook-duo-dock.sh"
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
