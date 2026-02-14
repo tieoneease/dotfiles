@@ -1,0 +1,104 @@
+"$schema" = "https://yazi-rs.github.io/schemas/keymap.json"
+
+[manager]
+prepend_keymap = [
+    # Navigation
+    { on = ["h"], run = "leave", desc = "Go back to parent directory" },
+    { on = ["l"], run = "enter", desc = "Enter directory or open file" },
+    { on = ["k"], run = "arrow -1", desc = "Move cursor up" },
+    { on = ["j"], run = "arrow 1", desc = "Move cursor down" },
+    { on = ["g", "g"], run = "arrow -99999999", desc = "Move to top" },
+    { on = ["G"], run = "arrow 99999999", desc = "Move to bottom" },
+
+    # Selection
+    { on = ["<Space>"], run = ["select --state=none", "arrow 1"], desc = "Toggle selection" },
+    { on = ["v"], run = "visual_mode", desc = "Enter visual mode (selection)" },
+    { on = ["V"], run = "visual_mode --unset", desc = "Exit visual mode" },
+    { on = ["<C-a>"], run = "select_all --state=true", desc = "Select all files" },
+    { on = ["<C-r>"], run = "select_all --state=none", desc = "Inverse selection" },
+    { on = ["<Esc>"], run = "escape", desc = "Exit visual mode, clear selection" },
+
+    # File operations
+    { on = ["y", "y"], run = "yank", desc = "Yank selected files (copy)" },
+    { on = ["x"], run = "yank --cut", desc = "Cut selected files" },
+    { on = ["p"], run = "paste", desc = "Paste yanked/cut files" },
+    { on = ["P"], run = "paste --force", desc = "Paste and overwrite" },
+    { on = ["d", "d"], run = "remove", desc = "Move to trash" },
+    { on = ["D"], run = "remove --permanently", desc = "Delete permanently" },
+    { on = ["a"], run = "create", desc = "Create file" },
+    { on = ["A"], run = "create --dir", desc = "Create directory" },
+    { on = ["r"], run = "rename --cursor=before_ext", desc = "Rename file" },
+
+    # Search and filter
+    { on = ["/"], run = "find --smart", desc = "Search by filename (fd)" },
+    { on = ["?"], run = "search fd", desc = "Search by content (rg)" },
+    { on = ["n"], run = "find_arrow", desc = "Next search match" },
+    { on = ["N"], run = "find_arrow --previous", desc = "Previous search match" },
+    { on = ["f"], run = "filter --smart", desc = "Filter files" },
+    { on = ["z", "h"], run = "hidden toggle", desc = "Toggle hidden files" },
+
+    # Sorting
+    { on = ["s", "m"], run = "sort modified --reverse", desc = "Sort by modified time" },
+    { on = ["s", "M"], run = "sort modified", desc = "Sort by modified time (reverse)" },
+    { on = ["s", "s"], run = "sort size --reverse", desc = "Sort by size" },
+    { on = ["s", "S"], run = "sort size", desc = "Sort by size (reverse)" },
+    { on = ["s", "n"], run = "sort natural", desc = "Sort by name" },
+    { on = ["s", "N"], run = "sort natural --reverse", desc = "Sort by name (reverse)" },
+
+    # Shell commands
+    { on = ["!"], run = "shell --interactive", desc = "Run shell command" },
+    { on = [":"], run = "shell --block --interactive", desc = "Run blocking shell command" },
+
+    # Tabs
+    { on = ["t"], run = "tab_create --current", desc = "Create new tab" },
+    { on = ["<C-w>"], run = "tab_close 0", desc = "Close current tab" },
+    { on = ["1"], run = "tab_switch 0", desc = "Switch to tab 1" },
+    { on = ["2"], run = "tab_switch 1", desc = "Switch to tab 2" },
+    { on = ["3"], run = "tab_switch 2", desc = "Switch to tab 3" },
+    { on = ["4"], run = "tab_switch 3", desc = "Switch to tab 4" },
+    { on = ["5"], run = "tab_switch 4", desc = "Switch to tab 5" },
+    { on = ["["], run = "tab_switch -1 --relative", desc = "Switch to previous tab" },
+    { on = ["]"], run = "tab_switch 1 --relative", desc = "Switch to next tab" },
+
+    # Help and quit
+    { on = ["~"], run = "help", desc = "Open help" },
+    { on = ["q"], run = "quit", desc = "Quit yazi" },
+    { on = ["Q"], run = "quit --no-cwd-file", desc = "Quit without saving cwd" },
+]
+
+[tasks]
+prepend_keymap = [
+    { on = ["k"], run = "arrow -1", desc = "Move cursor up" },
+    { on = ["j"], run = "arrow 1", desc = "Move cursor down" },
+    { on = ["<Esc>"], run = "close", desc = "Close task manager" },
+]
+
+[select]
+prepend_keymap = [
+    { on = ["k"], run = "arrow -1", desc = "Move cursor up" },
+    { on = ["j"], run = "arrow 1", desc = "Move cursor down" },
+    { on = ["<Enter>"], run = "close --submit", desc = "Submit selection" },
+    { on = ["<Esc>"], run = "close", desc = "Cancel selection" },
+]
+
+[input]
+prepend_keymap = [
+    { on = ["<Enter>"], run = "close --submit", desc = "Submit input" },
+    { on = ["<Esc>"], run = "close", desc = "Cancel input" },
+]
+
+[help]
+prepend_keymap = [
+    { on = ["k"], run = "arrow -1", desc = "Move cursor up" },
+    { on = ["j"], run = "arrow 1", desc = "Move cursor down" },
+    { on = ["<Esc>"], run = "escape", desc = "Close help" },
+    { on = ["q"], run = "escape", desc = "Close help" },
+]
+
+[completion]
+prepend_keymap = [
+    { on = ["k"], run = "arrow -1", desc = "Move cursor up" },
+    { on = ["j"], run = "arrow 1", desc = "Move cursor down" },
+    { on = ["<Enter>"], run = "close --submit", desc = "Submit completion" },
+    { on = ["<Esc>"], run = "close", desc = "Cancel completion" },
+]

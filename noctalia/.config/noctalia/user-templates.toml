@@ -9,3 +9,7 @@ post_hook = "pkill -SIGUSR1 nvim"
 input_path = "~/.config/noctalia/templates/tmux-colors.conf"
 output_path = "~/.config/tmux/colors.conf"
 post_hook = "tmux source-file ~/.config/tmux/tmux.conf"
+
+[templates.yazi]
+input_path = "~/.config/noctalia/templates/yazi-theme.toml"
+output_path = "~/.config/yazi/noctalia_theme.toml"

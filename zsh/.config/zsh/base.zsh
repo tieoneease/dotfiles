@@ -45,6 +45,16 @@ command -v starship >/dev/null && eval "$(starship init zsh)"
 # Initialize direnv
 command -v direnv >/dev/null && eval "$(direnv hook zsh)"
 
+# Yazi: change directory on exit
+function ya() {
+    local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
+    yazi "$@" --cwd-file="$tmp"
+    if cwd="$(cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+        cd -- "$cwd"
+    fi
+    rm -f -- "$tmp"
+}
+
 # Source aliases
 [[ -f ~/.config/zsh/aliases.zsh ]] && source ~/.config/zsh/aliases.zsh
 

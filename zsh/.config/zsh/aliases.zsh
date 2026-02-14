@@ -45,5 +45,8 @@ alias claude='claude --chrome'
 alias code='claude --chrome --dangerously-skip-permissions'
 alias sonnet='code --model sonnet'
 
+# File manager
+alias y="ya"
+
 # Other
 alias todos="nvim ~/todos.todo"

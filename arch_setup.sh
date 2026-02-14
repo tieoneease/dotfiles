@@ -38,6 +38,10 @@ fi
 echo "Installing core CLI tools..."
 install_packages stow git zsh neovim tmux wget curl direnv fzf ripgrep fd unzip fontconfig starship jq
 
+# File manager
+echo "Installing file manager..."
+install_packages yazi imagemagick poppler ueberzugpp chafa
+
 # Desktop environment
 echo "Installing desktop environment..."
 install_packages niri noctalia-shell-git fuzzel matugen-bin
