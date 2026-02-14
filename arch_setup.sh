@@ -56,7 +56,7 @@ install_packages kitty alacritty
 
 # Desktop utilities
 echo "Installing desktop utilities..."
-install_packages swaylock swayidle playerctl network-manager-applet brightnessctl wl-clipboard bluez bluez-utils \
+install_packages swayidle playerctl network-manager-applet brightnessctl wl-clipboard bluez bluez-utils \
     xdg-desktop-portal xdg-desktop-portal-gtk
 
 # Browser
