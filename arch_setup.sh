@@ -99,6 +99,9 @@ echo "Enabling system services..."
 sudo systemctl enable --now keyd.service
 sudo systemctl enable greetd.service
 
+echo "Enabling user services..."
+systemctl --user enable noctalia.service
+
 # --- Shell setup ---
 
 if [[ "$SHELL" != *"zsh"* ]]; then
