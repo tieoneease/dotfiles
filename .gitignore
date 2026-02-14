@@ -17,3 +17,7 @@ kitty/.config/kitty/current-theme.conf
 kitty/.config/kitty/themes/
 kitty/.config/kitty/*.bak
 alacritty/.config/alacritty/colors.toml
+
+# Noctalia runtime state (written by Noctalia Shell on every UI toggle)
+noctalia/.config/noctalia/settings.json
+noctalia/.config/noctalia/colors.json

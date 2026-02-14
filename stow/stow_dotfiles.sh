@@ -93,6 +93,19 @@ backup_toplevel_dotfiles() {
     done
 }
 
+# Copy Noctalia .default configs to live paths if they don't already exist
+# Noctalia reads settings.json/colors.json at runtime and writes to them on every
+# UI toggle, so we track .default variants and let the live files stay untracked.
+setup_noctalia_defaults() {
+    local noctalia_dir="$HOME/.config/noctalia"
+    for f in settings colors; do
+        if [ -f "$noctalia_dir/${f}.default.json" ] && [ ! -e "$noctalia_dir/${f}.json" ]; then
+            echo "  Copying ${f}.default.json → ${f}.json"
+            cp "$noctalia_dir/${f}.default.json" "$noctalia_dir/${f}.json"
+        fi
+    done
+}
+
 main() {
     echo "Starting dotfiles setup..."
 
@@ -101,6 +114,7 @@ main() {
     backup_toplevel_dotfiles
     stow_packages
     setup_tmux_plugins
+    setup_noctalia_defaults
 
     echo ""
     echo "Dotfiles setup completed successfully!"
