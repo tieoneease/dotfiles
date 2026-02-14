@@ -396,6 +396,66 @@ These are overwritten every time a wallpaper is selected in Noctalia.
 
 ---
 
+## Bluetooth — Keyboard Pairing
+
+Noctalia Shell's Bluetooth UI can scan and connect to devices, but **does not display pairing PINs** for devices that require passkey entry (e.g. BLE keyboards). The pairing attempt silently fails with `AuthenticationFailed` because no agent handles the passkey display.
+
+### Workaround: Pair via CLI
+
+Use `bluetoothctl` with a D-Bus pairing agent that prints the passkey to stdout:
+
+```bash
+# 1. Enable pairing and scan
+bluetoothctl pairable on
+bluetoothctl --timeout 30 scan on
+
+# 2. Find the device
+bluetoothctl devices
+# e.g. Device C6:E9:DF:79:01:7F ASUS Zenbook Duo Keyboard
+
+# 3. Pair using a Python agent that displays the passkey
+python3 <<'AGENT'
+import dbus, dbus.service, dbus.mainloop.glib
+from gi.repository import GLib
+
+AGENT_PATH, DEVICE = "/test/agent", "C6:E9:DF:79:01:7F"  # change address
+
+class Agent(dbus.service.Object):
+    @dbus.service.method("org.bluez.Agent1", in_signature="ouq", out_signature="")
+    def DisplayPasskey(self, device, passkey, entered):
+        print(f"TYPE THIS ON KEYBOARD: {passkey:06d}")
+    @dbus.service.method("org.bluez.Agent1", in_signature="ou", out_signature="")
+    def RequestConfirmation(self, device, passkey):
+        print(f"CONFIRMING PASSKEY: {passkey:06d}")
+    @dbus.service.method("org.bluez.Agent1", in_signature="", out_signature="")
+    def Cancel(self): pass
+
+dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+bus = dbus.SystemBus()
+agent = Agent(bus, AGENT_PATH)
+mgr = dbus.Interface(bus.get_object("org.bluez", "/org/bluez"), "org.bluez.AgentManager1")
+mgr.RegisterAgent(AGENT_PATH, "DisplayYesNo")
+mgr.RequestDefaultAgent(AGENT_PATH)
+dev = dbus.Interface(bus.get_object("org.bluez", f"/org/bluez/hci0/dev_{DEVICE.replace(':', '_')}"), "org.bluez.Device1")
+loop = GLib.MainLoop()
+GLib.timeout_add(500, lambda: (dev.Pair(reply_handler=lambda: None, error_handler=print), False)[-1])
+GLib.timeout_add(45000, loop.quit)
+loop.run()
+AGENT
+
+# 4. Trust and connect
+bluetoothctl trust C6:E9:DF:79:01:7F
+bluetoothctl connect C6:E9:DF:79:01:7F
+```
+
+Type the displayed passkey on the Bluetooth keyboard and press Enter. Once paired and trusted, the device auto-reconnects on future boots.
+
+### Why not patch bluetooth-pair.py?
+
+Noctalia's pairing script (`/etc/xdg/quickshell/noctalia-shell/Scripts/python/src/network/bluetooth-pair.py`) uses the `KeyboardOnly` agent capability. Overriding it with `KeyboardDisplay` (to force passkey display) was attempted but the passkey still wasn't surfaced to the UI — the QML side doesn't have a widget for displaying passkeys. Until Noctalia adds passkey display support, CLI pairing is the reliable workaround.
+
+---
+
 ## Maintenance
 
 | Task | Command |

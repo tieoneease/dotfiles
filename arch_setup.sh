@@ -231,25 +231,11 @@ if [[ "$response" =~ ^[Yy]$ ]]; then
         echo "  - DKMS module $DKMS_PKG/$DKMS_VER already installed"
     fi
 
-    # Override bluetooth-pair.py to use KeyboardDisplay agent capability
-    # (forces Passkey Entry for BLE keyboards instead of Numeric Comparison)
-    PAIR_SCRIPT="/etc/xdg/quickshell/noctalia-shell/Scripts/python/src/network/bluetooth-pair.py"
-    if [ -f "$PAIR_SCRIPT" ]; then
-        echo "Patching bluetooth-pair.py for Zenbook Duo keyboard pairing..."
-        sudo cp -f "$DOTFILES_DIR/etc/noctalia-shell/bluetooth-pair.py" "$PAIR_SCRIPT"
-    fi
-
-    # Install pacman hook to re-apply override after noctalia-shell-git updates
-    echo "Installing noctalia bluetooth-pair pacman hook..."
-    sudo mkdir -p /etc/pacman.d/hooks
-    sudo cp -f "$DOTFILES_DIR/etc/pacman.d/hooks/noctalia-bt-pair.hook" /etc/pacman.d/hooks/
-
     echo "ASUS Zenbook Duo setup complete."
     echo "  - asusctl manages fn keys, keyboard backlight, and platform profiles"
     echo "  - wev can diagnose function key issues (run 'wev' and press keys)"
     echo "  - Dock/undock script auto-toggles eDP-2 on keyboard attach/detach"
     echo "  - hid-asus DKMS module adds Zenbook Duo BT keyboard support"
-    echo "  - bluetooth-pair.py patched for BLE keyboard passkey entry"
 fi
 
 # --- Stow dotfiles ---
