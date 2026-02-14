@@ -88,6 +88,11 @@ echo "Configuring greetd..."
 sudo mkdir -p /etc/greetd
 sudo cp -f "$DOTFILES_DIR/etc/greetd/config.toml" /etc/greetd/config.toml
 
+# Copy bluetooth config
+echo "Configuring bluetooth..."
+sudo mkdir -p /etc/bluetooth
+sudo cp -f "$DOTFILES_DIR/etc/bluetooth/main.conf" /etc/bluetooth/main.conf
+
 # Copy portal config
 echo "Configuring xdg-desktop-portal..."
 sudo mkdir -p /etc/xdg-desktop-portal
