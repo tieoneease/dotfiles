@@ -23,6 +23,38 @@ vim.api.nvim_set_hl(0, "Visual", { bg = "{{colors.primary_container.default.hex}
 vim.api.nvim_set_hl(0, "Comment", { fg = "{{colors.outline.default.hex}}", italic = true })
 vim.api.nvim_set_hl(0, "Conditional", { italic = true })
 
+-- Telescope: MD3 surface elevation hierarchy (flat/borderless)
+-- Preview = surface (darkest), Results = surface_container (mid), Prompt = surface_container_high (lightest)
+local tel = {
+    -- Preview panel (darkest — blends with editor)
+    TelescopePreviewNormal  = { bg = "{{colors.surface.default.hex}}", fg = "{{colors.on_surface.default.hex}}" },
+    TelescopePreviewBorder  = { bg = "{{colors.surface.default.hex}}", fg = "{{colors.surface.default.hex}}" },
+    TelescopePreviewTitle   = { bg = "{{colors.tertiary.default.hex}}", fg = "{{colors.on_tertiary.default.hex}}", bold = true },
+
+    -- Results panel (mid elevation)
+    TelescopeNormal         = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.on_surface.default.hex}}" },
+    TelescopeResultsNormal  = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.on_surface.default.hex}}" },
+    TelescopeResultsBorder  = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.surface_container.default.hex}}" },
+    TelescopeResultsTitle   = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.surface_container.default.hex}}" },
+
+    -- Prompt panel (lightest — input area stands out)
+    TelescopePromptNormal   = { bg = "{{colors.surface_container_high.default.hex}}", fg = "{{colors.on_surface.default.hex}}" },
+    TelescopePromptBorder   = { bg = "{{colors.surface_container_high.default.hex}}", fg = "{{colors.surface_container_high.default.hex}}" },
+    TelescopePromptTitle    = { bg = "{{colors.primary.default.hex}}", fg = "{{colors.on_primary.default.hex}}", bold = true },
+    TelescopePromptCounter  = { fg = "{{colors.outline.default.hex}}" },
+    TelescopePromptPrefix   = { fg = "{{colors.primary.default.hex}}" },
+
+    -- Selection and matching
+    TelescopeSelection      = { bg = "{{colors.primary_container.default.hex}}", fg = "{{colors.on_primary_container.default.hex}}" },
+    TelescopeSelectionCaret = { bg = "{{colors.primary_container.default.hex}}", fg = "{{colors.primary.default.hex}}" },
+    TelescopeMatching       = { fg = "{{colors.primary.default.hex}}", bold = true },
+    TelescopeMultiSelection = { bg = "{{colors.secondary_container.default.hex}}", fg = "{{colors.on_secondary_container.default.hex}}" },
+    TelescopeMultiIcon      = { fg = "{{colors.secondary.default.hex}}" },
+}
+for group, opts in pairs(tel) do
+    vim.api.nvim_set_hl(0, group, opts)
+end
+
 -- Re-source lualine for hot-reload
 local ll_ok, lualine = pcall(require, "lualine")
 if ll_ok then

@@ -2,7 +2,7 @@
 -- Colors are generated from wallpaper -> Material Design 3 tokens -> base16 palette
 
 require("base16-colorscheme").with_config({
-    telescope = true,
+    telescope = false,
     telescope_borders = false,
 })
 
