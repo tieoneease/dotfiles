@@ -36,10 +36,10 @@ Item {
   readonly property string textColorKey: widgetSettings.textColor !== undefined ? widgetSettings.textColor : (widgetMetadata ? widgetMetadata.textColor : "")
 
   // Get main instance from pluginApi
-  readonly property var lte: pluginApi ? pluginApi.mainInstance : null
+  readonly property var scr: pluginApi ? pluginApi.mainInstance : null
 
-  // Self-hide when no modem detected
-  visible: lte ? lte.modemAvailable : false
+  // Self-hide when no secondary screen available
+  visible: scr ? scr.screenAvailable : false
   implicitWidth: visible ? pill.width : 0
   implicitHeight: visible ? pill.height : 0
 
@@ -52,74 +52,55 @@ Item {
     customTextColor: Color.resolveColorKeyOptional(root.textColorKey)
 
     icon: {
-      if (!root.lte || !root.lte.modemAvailable)
-        return "antenna-bars-off";
-      return root.lte.signalIcon();
+      if (!root.scr || !root.scr.screenAvailable)
+        return "device-laptop";
+      return root.scr.screenEnabled ? "layout-rows" : "device-laptop";
     }
 
-    text: {
-      if (!root.lte || !root.lte.modemAvailable)
-        return "";
-      return root.lte.techLabel();
-    }
+    text: ""
 
     autoHide: false
-    forceOpen: !isBarVertical && root.displayMode === "alwaysShow"
-    forceClose: isBarVertical || root.displayMode === "alwaysHide" || text === ""
+    forceOpen: false
+    forceClose: true
 
     tooltipText: {
-      if (!root.lte || !root.lte.modemAvailable) {
+      if (!root.scr || !root.scr.screenAvailable) {
         if (root.pluginApi)
-          return root.pluginApi.tr("tooltip.no-modem");
-        return "No modem detected";
+          return root.pluginApi.tr("tooltip.no-screen");
+        return "No secondary screen detected";
       }
-      if (root.lte.modemState !== "connected" && root.lte.modemState !== "registered") {
+      if (root.scr.screenEnabled) {
         if (root.pluginApi)
-          return root.pluginApi.tr("tooltip.disconnected");
-        return "Cellular disconnected";
+          return root.pluginApi.tr("tooltip.screen-on");
+        return "Secondary screen is on";
       }
-      var op = root.lte.operatorName || "";
-      var tech = root.lte.techLabel();
-      var sig = root.lte.signalQuality;
-      var parts = [];
-      if (op) parts.push(op);
-      if (tech) parts.push(tech);
-      parts.push(sig + "%");
-      return parts.join(" \u2014 ");
+      if (root.pluginApi)
+        return root.pluginApi.tr("tooltip.screen-off");
+      return "Secondary screen is off";
     }
 
     onClicked: {
-      if (!root.lte || !root.pluginApi)
+      if (!root.scr || !root.pluginApi)
         return;
-      var msg;
-      if (!root.lte.modemAvailable) {
-        msg = root.pluginApi.tr("toast.no-modem");
-      } else if (root.lte.modemState !== "connected" && root.lte.modemState !== "registered") {
-        msg = root.pluginApi.tr("toast.disconnected");
-      } else {
-        msg = root.pluginApi.tr("toast.details", {
-          "operator": root.lte.operatorName,
-          "tech": root.lte.techLabel(),
-          "signal": root.lte.signalQuality
-        });
+      if (!root.scr.screenAvailable) {
+        ToastService.showNotice(root.pluginApi.tr("toast.title"), root.pluginApi.tr("toast.no-screen"), "device-laptop");
+        return;
       }
-      ToastService.showNotice(root.pluginApi.tr("toast.title"), msg, root.lte.signalIcon());
+      root.scr.toggle();
+      var msg = root.scr.screenEnabled ? root.pluginApi.tr("toast.turned-off") : root.pluginApi.tr("toast.turned-on");
+      ToastService.showNotice(root.pluginApi.tr("toast.title"), msg, root.scr.screenEnabled ? "device-laptop" : "layout-rows");
     }
 
     onRightClicked: {
-      if (!root.lte || !root.pluginApi)
+      if (!root.scr || !root.pluginApi)
         return;
       var msg;
-      if (!root.lte.modemAvailable) {
-        msg = root.pluginApi.tr("toast.no-modem");
+      if (!root.scr.screenAvailable) {
+        msg = root.pluginApi.tr("toast.no-screen");
       } else {
-        msg = root.pluginApi.tr("toast.details", {
-          "operator": root.lte.operatorName,
-          "tech": root.lte.techLabel(),
-          "signal": root.lte.signalQuality
-        });
+        msg = root.scr.screenEnabled ? root.pluginApi.tr("tooltip.screen-on") : root.pluginApi.tr("tooltip.screen-off");
       }
-      ToastService.showNotice(root.pluginApi.tr("toast.title"), msg, root.lte.signalIcon());
+      ToastService.showNotice(root.pluginApi.tr("toast.title"), msg, root.scr.screenEnabled ? "layout-rows" : "device-laptop");
     }
   }
 }

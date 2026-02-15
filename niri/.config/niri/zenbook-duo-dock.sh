@@ -5,6 +5,37 @@ set -euo pipefail
 # USB ID 0b05:1b2c = ASUS Zenbook Duo 2024 Keyboard
 # (2025 model uses 0b05:1bf2)
 
+NIRI_CONFIG_DIR="$HOME/.config/niri"
+ZENBOOK_HOSTNAME="sam-duomoon"
+
+# Generate single-monitor defaults if include files don't exist yet.
+# Ensures non-Zenbook devices get valid include files on first boot.
+generate_defaults() {
+    if [[ ! -f "$NIRI_CONFIG_DIR/monitor-workspaces.kdl" ]]; then
+        cat > "$NIRI_CONFIG_DIR/monitor-workspaces.kdl" << 'EOF'
+workspace "󰊯"
+workspace "󰭹"
+workspace "󰆍"
+workspace "󰈙"
+workspace ""
+workspace "󰄨"
+workspace "󰍉"
+workspace ""
+workspace "󰳪"
+EOF
+    fi
+    if [[ ! -f "$NIRI_CONFIG_DIR/monitor-nav.kdl" ]]; then
+        printf 'binds {\n    Alt+J { focus-window-or-workspace-down; }\n    Alt+K { focus-window-or-workspace-up; }\n}\n' > "$NIRI_CONFIG_DIR/monitor-nav.kdl"
+    fi
+}
+
+generate_defaults
+
+# Only run dock/undock logic on the Zenbook Duo
+if [[ "$(hostname)" != "$ZENBOOK_HOSTNAME" ]]; then
+    exit 0
+fi
+
 is_docked() {
     lsusb -d "0b05:1b2c" &>/dev/null
 }
@@ -26,15 +57,76 @@ toggle_screen() {
     fi
 }
 
+# Write Alt+J/K binds — monitor navigation when undocked, window/workspace when docked.
+# Niri auto-reloads on file change, so bindings swap instantly.
+write_nav_binds() {
+    local f="$NIRI_CONFIG_DIR/monitor-nav.kdl"
+    if is_docked; then
+        printf 'binds {\n    Alt+J { focus-window-or-workspace-down; }\n    Alt+K { focus-window-or-workspace-up; }\n}\n' > "$f"
+    else
+        printf 'binds {\n    Alt+J { focus-monitor-down; }\n    Alt+K { focus-monitor-up; }\n}\n' > "$f"
+    fi
+}
+
+# Write workspace declarations — 9 named workspaces when docked,
+# 18 (9 per monitor with different icons) when undocked.
+write_workspace_config() {
+    local f="$NIRI_CONFIG_DIR/monitor-workspaces.kdl"
+    if is_docked; then
+        cat > "$f" << 'EOF'
+workspace "󰊯"
+workspace "󰭹"
+workspace "󰆍"
+workspace "󰈙"
+workspace ""
+workspace "󰄨"
+workspace "󰍉"
+workspace ""
+workspace "󰳪"
+EOF
+    else
+        cat > "$f" << 'EOF'
+// eDP-1 (top screen)
+workspace "󰊯" { open-on-output "eDP-1"; }
+workspace "󰭹" { open-on-output "eDP-1"; }
+workspace "󰆍" { open-on-output "eDP-1"; }
+workspace "󰈙" { open-on-output "eDP-1"; }
+workspace "" { open-on-output "eDP-1"; }
+workspace "󰄨" { open-on-output "eDP-1"; }
+workspace "󰍉" { open-on-output "eDP-1"; }
+workspace "" { open-on-output "eDP-1"; }
+workspace "󰳪" { open-on-output "eDP-1"; }
+
+// eDP-2 (bottom screen)
+workspace "1" { open-on-output "eDP-2"; }
+workspace "2" { open-on-output "eDP-2"; }
+workspace "3" { open-on-output "eDP-2"; }
+workspace "4" { open-on-output "eDP-2"; }
+workspace "5" { open-on-output "eDP-2"; }
+workspace "6" { open-on-output "eDP-2"; }
+workspace "7" { open-on-output "eDP-2"; }
+workspace "8" { open-on-output "eDP-2"; }
+workspace "9" { open-on-output "eDP-2"; }
+EOF
+    fi
+}
+
+# Apply monitor state and regenerate config includes
+apply_dock_state() {
+    toggle_screen
+    write_nav_binds
+    write_workspace_config
+}
+
 # Set initial state
-toggle_screen
+apply_dock_state
 
 # Watch for USB events (pogo pins generate event storms, debounce with sleep)
 stdbuf -oL udevadm monitor --subsystem-match=usb --udev 2>/dev/null | while read -r line; do
     case "$line" in
         *"add"*|*"remove"*)
             sleep 1
-            toggle_screen
+            apply_dock_state
             ;;
     esac
 done

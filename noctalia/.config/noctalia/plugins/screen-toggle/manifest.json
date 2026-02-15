@@ -1,0 +1,21 @@
+{
+  "id": "screen-toggle",
+  "name": "Screen Toggle",
+  "version": "1.0.0",
+  "author": "chungsam",
+  "description": "Toggle the secondary screen (eDP-2) on Zenbook Duo devices",
+  "entryPoints": {
+    "main": "Main.qml",
+    "barWidget": "BarWidget.qml",
+    "controlCenterWidget": "ControlCenterWidget.qml"
+  },
+  "metadata": {
+    "tags": ["Display", "Indicator", "Bar"],
+    "displayMode": "alwaysShow",
+    "iconColor": "",
+    "textColor": "",
+    "defaultSettings": {
+      "pollingInterval": 5000
+    }
+  }
+}

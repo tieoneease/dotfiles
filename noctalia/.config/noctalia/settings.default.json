@@ -143,6 +143,9 @@
                     "showPowerProfiles": false
                 },
                 {
+                    "id": "plugin:screen-toggle"
+                },
+                {
                     "displayMode": "onhover",
                     "iconColor": "none",
                     "id": "Volume",
@@ -255,6 +258,9 @@
                 },
                 {
                     "id": "plugin:lte-status"
+                },
+                {
+                    "id": "plugin:screen-toggle"
                 },
                 {
                     "id": "Bluetooth"

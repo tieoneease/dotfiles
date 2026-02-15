@@ -10,6 +10,8 @@ NIconButtonHot {
 
   readonly property var lte: pluginApi ? pluginApi.mainInstance : null
 
+  visible: lte ? lte.modemAvailable : false
+
   hot: lte ? (lte.modemAvailable && (lte.modemState === "connected" || lte.modemState === "registered")) : false
 
   icon: {

@@ -10,6 +10,10 @@
         "lte-status": {
             "enabled": true,
             "sourceUrl": "https://github.com/noctalia-dev/noctalia-plugins"
+        },
+        "screen-toggle": {
+            "enabled": true,
+            "sourceUrl": "https://github.com/noctalia-dev/noctalia-plugins"
         }
     },
     "version": 2

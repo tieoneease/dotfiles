@@ -1,0 +1,14 @@
+{
+  "name": "Screen Toggle",
+  "tooltip": {
+    "no-screen": "No secondary screen detected",
+    "screen-on": "Secondary screen is on",
+    "screen-off": "Secondary screen is off"
+  },
+  "toast": {
+    "title": "Screen Toggle",
+    "turned-on": "Secondary screen turned on",
+    "turned-off": "Secondary screen turned off",
+    "no-screen": "No secondary screen detected"
+  }
+}
