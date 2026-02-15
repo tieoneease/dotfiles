@@ -271,7 +271,7 @@ window-rule {
     open-on-workspace "󰭹"
 }
 window-rule {
-    match app-id="webapp-whatsapp"
+    match app-id="chrome-web.whatsapp.com__-Default"
     open-on-workspace "󰭹"
 }
 
@@ -308,10 +308,10 @@ binds {
     Alt+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
     Mod+Alt+L hotkey-overlay-title="Turn Off Screen" { spawn "niri" "msg" "action" "power-off-monitors"; }
     Mod+B { spawn "google-chrome-stable"; }
-    Mod+S { spawn "focus-or-launch" "Slack" "slack"; }
-    Mod+D { spawn "focus-or-launch" "discord" "discord"; }
-    Mod+W { spawn "focus-or-launch" "webapp-whatsapp" "webapp-launch" "whatsapp" "https://web.whatsapp.com"; }
-    Mod+O { spawn "focus-or-launch" "obsidian" "obsidian"; }
+    Mod+S { spawn-sh "~/.local/bin/focus-or-launch Slack slack"; }
+    Mod+D { spawn-sh "~/.local/bin/focus-or-launch discord discord"; }
+    Mod+W { spawn-sh "~/.local/bin/focus-or-launch chrome-web.whatsapp.com__-Default ~/.local/bin/webapp-launch whatsapp https://web.whatsapp.com"; }
+    Mod+O { spawn-sh "~/.local/bin/focus-or-launch obsidian obsidian"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
