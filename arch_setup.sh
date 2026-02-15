@@ -61,7 +61,7 @@ install_packages kitty alacritty
 # Desktop utilities
 echo "Installing desktop utilities..."
 install_packages swayidle playerctl network-manager-applet brightnessctl wl-clipboard bluez bluez-utils \
-    xdg-desktop-portal xdg-desktop-portal-gtk wlsunset
+    xdg-desktop-portal xdg-desktop-portal-gtk wlsunset localsend-bin
 
 # Input method framework (Chinese Traditional Pinyin)
 echo "Installing input method framework..."

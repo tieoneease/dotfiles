@@ -54,6 +54,10 @@ brew install --cask karabiner-elements
 echo "Installing Raycast..."
 brew install --cask raycast
 
+# Install LocalSend (cross-platform file sharing)
+echo "Installing LocalSend..."
+brew install --cask localsend
+
 # Add aerospace tap and install
 echo "Adding aerospace tap..."
 brew tap nikitabobko/tap
