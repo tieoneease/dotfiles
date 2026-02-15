@@ -8,11 +8,20 @@ set -euo pipefail
 NIRI_CONFIG_DIR="$HOME/.config/niri"
 ZENBOOK_HOSTNAME="sam-duomoon"
 
+# Write file atomically via temp+rename to avoid niri seeing truncated/partial content
+write_atomic() {
+    local target="$1"
+    local tmp
+    tmp=$(mktemp "${target}.XXXXXX")
+    cat > "$tmp"
+    mv -f "$tmp" "$target"
+}
+
 # Generate single-monitor defaults if include files don't exist yet.
 # Ensures non-Zenbook devices get valid include files on first boot.
 generate_defaults() {
     if [[ ! -f "$NIRI_CONFIG_DIR/monitor-workspaces.kdl" ]]; then
-        cat > "$NIRI_CONFIG_DIR/monitor-workspaces.kdl" << 'EOF'
+        write_atomic "$NIRI_CONFIG_DIR/monitor-workspaces.kdl" << 'EOF'
 workspace "󰊯"
 workspace "󰭹"
 workspace "󰆍"
@@ -25,7 +34,7 @@ workspace "󰳪"
 EOF
     fi
     if [[ ! -f "$NIRI_CONFIG_DIR/monitor-nav.kdl" ]]; then
-        printf 'binds {\n    Alt+J { focus-window-or-workspace-down; }\n    Alt+K { focus-window-or-workspace-up; }\n}\n' > "$NIRI_CONFIG_DIR/monitor-nav.kdl"
+        printf 'binds {\n    Alt+J { focus-window-or-workspace-down; }\n    Alt+K { focus-window-or-workspace-up; }\n}\n' | write_atomic "$NIRI_CONFIG_DIR/monitor-nav.kdl"
     fi
 }
 
@@ -62,9 +71,9 @@ toggle_screen() {
 write_nav_binds() {
     local f="$NIRI_CONFIG_DIR/monitor-nav.kdl"
     if is_docked; then
-        printf 'binds {\n    Alt+J { focus-window-or-workspace-down; }\n    Alt+K { focus-window-or-workspace-up; }\n}\n' > "$f"
+        printf 'binds {\n    Alt+J { focus-window-or-workspace-down; }\n    Alt+K { focus-window-or-workspace-up; }\n}\n' | write_atomic "$f"
     else
-        printf 'binds {\n    Alt+J { focus-monitor-down; }\n    Alt+K { focus-monitor-up; }\n}\n' > "$f"
+        printf 'binds {\n    Alt+J { focus-monitor-down; }\n    Alt+K { focus-monitor-up; }\n}\n' | write_atomic "$f"
     fi
 }
 
@@ -73,7 +82,7 @@ write_nav_binds() {
 write_workspace_config() {
     local f="$NIRI_CONFIG_DIR/monitor-workspaces.kdl"
     if is_docked; then
-        cat > "$f" << 'EOF'
+        write_atomic "$f" << 'EOF'
 workspace "󰊯"
 workspace "󰭹"
 workspace "󰆍"
@@ -85,7 +94,7 @@ workspace ""
 workspace "󰳪"
 EOF
     else
-        cat > "$f" << 'EOF'
+        write_atomic "$f" << 'EOF'
 // eDP-1 (top screen)
 workspace "󰊯" { open-on-output "eDP-1"; }
 workspace "󰭹" { open-on-output "eDP-1"; }
@@ -116,16 +125,17 @@ apply_dock_state() {
     toggle_screen
     write_nav_binds
     write_workspace_config
+    niri msg action load-config-file 2>/dev/null || true
 }
 
 # Set initial state
 apply_dock_state
 
-# Watch for USB events (pogo pins generate event storms, debounce with sleep)
+# Watch for USB events (pogo pins generate event storms, drain-based debounce)
 stdbuf -oL udevadm monitor --subsystem-match=usb --udev 2>/dev/null | while read -r line; do
     case "$line" in
         *"add"*|*"remove"*)
-            sleep 1
+            while read -r -t 1 _; do :; done
             apply_dock_state
             ;;
     esac
