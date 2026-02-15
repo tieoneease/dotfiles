@@ -9,6 +9,7 @@ alias brain="cd ~/Documents/Brain/"
 # Editor
 alias zshconfig="nvim ~/.zshrc.local"
 alias nvimconfig="nvim ~/.config/nvim"
+alias vs='/usr/bin/code'
 
 # Tmux
 alias tml="tmux ls"

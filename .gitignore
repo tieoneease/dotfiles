@@ -23,6 +23,9 @@ yazi/.config/yazi/flavors/
 nvim/.config/nvim/lua/noctalia_colors.lua
 tmux/.config/tmux/colors.conf
 
+# fcitx5 auto-generated cache
+fcitx5/.config/fcitx5/conf/cached_layouts
+
 # Noctalia runtime state (written by Noctalia Shell on every UI toggle)
 noctalia/.config/noctalia/settings.json
 noctalia/.config/noctalia/colors.json

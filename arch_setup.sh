@@ -71,6 +71,10 @@ install_packages fcitx5 fcitx5-gtk fcitx5-qt fcitx5-chinese-addons fcitx5-config
 echo "Installing browser..."
 install_packages google-chrome
 
+# Editor
+echo "Installing editor..."
+install_packages visual-studio-code-bin
+
 # Productivity applications
 echo "Installing productivity applications..."
 install_packages obsidian

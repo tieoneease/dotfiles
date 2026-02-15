@@ -3,5 +3,8 @@
     "type": "command",
     "command": "/bin/bash /home/chungsam/.claude/statusline-command.sh"
   },
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "permissions": {
+    "allow": []
+  }
 }
