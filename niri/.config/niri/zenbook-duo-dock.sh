@@ -17,10 +17,10 @@ workspace "󰊯"
 workspace "󰭹"
 workspace "󰆍"
 workspace "󰈙"
-workspace ""
+workspace ""
 workspace "󰄨"
 workspace "󰍉"
-workspace ""
+workspace ""
 workspace "󰳪"
 EOF
     fi
@@ -78,10 +78,10 @@ workspace "󰊯"
 workspace "󰭹"
 workspace "󰆍"
 workspace "󰈙"
-workspace ""
+workspace ""
 workspace "󰄨"
 workspace "󰍉"
-workspace ""
+workspace ""
 workspace "󰳪"
 EOF
     else
@@ -91,10 +91,10 @@ workspace "󰊯" { open-on-output "eDP-1"; }
 workspace "󰭹" { open-on-output "eDP-1"; }
 workspace "󰆍" { open-on-output "eDP-1"; }
 workspace "󰈙" { open-on-output "eDP-1"; }
-workspace "" { open-on-output "eDP-1"; }
+workspace "" { open-on-output "eDP-1"; }
 workspace "󰄨" { open-on-output "eDP-1"; }
 workspace "󰍉" { open-on-output "eDP-1"; }
-workspace "" { open-on-output "eDP-1"; }
+workspace "" { open-on-output "eDP-1"; }
 workspace "󰳪" { open-on-output "eDP-1"; }
 
 // eDP-2 (bottom screen)
