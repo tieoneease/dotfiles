@@ -69,7 +69,7 @@ setup_tmux_plugins() {
     local tmux_plugin_dir="${HOME}/.config/tmux/plugins"
     mkdir -p "$tmux_plugin_dir"
 
-    if [ ! -d "$tmux_plugin_dir/tpm" ]; then
+    if [ ! -f "$tmux_plugin_dir/tpm/tpm" ]; then
         echo "Installing TPM (Tmux Plugin Manager)..."
         git clone https://github.com/tmux-plugins/tpm "$tmux_plugin_dir/tpm"
     fi
