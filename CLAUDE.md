@@ -55,9 +55,9 @@ Each package mirrors the home directory:
 
 Dynamic Material Design 3 colors generated from the current wallpaper:
 - **Engine:** matugen extracts colors from wallpaper, Noctalia Shell triggers generation
-- **Templates:** `noctalia/.config/noctalia/templates/` — input templates per app
-- **User config:** `noctalia/.config/noctalia/user-templates.toml` — maps templates to output paths + post-hooks
-- **Generated files (gitignored):** `colors.kdl` (niri), `noctalia_colors.lua` (nvim), `colors.conf` (tmux), `current-theme.conf` (kitty), `colors.toml` (alacritty)
+- **Built-in templates:** Noctalia has built-in templates for niri, kitty, yazi, fuzzel, and alacritty — enabled in `settings.default.json` `activeTemplates`. Do NOT create stow files at their output paths (they would conflict).
+- **Custom user templates:** `noctalia/.config/noctalia/templates/` + `user-templates.toml` for apps without built-in support (nvim, tmux)
+- **Generated files (all gitignored):** `noctalia.kdl` (niri), `themes/noctalia.conf` (kitty), `flavors/noctalia.yazi/` (yazi), `themes/noctalia.toml` (alacritty), `noctalia_colors.lua` (nvim), `colors.conf` (tmux)
 - **Wallpapers:** `wallpapers/` contains defaults, copied to `~/Pictures/Wallpapers/` by setup script (not stowed — directory holds user content)
 
 ## Arch Linux / EndeavourOS Setup

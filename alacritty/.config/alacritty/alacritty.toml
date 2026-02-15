@@ -1,4 +1,4 @@
-import = ["~/.config/alacritty/colors.toml"]
+import = ["~/.config/alacritty/themes/noctalia.toml"]
 
 [[keyboard.bindings]]
 key = "Return"
