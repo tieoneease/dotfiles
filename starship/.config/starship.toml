@@ -1,77 +1,63 @@
-# Get editor completions based on the config schema
+# Minimal Starship prompt — Nerd Font glyphs, no emoji
 "$schema" = 'https://starship.rs/config-schema.json'
 
-# Inserts a blank line between shell prompts
 add_newline = true
 
-# Replace the '❯' symbol in the prompt with '➜'
-[character] # The name of the module we are configuring is 'character'
-success_symbol = '[➜](bold green)' # The 'success_symbol' segment is being set to '➜' with color 'bold green'
-error_symbol = '[✗](bold red)'
+[character]
+success_symbol = '[](bold green)'
+error_symbol = '[](bold red)'
 
-# Disable the package module, hiding it from the prompt completely
-[package]
+[directory]
+truncation_length = 3
+format = '[$path]($style)[$read_only]($read_only_style) '
+
+[git_branch]
+symbol = ' '
+
+[git_status]
+format = '([$all_status$ahead_behind]($style) )'
+modified = ' '
+untracked = ' '
+staged = '+${count} '
+ahead = '⇡${count} '
+behind = '⇣${count} '
+conflicted = ' '
+deleted = ' '
+renamed = '» '
+stashed = ' '
+up_to_date = ''
+diverged = '⇡${ahead_count} ⇣${behind_count} '
+
+[git_state]
+format = '\([$state( $progress_current/$progress_total)]($style)\) '
+
+[git_commit]
+disabled = true
+
+[git_metrics]
 disabled = true
 
 [cmd_duration]
-min_time = 500
-format = "underwent [$duration](bold yellow)"
-
-[directory]
-truncation_length = 5
-format = "[$path]($style)[$read_only]($read_only_style) "
-
-[git_branch]
-symbol = "🌱 "
-truncation_length = 4
-truncation_symbol = ""
-
-[git_commit]
-commit_hash_length = 4
-tag_symbol = "🔖 "
-
-[git_state]
-format = '[\($state( $progress_current of $progress_total)\)]($style) '
-cherry_pick = "[🍒 PICKING](bold red)"
-
-[git_metrics]
-added_style = "bold blue"
-format = '[+$added]($added_style)/[-$deleted]($deleted_style) '
-
-[git_status]
-conflicted = "🏳"
-ahead = "🏎💨"
-behind = "😰"
-diverged = "😵"
-up_to_date = "✓"
-untracked = "🤷"
-stashed = "📦"
-modified = "📝"
-staged = '[++\($count\)](green)'
-renamed = "👅"
-deleted = "🗑"
+min_time = 2000
+format = ' [$duration]($style) '
+style = 'bold yellow'
 
 [hostname]
-ssh_only = false
-format =  "on [$hostname](bold red) "
-trim_at = ".companyname.com"
-disabled = false
+ssh_only = true
+format = ' [$hostname]($style) '
+style = 'bold red'
 
 [memory_usage]
-disabled = false
-threshold = -1
-symbol = " "
-style = "bold dimmed green"
-
-[rust]
-symbol = " "
-
-[python]
-symbol = "󱔎"
+disabled = true
 
 [time]
-disabled = false
-format = '[\[ $time \]]($style) '
-time_format = "%T"
-utc_time_offset = "-5"
-time_range = "10:00:00-14:00:00"
+disabled = true
+
+[package]
+disabled = true
+
+[rust]
+symbol = ' '
+
+[python]
+symbol = ' '
