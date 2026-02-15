@@ -156,6 +156,7 @@ input {
     }
     touchpad {
         tap
+        dwt
         natural-scroll
     }
 }
