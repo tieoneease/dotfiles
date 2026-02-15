@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Launch a URL as a frameless Chromium web app window.
+# Uses a dedicated Chromium instance (separate from Chrome for daily browsing).
+# --class sets a predictable Wayland app_id for niri window matching.
+#
+# Usage: webapp-launch <name> <url>
+
+if [ $# -ne 2 ]; then
+    echo "Usage: webapp-launch <name> <url>"
+    exit 1
+fi
+
+name="$1"
+url="$2"
+
+exec chromium --app="$url" --class="webapp-${name}"

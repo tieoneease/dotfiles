@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Generic focus-or-launch for niri
+# If a window with matching app_id exists, focus it; otherwise launch the command.
+#
+# Usage: focus-or-launch <app-id> <command> [args...]
+
+if [ $# -lt 2 ]; then
+    echo "Usage: focus-or-launch <app-id> <command> [args...]"
+    exit 1
+fi
+
+app_id="$1"
+shift
+
+# Query niri for a window matching the app_id
+window_id=$(niri msg --json windows | jq -r --arg id "$app_id" '.[] | select(.app_id == $id) | .id' | head -n 1)
+
+if [ -n "$window_id" ]; then
+    niri msg action focus-window --id "$window_id"
+else
+    setsid "$@" &>/dev/null &
+fi

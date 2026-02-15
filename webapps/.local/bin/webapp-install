@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Install a web app: download icon and create a .desktop launcher.
+#
+# Interactive: webapp-install          (gum TUI prompts)
+# CLI:         webapp-install <name> <url> <icon-url>
+
+ICONS_DIR="$HOME/.local/share/icons"
+APPS_DIR="$HOME/.local/share/applications"
+
+create_webapp() {
+    local name="$1"
+    local url="$2"
+    local icon_url="$3"
+
+    # Sanitize name for filenames (lowercase, hyphens)
+    local slug
+    slug=$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-')
+
+    local icon_path="$ICONS_DIR/webapp-${slug}.png"
+    local desktop_path="$APPS_DIR/webapp-${slug}.desktop"
+
+    mkdir -p "$ICONS_DIR" "$APPS_DIR"
+
+    # Download icon
+    local tmp_icon
+    tmp_icon=$(mktemp /tmp/webapp-icon-XXXXXX)
+    if ! curl -fsSL -o "$tmp_icon" "$icon_url"; then
+        echo "Error: Failed to download icon from $icon_url"
+        rm -f "$tmp_icon"
+        return 1
+    fi
+
+    # Convert to PNG if magick is available (handles SVG/ICO/WEBP)
+    if command -v magick &>/dev/null; then
+        magick "$tmp_icon" -resize 256x256 -background none -gravity center -extent 256x256 "$icon_path"
+    else
+        cp "$tmp_icon" "$icon_path"
+    fi
+    rm -f "$tmp_icon"
+
+    # Create .desktop file
+    cat > "$desktop_path" << EOF
+[Desktop Entry]
+Name=${name}
+Exec=focus-or-launch webapp-${slug} webapp-launch ${slug} ${url}
+Icon=${icon_path}
+Type=Application
+Categories=Network;WebBrowser;
+StartupWMClass=webapp-${slug}
+EOF
+
+    echo "$desktop_path"
+}
+
+# Interactive mode (gum TUI)
+if [ $# -eq 0 ]; then
+    if ! command -v gum &>/dev/null; then
+        echo "Error: gum is required for interactive mode. Install with: yay -S gum"
+        echo "Or use CLI mode: webapp-install <name> <url> <icon-url>"
+        exit 1
+    fi
+
+    echo ""
+    gum style --bold "Let's create a new web app."
+    echo ""
+
+    name=$(gum input --placeholder "Name (e.g. Notion)" --header "Name>")
+    [ -z "$name" ] && echo "Cancelled." && exit 0
+
+    url=$(gum input --placeholder "https://example.com" --header "URL>")
+    [ -z "$url" ] && echo "Cancelled." && exit 0
+
+    icon_url=$(gum input --placeholder "https://example.com/icon.png" --header "Icon URL>")
+    [ -z "$icon_url" ] && echo "Cancelled." && exit 0
+
+    echo ""
+    gum confirm "Create web app \"$name\" for $url?" || { echo "Cancelled."; exit 0; }
+
+    gum spin --title "Downloading icon..." -- sleep 0
+    desktop_path=$(create_webapp "$name" "$url" "$icon_url")
+
+    echo ""
+    gum style --foreground 2 "✓ Created $(basename "$desktop_path")"
+    echo "You can now launch $name with fuzzel (Alt+Space)"
+
+    echo ""
+    if gum confirm "Test launch now?"; then
+        slug=$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-')
+        setsid webapp-launch "$slug" "$url" &>/dev/null &
+    fi
+
+# CLI mode (3 positional args)
+elif [ $# -eq 3 ]; then
+    desktop_path=$(create_webapp "$1" "$2" "$3")
+    echo "Created $desktop_path"
+else
+    echo "Usage:"
+    echo "  webapp-install                          (interactive)"
+    echo "  webapp-install <name> <url> <icon-url>  (scripted)"
+    exit 1
+fi
