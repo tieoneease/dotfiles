@@ -1,5 +1,8 @@
 import = ["~/.config/alacritty/themes/noctalia.toml"]
 
+[scrolling]
+multiplier = 5
+
 [font]
 size = 14
 
