@@ -58,14 +58,6 @@ position_edp2_below() {
     niri msg output eDP-2 position set 0 "$y"
 }
 
-toggle_screen() {
-    if is_docked; then
-        niri msg output eDP-2 off
-    else
-        position_edp2_below
-    fi
-}
-
 # Write Alt+J/K binds — monitor navigation when undocked, window/workspace when docked.
 # Niri auto-reloads on file change, so bindings swap instantly.
 write_nav_binds() {
@@ -106,26 +98,43 @@ workspace "󰍉" { open-on-output "eDP-1"; }
 workspace "" { open-on-output "eDP-1"; }
 workspace "󰳪" { open-on-output "eDP-1"; }
 
-// eDP-2 (bottom screen)
-workspace "1" { open-on-output "eDP-2"; }
-workspace "2" { open-on-output "eDP-2"; }
-workspace "3" { open-on-output "eDP-2"; }
-workspace "4" { open-on-output "eDP-2"; }
-workspace "5" { open-on-output "eDP-2"; }
-workspace "6" { open-on-output "eDP-2"; }
-workspace "7" { open-on-output "eDP-2"; }
-workspace "8" { open-on-output "eDP-2"; }
+// eDP-2 (bottom screen) — declared in reverse because niri prepends
+// each new workspace to the top during config reload, so 9→1 yields 1→9
 workspace "9" { open-on-output "eDP-2"; }
+workspace "8" { open-on-output "eDP-2"; }
+workspace "7" { open-on-output "eDP-2"; }
+workspace "6" { open-on-output "eDP-2"; }
+workspace "5" { open-on-output "eDP-2"; }
+workspace "4" { open-on-output "eDP-2"; }
+workspace "3" { open-on-output "eDP-2"; }
+workspace "2" { open-on-output "eDP-2"; }
+workspace "1" { open-on-output "eDP-2"; }
 EOF
     fi
 }
 
-# Apply monitor state and regenerate config includes
-apply_dock_state() {
-    toggle_screen
-    write_nav_binds
+# Docked: disable eDP-2, shrink to 9 workspaces, reload
+apply_docked() {
+    niri msg output eDP-2 off
     write_workspace_config
+    write_nav_binds
     niri msg action load-config-file 2>/dev/null || true
+}
+
+# Undocked: write 18-workspace config and reload, then enable eDP-2.
+apply_undocked() {
+    write_workspace_config
+    write_nav_binds
+    niri msg action load-config-file 2>/dev/null || true
+    position_edp2_below
+}
+
+apply_dock_state() {
+    if is_docked; then
+        apply_docked
+    else
+        apply_undocked
+    fi
 }
 
 # Set initial state
