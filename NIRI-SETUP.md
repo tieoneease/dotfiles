@@ -25,9 +25,9 @@ Wayland-native tiling setup on Arch Linux.
 │  └── includes colors.kdl (auto-generated)           │
 ├─────────────────────────────────────────────────────┤
 │ keyd (system-level, /etc/keyd/default.conf)         │
-│  ├── LeftAlt tap-hold → numpad layer                │
-│  ├── RightAlt tap-hold → nav layer (tab mgmt)       │
-│  ├── Both Alts → arrows + Home/End/PgUp/PgDn        │
+│  ├── LeftAlt tap-hold → alt layer (numpad)           │
+│  ├── RightAlt tap-hold → altgr layer (tab mgmt)     │
+│  ├── Both Alts → arrows + Home/End/Scroll            │
 │  └── RightCtrl tap-hold → control (vol/brightness)  │
 ├─────────────────────────────────────────────────────┤
 │ Noctalia Shell (systemd user service)               │
@@ -77,7 +77,7 @@ keyd handles things XKB cannot: tap-hold (`overload()`), multi-key output, and c
 
 ### Layers
 
-#### `[numpad:A]` — LeftAlt held
+#### `[alt:A]` — LeftAlt held
 
 Tap LeftAlt = LeftAlt. Hold LeftAlt + key = numpad digit.
 
@@ -89,9 +89,9 @@ s d f         →  4 5 6
 x c v b       →  1 2 3 0
 ```
 
-`[numpad+shift]` maps the same keys to `Shift+digit` (i.e. `!@#` etc.).
+`[alt+shift]` maps the same keys to `Shift+digit` (i.e. `!@#` etc.).
 
-#### `[nav:G]` — RightAlt held (Chrome tab management)
+#### `[altgr:G]` — RightAlt held (Chrome tab management)
 
 Tap RightAlt = RightAlt. Hold RightAlt + key = tab action.
 
@@ -104,7 +104,7 @@ The `:G` (AltGr) suffix means unmapped keys pass through as ISO_Level3_Shift —
 | `k` | Ctrl+Tab | Next tab |
 | `l` | Ctrl+Shift+PageDown | Move tab right |
 
-#### `[numpad+nav]` — Both Alts held (arrows and navigation)
+#### `[alt+altgr]` — Both Alts held (arrows and navigation)
 
 This is a composite layer that activates when both LeftAlt and RightAlt are held simultaneously. It **must** appear after both constituent layers in the config file.
 
@@ -115,8 +115,8 @@ This is a composite layer that activates when both LeftAlt and RightAlt are held
 | `k` | Up |
 | `l` | Right |
 | `n` | Home |
-| `m` | PageDown |
-| `,` | PageUp |
+| `m` | ScrollDown |
+| `,` | ScrollUp |
 | `.` | End |
 
 #### `[control]` — RightCtrl held (volume and brightness)
