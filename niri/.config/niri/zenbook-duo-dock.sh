@@ -6,6 +6,7 @@ set -euo pipefail
 # (2025 model uses 0b05:1bf2)
 
 NIRI_CONFIG_DIR="$HOME/.config/niri"
+DEVICE_CONFIG_DIR="$NIRI_CONFIG_DIR/devices"
 ZENBOOK_HOSTNAME="sam-duomoon"
 
 # Write file atomically via temp+rename to avoid niri seeing truncated/partial content
@@ -35,6 +36,12 @@ EOF
     fi
     if [[ ! -f "$NIRI_CONFIG_DIR/monitor-nav.kdl" ]]; then
         printf 'binds {\n    Alt+J { focus-window-or-workspace-down; }\n    Alt+K { focus-window-or-workspace-up; }\n}\n' | write_atomic "$NIRI_CONFIG_DIR/monitor-nav.kdl"
+    fi
+    if [[ ! -f "$NIRI_CONFIG_DIR/device-outputs.kdl" ]]; then
+        local device_file="$DEVICE_CONFIG_DIR/$(hostname).kdl"
+        if [[ -f "$device_file" ]]; then
+            cp "$device_file" "$NIRI_CONFIG_DIR/device-outputs.kdl"
+        fi
     fi
 }
 

@@ -44,7 +44,7 @@ install_packages yazi imagemagick poppler ueberzugpp chafa
 
 # Desktop environment
 echo "Installing desktop environment..."
-install_packages niri noctalia-shell-git fuzzel matugen-bin
+install_packages niri-git noctalia-shell-git fuzzel matugen-bin
 
 # Greeter
 echo "Installing greeter..."
@@ -93,7 +93,7 @@ install_packages zsh-autosuggestions zsh-syntax-highlighting
 
 # Fonts
 echo "Installing fonts..."
-install_packages ttf-hack-nerd ttf-jetbrains-mono-nerd ttf-fira-code-nerd \
+install_packages ttf-hack-nerd ttf-jetbrains-mono-nerd ttf-firacode-nerd \
     ttf-iosevka-nerd ttf-cascadia-code-nerd ttf-sourcecodepro-nerd inter-font \
     ttf-inconsolata-go-nerd
 

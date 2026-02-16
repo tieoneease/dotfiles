@@ -106,6 +106,45 @@ setup_noctalia_defaults() {
     done
 }
 
+setup_niri_includes() {
+    local niri_dir="$HOME/.config/niri"
+    local devices_dir="$niri_dir/devices"
+
+    # Generate device-outputs.kdl from hostname-matched template
+    if [ ! -e "$niri_dir/device-outputs.kdl" ] && [ -f "$devices_dir/$(hostname).kdl" ]; then
+        echo "  Copying device output config for $(hostname)"
+        cp "$devices_dir/$(hostname).kdl" "$niri_dir/device-outputs.kdl"
+    fi
+
+    # Create stub noctalia.kdl if Noctalia hasn't generated it yet
+    # (empty file is valid KDL; static fallback colors in config.kdl apply)
+    if [ ! -e "$niri_dir/noctalia.kdl" ]; then
+        echo "  Creating stub noctalia.kdl (Noctalia will overwrite on first wallpaper change)"
+        touch "$niri_dir/noctalia.kdl"
+    fi
+
+    # Create default workspace/nav configs if zenbook-duo-dock.sh hasn't run yet
+    if [ ! -e "$niri_dir/monitor-workspaces.kdl" ]; then
+        echo "  Creating default monitor-workspaces.kdl"
+        cat > "$niri_dir/monitor-workspaces.kdl" << 'NIRI'
+workspace "󰊯"
+workspace "󰭹"
+workspace "󰆍"
+workspace "󰈙"
+workspace ""
+workspace "󰄨"
+workspace "󰍉"
+workspace ""
+workspace "󰳪"
+NIRI
+    fi
+
+    if [ ! -e "$niri_dir/monitor-nav.kdl" ]; then
+        echo "  Creating default monitor-nav.kdl"
+        printf 'binds {\n    Alt+J { focus-window-or-workspace-down; }\n    Alt+K { focus-window-or-workspace-up; }\n}\n' > "$niri_dir/monitor-nav.kdl"
+    fi
+}
+
 main() {
     echo "Starting dotfiles setup..."
 
@@ -115,6 +154,7 @@ main() {
     stow_packages
     setup_tmux_plugins
     setup_noctalia_defaults
+    setup_niri_includes
 
     echo ""
     echo "Dotfiles setup completed successfully!"
