@@ -271,6 +271,8 @@ class RecorderDaemon:
 
     def _finish_transcription(self):
         """TRANSCRIBING → TYPING: destroy window, schedule typing."""
+        if self.state != TRANSCRIBING:
+            return False  # cancelled by Escape
         self._destroy_window()
 
         if not self.transcribed_text:
@@ -332,6 +334,15 @@ class RecorderDaemon:
         self.rec_dot = None
         self.label_time = None
 
+    # --- Key handler ---
+
+    def on_key_pressed(self, controller, keyval, keycode, state):
+        """Escape cancels recording or transcription."""
+        if keyval == Gdk.KEY_Escape and self.state in (RECORDING, TRANSCRIBING):
+            self._teardown_to_idle()
+            return True
+        return False
+
     # --- Signal handlers ---
 
     def on_sigusr1(self):
@@ -372,21 +383,29 @@ class RecorderDaemon:
 
         PI = 3.14159
 
-        for i, rms in enumerate(bars):
-            target = min(rms / max_rms, 1.0)
-            self.smooth_bars[i] += SMOOTHING * (target - self.smooth_bars[i])
-            normalized = self.smooth_bars[i] ** 0.45
+        elapsed = time.monotonic() - self.start_time
 
-            half_h = max(2, normalized * max_half)
+        for i, rms in enumerate(bars):
             x = i * (bar_width + gap)
+
+            if self.state == TRANSCRIBING:
+                # Traveling sine wave: sweeps left-to-right across bars
+                wave = math.sin(elapsed * 2.5 - i * 0.35)
+                wave_norm = 0.5 + 0.5 * wave  # 0.0–1.0
+                half_h = max_half * (0.15 + 0.15 * wave_norm)
+                alpha = 0.25 + 0.15 * wave_norm
+                cr.set_source_rgba(r_active, g_active, b_active, alpha)
+            else:
+                target = min(rms / max_rms, 1.0)
+                self.smooth_bars[i] += SMOOTHING * (target - self.smooth_bars[i])
+                normalized = self.smooth_bars[i] ** 0.45
+                half_h = max(2, normalized * max_half)
 
             y = center_y - half_h
             bar_h = half_h * 2
             radius = min(bar_width / 2, 3)
 
-            if self.state == TRANSCRIBING:
-                cr.set_source_rgba(r_muted, g_muted, b_muted, 0.4)
-            else:
+            if self.state != TRANSCRIBING:
                 # Glow layer: expanded, semi-transparent
                 glow_expand = 1.5
                 glow_half = half_h * glow_expand
@@ -447,7 +466,7 @@ class RecorderDaemon:
         # Layer shell setup
         Gtk4LayerShell.init_for_window(window)
         Gtk4LayerShell.set_layer(window, Gtk4LayerShell.Layer.OVERLAY)
-        Gtk4LayerShell.set_keyboard_mode(window, Gtk4LayerShell.KeyboardMode.NONE)
+        Gtk4LayerShell.set_keyboard_mode(window, Gtk4LayerShell.KeyboardMode.ON_DEMAND)
         Gtk4LayerShell.set_anchor(window, Gtk4LayerShell.Edge.BOTTOM, True)
         Gtk4LayerShell.set_margin(window, Gtk4LayerShell.Edge.BOTTOM, 80)
         Gtk4LayerShell.set_namespace(window, "voice-recorder")
@@ -510,6 +529,12 @@ class RecorderDaemon:
         hbox.append(self.label_time)
 
         window.set_child(hbox)
+
+        # Escape key cancels recording/transcription
+        key_controller = Gtk.EventControllerKey()
+        key_controller.connect("key-pressed", self.on_key_pressed)
+        window.add_controller(key_controller)
+
         window.present()
 
 
