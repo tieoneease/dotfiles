@@ -242,6 +242,15 @@ window-rule {
     draw-border-with-background false
 }
 
+// Voice recorder — fallback if layer-shell falls through to regular toplevel
+window-rule {
+    match app-id="dev.dotfiles.voice-recorder"
+    open-floating true
+    draw-border-with-background false
+    focus-ring { off; }
+    border { off; }
+}
+
 // Example: block out two password managers from screen capture.
 // (This example rule is commented out with a "/-" in front.)
 /-window-rule {
