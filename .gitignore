@@ -38,6 +38,8 @@ fcitx5/.config/fcitx5/conf/cached_layouts
 # RIME deployment artifacts and runtime state
 fcitx5/.local/share/fcitx5/rime/build/
 fcitx5/.local/share/fcitx5/rime/user.yaml
+fcitx5/.local/share/fcitx5/rime/installation.yaml
+fcitx5/.local/share/fcitx5/rime/*.userdb/
 
 # Noctalia runtime state (written by Noctalia Shell on every UI toggle)
 noctalia/.config/noctalia/settings.json
