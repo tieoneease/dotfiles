@@ -75,6 +75,10 @@ install_packages google-chrome
 echo "Installing editor..."
 install_packages visual-studio-code-bin
 
+# Communication
+echo "Installing communication tools..."
+install_packages slack-desktop  # XWayland version for better stability
+
 # Productivity applications
 echo "Installing productivity applications..."
 install_packages obsidian
