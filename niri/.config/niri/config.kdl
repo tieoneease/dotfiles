@@ -340,6 +340,9 @@ binds {
     XF86MonBrightnessUp allow-when-locked=true { spawn "~/.config/niri/brightness.sh" "+5%"; }
     XF86MonBrightnessDown allow-when-locked=true { spawn "~/.config/niri/brightness.sh" "5%-"; }
 
+    // Voice-to-text toggle (leftctrl+v → keyd emits F13 → XKB maps to XF86Tools)
+    XF86Tools { spawn-sh "~/.local/bin/voice-toggle"; }
+
     // Open/close the Overview: a zoomed-out view of workspaces and windows.
     // You can also move the mouse into the top-left hot corner,
     // or do a four-finger swipe up on a touchpad.
