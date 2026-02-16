@@ -79,6 +79,10 @@ install_packages visual-studio-code-bin
 echo "Installing productivity applications..."
 install_packages obsidian
 
+# Voice-to-text
+echo "Installing voice-to-text tools..."
+install_packages whisper.cpp dotool gtk4-layer-shell python-sounddevice python-numpy python-gobject
+
 # Zsh plugins (system-wide, sourced from /usr/share/zsh/plugins/)
 echo "Installing zsh plugins..."
 install_packages zsh-autosuggestions zsh-syntax-highlighting
@@ -236,6 +240,10 @@ echo "Running stow script..."
 chmod +x "$DOTFILES_DIR/stow/stow_dotfiles.sh"
 "$DOTFILES_DIR/stow/stow_dotfiles.sh"
 
+# Enable dotoold after stow deploys the service file with [Install] section
+systemctl --user daemon-reload
+systemctl --user enable --now dotoold.service
+
 # Set GTK dark mode preference
 echo "Setting system-wide dark mode preference..."
 if command -v gsettings >/dev/null 2>&1; then
@@ -250,6 +258,16 @@ echo "Syncing default wallpapers..."
 mkdir -p "$HOME/Pictures/Wallpapers"
 cp -n "$DOTFILES_DIR/wallpapers/"*.jpg "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
 cp -n "$DOTFILES_DIR/wallpapers/"*.png "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
+
+# --- Whisper model ---
+
+WHISPER_MODEL_DIR="$HOME/.local/share/whisper-models"
+if [ ! -f "$WHISPER_MODEL_DIR/ggml-base.en.bin" ]; then
+    echo "Downloading whisper base.en model..."
+    mkdir -p "$WHISPER_MODEL_DIR"
+    curl -L -o "$WHISPER_MODEL_DIR/ggml-base.en.bin" \
+        "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin"
+fi
 
 # --- Done ---
 
