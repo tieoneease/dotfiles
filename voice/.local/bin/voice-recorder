@@ -33,19 +33,43 @@ PID_FILE = "/tmp/voice-recorder.pid"
 WHISPER_MODEL = os.path.expanduser("~/.local/share/whisper-models/ggml-base.en.bin")
 SAMPLE_RATE = 16000
 CHANNELS = 1
-NUM_BARS = 24
-SMOOTHING = 0.4
+NUM_BARS = 32
+SMOOTHING = 0.55
 WAV_FILE = "/tmp/voice-recording.wav"
 COLORS_FILE = os.path.expanduser("~/.config/noctalia/colors.json")
 
-# Pre-generate ready tone: 80ms 660Hz sine wave with fade envelope
-READY_TONE_DURATION = 0.08
-READY_TONE_FREQ = 660
-READY_TONE_SAMPLES = int(SAMPLE_RATE * READY_TONE_DURATION)
-_t = np.linspace(0, READY_TONE_DURATION, READY_TONE_SAMPLES, endpoint=False, dtype=np.float32)
-_envelope = np.minimum(_t / 0.01, 1.0) * np.minimum((READY_TONE_DURATION - _t) / 0.02, 1.0)
-READY_TONE = (0.3 * np.sin(2 * np.pi * READY_TONE_FREQ * _t) * _envelope).astype(np.float32)
-del _t, _envelope
+# Pre-generate ready chime: ascending two-note (C5→E5) with harmonics
+CHIME_DURATION = 0.28
+CHIME_SAMPLES = int(SAMPLE_RATE * CHIME_DURATION)
+_t = np.linspace(0, CHIME_DURATION, CHIME_SAMPLES, endpoint=False, dtype=np.float32)
+
+# Exponential decay envelope with soft 5ms attack
+_attack = np.minimum(_t / 0.005, 1.0)
+_decay_tau = 0.08
+
+# Note 1: C5 (523 Hz) starts at t=0
+_env1 = _attack * np.exp(-_t / _decay_tau)
+_note1 = _env1 * (np.sin(2 * np.pi * 523 * _t) + 0.3 * np.sin(2 * np.pi * 1046 * _t) + 0.1 * np.sin(2 * np.pi * 1569 * _t))
+
+# Note 2: E5 (659 Hz) starts at t=80ms
+_t2_offset = 0.08
+_mask2 = (_t >= _t2_offset).astype(np.float32)
+_t2_shifted = np.maximum(_t - _t2_offset, 0.0)
+_env2 = np.minimum(_t2_shifted / 0.005, 1.0) * np.exp(-_t2_shifted / _decay_tau) * _mask2
+_note2 = _env2 * (np.sin(2 * np.pi * 659 * _t) + 0.3 * np.sin(2 * np.pi * 1318 * _t) + 0.1 * np.sin(2 * np.pi * 1977 * _t))
+
+READY_TONE = (0.25 * (_note1 + _note2)).astype(np.float32)
+
+# Pre-compute chime RMS envelope for waveform injection (~64ms windows matching UI timer)
+_chime_window_ms = 64
+_chime_window_samples = int(SAMPLE_RATE * _chime_window_ms / 1000)
+CHIME_RMS_ENVELOPE = []
+for _i in range(0, CHIME_SAMPLES, _chime_window_samples):
+    _chunk = READY_TONE[_i:_i + _chime_window_samples]
+    CHIME_RMS_ENVELOPE.append(float(np.sqrt(np.mean(_chunk ** 2))))
+
+del _t, _attack, _decay_tau, _env1, _note1, _t2_offset, _mask2, _t2_shifted, _env2, _note2
+del _chime_window_ms, _chime_window_samples, _i, _chunk
 
 # States
 IDLE = "idle"
@@ -114,6 +138,24 @@ class RecorderDaemon:
         self.smooth_bars = [0.0] * NUM_BARS
         self.start_time = 0.0
         self.transcribed_text = None
+
+    # --- Chime waveform injection ---
+
+    def inject_chime_waveform(self):
+        """Feed pre-computed chime RMS into rms_history for visual burst."""
+        self._chime_idx = 0
+
+        def _inject_step():
+            if self._chime_idx >= len(CHIME_RMS_ENVELOPE):
+                return False  # done
+            chime_rms = CHIME_RMS_ENVELOPE[self._chime_idx] * 3.0
+            # Blend: chime wins unless mic is louder
+            current = self.rms_history[-1] if self.rms_history else 0.0
+            self.rms_history.append(max(current, chime_rms))
+            self._chime_idx += 1
+            return self._chime_idx < len(CHIME_RMS_ENVELOPE)
+
+        GLib.timeout_add(64, _inject_step)
 
     # --- Audio ---
 
@@ -189,11 +231,14 @@ class RecorderDaemon:
         # Build UI
         self.build_window()
 
-        # Play ready tone (non-blocking, uses output device — won't be captured by input)
+        # Play ready chime (non-blocking, uses output device — won't be captured by input)
         try:
             sd.play(READY_TONE, samplerate=SAMPLE_RATE)
         except Exception:
-            pass  # no output device? no problem, just skip the tone
+            pass  # no output device? no problem, just skip the chime
+
+        # Inject chime energy into waveform for initial visual burst
+        self.inject_chime_waveform()
 
         # Start UI refresh timer (~30fps)
         self.ui_timer_id = GLib.timeout_add(33, self.update_ui)
@@ -313,10 +358,10 @@ class RecorderDaemon:
     # --- UI ---
 
     def draw_waveform(self, area, cr, width, height):
-        """Draw mirrored waveform bars with exponential smoothing."""
+        """Draw mirrored waveform bars with glow and exponential smoothing."""
         gap = 2
         bar_width = max(1, (width - (NUM_BARS - 1) * gap) / NUM_BARS)
-        max_rms = 0.15
+        max_rms = 0.08
         center_y = height / 2
         max_half = (height / 2) - 2
 
@@ -325,28 +370,48 @@ class RecorderDaemon:
         r_active, g_active, b_active = self.colors["primary_rgb"]
         r_muted, g_muted, b_muted = self.colors["on_surface_variant_rgb"]
 
+        PI = 3.14159
+
         for i, rms in enumerate(bars):
             target = min(rms / max_rms, 1.0)
             self.smooth_bars[i] += SMOOTHING * (target - self.smooth_bars[i])
-            normalized = self.smooth_bars[i]
-            normalized = normalized ** 0.7
+            normalized = self.smooth_bars[i] ** 0.45
 
-            half_h = max(1, normalized * max_half)
+            half_h = max(2, normalized * max_half)
             x = i * (bar_width + gap)
-
-            if self.state == TRANSCRIBING:
-                cr.set_source_rgba(r_muted, g_muted, b_muted, 0.4)
-            else:
-                cr.set_source_rgba(r_active, g_active, b_active, 0.4 + 0.55 * normalized)
 
             y = center_y - half_h
             bar_h = half_h * 2
             radius = min(bar_width / 2, 3)
+
+            if self.state == TRANSCRIBING:
+                cr.set_source_rgba(r_muted, g_muted, b_muted, 0.4)
+            else:
+                # Glow layer: expanded, semi-transparent
+                glow_expand = 1.5
+                glow_half = half_h * glow_expand
+                glow_y = center_y - glow_half
+                glow_h = glow_half * 2
+                glow_x = x - (bar_width * (glow_expand - 1) / 2)
+                glow_w = bar_width * glow_expand
+                glow_r = min(glow_w / 2, 4)
+                cr.set_source_rgba(r_active, g_active, b_active, 0.15 * normalized)
+                cr.new_sub_path()
+                cr.arc(glow_x + glow_w - glow_r, glow_y + glow_r, glow_r, -0.5 * PI, 0)
+                cr.arc(glow_x + glow_w - glow_r, glow_y + glow_h - glow_r, glow_r, 0, 0.5 * PI)
+                cr.arc(glow_x + glow_r, glow_y + glow_h - glow_r, glow_r, 0.5 * PI, PI)
+                cr.arc(glow_x + glow_r, glow_y + glow_r, glow_r, PI, 1.5 * PI)
+                cr.close_path()
+                cr.fill()
+
+                # Crisp bar
+                cr.set_source_rgba(r_active, g_active, b_active, 0.5 + 0.5 * normalized)
+
             cr.new_sub_path()
-            cr.arc(x + bar_width - radius, y + radius, radius, -0.5 * 3.14159, 0)
-            cr.arc(x + bar_width - radius, y + bar_h - radius, radius, 0, 0.5 * 3.14159)
-            cr.arc(x + radius, y + bar_h - radius, radius, 0.5 * 3.14159, 3.14159)
-            cr.arc(x + radius, y + radius, radius, 3.14159, 1.5 * 3.14159)
+            cr.arc(x + bar_width - radius, y + radius, radius, -0.5 * PI, 0)
+            cr.arc(x + bar_width - radius, y + bar_h - radius, radius, 0, 0.5 * PI)
+            cr.arc(x + radius, y + bar_h - radius, radius, 0.5 * PI, PI)
+            cr.arc(x + radius, y + radius, radius, PI, 1.5 * PI)
             cr.close_path()
             cr.fill()
 
@@ -387,7 +452,7 @@ class RecorderDaemon:
         Gtk4LayerShell.set_margin(window, Gtk4LayerShell.Edge.BOTTOM, 80)
         Gtk4LayerShell.set_namespace(window, "voice-recorder")
 
-        window.set_default_size(320, 64)
+        window.set_default_size(380, 80)
         window.set_resizable(False)
         window.set_titlebar(Gtk.Box())
 
