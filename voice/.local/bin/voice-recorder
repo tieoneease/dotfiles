@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
 
 """
-Voice-to-text recorder with live waveform popup.
-Records audio, transcribes via whisper-cli, and types the result with dotool.
+Voice-to-text recorder daemon with live waveform popup.
 
-Usage: voice-recorder
-Stop recording: send SIGUSR1 (via voice-toggle)
+Runs as a persistent daemon (started at login via systemd).
+On SIGUSR1: toggles between recording and idle.
+Records audio, transcribes via whisper-cli, types the result with dotoolc.
+
+State machine (all transitions on GLib main thread):
+  IDLE ─SIGUSR1→ RECORDING ─SIGUSR1→ TRANSCRIBING ─done→ TYPING ─done→ IDLE
 """
 
+import collections
 import json
 import math
 import os
 import signal
 import subprocess
 import time
-import collections
+import threading
 import wave
 
 import numpy as np
@@ -33,6 +37,22 @@ NUM_BARS = 24
 SMOOTHING = 0.4
 WAV_FILE = "/tmp/voice-recording.wav"
 COLORS_FILE = os.path.expanduser("~/.config/noctalia/colors.json")
+
+# Pre-generate ready tone: 80ms 660Hz sine wave with fade envelope
+READY_TONE_DURATION = 0.08
+READY_TONE_FREQ = 660
+READY_TONE_SAMPLES = int(SAMPLE_RATE * READY_TONE_DURATION)
+_t = np.linspace(0, READY_TONE_DURATION, READY_TONE_SAMPLES, endpoint=False, dtype=np.float32)
+_envelope = np.minimum(_t / 0.01, 1.0) * np.minimum((READY_TONE_DURATION - _t) / 0.02, 1.0)
+READY_TONE = (0.3 * np.sin(2 * np.pi * READY_TONE_FREQ * _t) * _envelope).astype(np.float32)
+del _t, _envelope
+
+# States
+IDLE = "idle"
+RECORDING = "recording"
+TRANSCRIBING = "transcribing"
+TYPING = "typing"
+
 
 # --- Colors ---
 
@@ -63,73 +83,372 @@ def load_colors():
     return defaults
 
 
-# --- State ---
+# --- Daemon State ---
 
-class RecorderState:
+class RecorderDaemon:
     def __init__(self):
-        self.recording = True
-        self.transcribing = False
-        self.transcribed_text = None
+        self.state = IDLE
+        self.app = None
+        self.colors = None
+
+        # Per-session state (reset between recordings)
         self.audio_chunks = []
         self.rms_history = collections.deque([0.0] * NUM_BARS, maxlen=NUM_BARS)
         self.smooth_bars = [0.0] * NUM_BARS
-        self.start_time = time.monotonic()
+        self.start_time = 0.0
+        self.transcribed_text = None
         self.stream = None
-        self.app = None
+
+        # UI widgets (created/destroyed per session)
         self.window = None
         self.drawing_area = None
         self.rec_dot = None
         self.label_time = None
-        self.colors = None
+        self.ui_timer_id = None
+        self.css_provider = None
 
-state = RecorderState()
+    def reset_session(self):
+        """Clear per-session state between recordings."""
+        self.audio_chunks = []
+        self.rms_history = collections.deque([0.0] * NUM_BARS, maxlen=NUM_BARS)
+        self.smooth_bars = [0.0] * NUM_BARS
+        self.start_time = 0.0
+        self.transcribed_text = None
 
+    # --- Audio ---
 
-# --- Audio ---
+    def audio_callback(self, indata, frames, time_info, status):
+        """Called by sounddevice for each audio block."""
+        self.audio_chunks.append(indata.copy())
+        rms = float(np.sqrt(np.mean(indata ** 2)))
+        self.rms_history.append(rms)
 
-def audio_callback(indata, frames, time_info, status):
-    """Called by sounddevice for each audio block."""
-    state.audio_chunks.append(indata.copy())
-    rms = float(np.sqrt(np.mean(indata ** 2)))
-    state.rms_history.append(rms)
+    def save_wav(self):
+        """Save recorded audio chunks to WAV file."""
+        if not self.audio_chunks:
+            return False
+        audio = np.concatenate(self.audio_chunks, axis=0)
+        audio_int16 = np.clip(audio * 32767, -32768, 32767).astype(np.int16)
+        with wave.open(WAV_FILE, "w") as wf:
+            wf.setnchannels(CHANNELS)
+            wf.setsampwidth(2)
+            wf.setframerate(SAMPLE_RATE)
+            wf.writeframes(audio_int16.tobytes())
+        return True
 
+    # --- Transcription ---
 
-def save_wav():
-    """Save recorded audio chunks to WAV file."""
-    if not state.audio_chunks:
+    def transcribe(self):
+        """Run whisper-cli transcription, return text."""
+        try:
+            result = subprocess.run(
+                ["whisper-cli", "-m", WHISPER_MODEL, "-f", WAV_FILE, "-np", "-nt"],
+                capture_output=True, text=True, timeout=120
+            )
+            text = result.stdout.strip()
+            lines = []
+            for line in text.splitlines():
+                line = line.strip()
+                if not line or line == "[BLANK_AUDIO]":
+                    continue
+                lines.append(line)
+            return " ".join(lines).strip()
+        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+            notify(f"Transcription failed: {e}")
+            return ""
+
+    # --- State transitions ---
+
+    def start_recording(self):
+        """IDLE → RECORDING: reload colors, open stream, build window, play tone."""
+        if self.state != IDLE:
+            return
+
+        # Reload colors in case wallpaper changed
+        self.colors = load_colors()
+        self.reset_session()
+        self.start_time = time.monotonic()
+
+        # Open audio stream
+        try:
+            self.stream = sd.InputStream(
+                samplerate=SAMPLE_RATE,
+                channels=CHANNELS,
+                dtype="float32",
+                blocksize=1024,
+                callback=self.audio_callback,
+            )
+            self.stream.start()
+        except Exception as e:
+            self.stream = None
+            notify(f"Audio device error: {e}")
+            return  # stay IDLE, don't crash
+
+        self.state = RECORDING
+
+        # Build UI
+        self.build_window()
+
+        # Play ready tone (non-blocking, uses output device — won't be captured by input)
+        try:
+            sd.play(READY_TONE, samplerate=SAMPLE_RATE)
+        except Exception:
+            pass  # no output device? no problem, just skip the tone
+
+        # Start UI refresh timer (~30fps)
+        self.ui_timer_id = GLib.timeout_add(33, self.update_ui)
+
+    def stop_recording(self):
+        """RECORDING → TRANSCRIBING: stop stream, save WAV, spawn transcription."""
+        if self.state != RECORDING:
+            return
+
+        self.state = TRANSCRIBING
+
+        # Stop audio stream
+        if self.stream is not None:
+            self.stream.stop()
+            self.stream.close()
+            self.stream = None
+
+        # Save audio, then transcribe in a thread to keep UI responsive
+        if self.save_wav():
+            t = threading.Thread(target=self._transcribe_then_type, daemon=True)
+            t.start()
+        else:
+            notify("No audio recorded")
+            self._teardown_to_idle()
+
+    def _transcribe_then_type(self):
+        """Run transcription (blocking), then schedule typing on main thread."""
+        self.transcribed_text = self.transcribe()
+        GLib.idle_add(self._finish_transcription)
+
+    def _finish_transcription(self):
+        """TRANSCRIBING → TYPING: destroy window, schedule typing."""
+        self._destroy_window()
+
+        if not self.transcribed_text:
+            self.state = IDLE
+            return False
+
+        self.state = TYPING
+        # Brief delay to let compositor settle focus after overlay teardown
+        GLib.timeout_add(300, self._type_text)
         return False
-    audio = np.concatenate(state.audio_chunks, axis=0)
-    audio_int16 = np.clip(audio * 32767, -32768, 32767).astype(np.int16)
-    with wave.open(WAV_FILE, "w") as wf:
-        wf.setnchannels(CHANNELS)
-        wf.setsampwidth(2)
-        wf.setframerate(SAMPLE_RATE)
-        wf.writeframes(audio_int16.tobytes())
-    return True
 
+    def _type_text(self):
+        """Type transcribed text, then return to IDLE."""
+        text = self.transcribed_text
+        try:
+            result = subprocess.run(
+                ["dotoolc"], input=f"type {text}\n",
+                text=True, timeout=10
+            )
+            if result.returncode != 0:
+                raise RuntimeError("dotoolc failed")
+        except (subprocess.TimeoutExpired, FileNotFoundError, RuntimeError):
+            # dotoolc unavailable — fall back to clipboard
+            try:
+                subprocess.run(["wl-copy", "--", text], timeout=5)
+                notify("Transcription copied to clipboard (dotool unavailable)")
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                notify("Could not type or copy transcription")
 
-# --- Transcription ---
+        self.state = IDLE
+        return False  # don't repeat timer
 
-def transcribe():
-    """Run whisper-cli transcription, return text (no wtype)."""
-    try:
-        result = subprocess.run(
-            ["whisper-cli", "-m", WHISPER_MODEL, "-f", WAV_FILE, "-np", "-nt"],
-            capture_output=True, text=True, timeout=120
+    def _teardown_to_idle(self):
+        """Clean up and return to IDLE from any state."""
+        if self.stream is not None:
+            try:
+                self.stream.stop()
+                self.stream.close()
+            except Exception:
+                pass
+            self.stream = None
+        self._destroy_window()
+        self.state = IDLE
+
+    def _destroy_window(self):
+        """Destroy the overlay window and clean up UI state."""
+        if self.ui_timer_id is not None:
+            GLib.source_remove(self.ui_timer_id)
+            self.ui_timer_id = None
+        if self.css_provider is not None:
+            Gtk.StyleContext.remove_provider_for_display(
+                Gdk.Display.get_default(), self.css_provider
+            )
+            self.css_provider = None
+        if self.window is not None:
+            self.window.destroy()
+            self.window = None
+        self.drawing_area = None
+        self.rec_dot = None
+        self.label_time = None
+
+    # --- Signal handlers ---
+
+    def on_sigusr1(self):
+        """Handle SIGUSR1: toggle between IDLE and RECORDING."""
+        if self.state == IDLE:
+            self.start_recording()
+        elif self.state == RECORDING:
+            self.stop_recording()
+        # TRANSCRIBING / TYPING → ignore
+        return True  # keep signal handler registered
+
+    def on_sigterm(self):
+        """Handle SIGTERM: clean shutdown."""
+        self._teardown_to_idle()
+        # Remove PID file
+        try:
+            os.unlink(PID_FILE)
+        except FileNotFoundError:
+            pass
+        if self.app is not None:
+            self.app.quit()
+        return False
+
+    # --- UI ---
+
+    def draw_waveform(self, area, cr, width, height):
+        """Draw mirrored waveform bars with exponential smoothing."""
+        gap = 2
+        bar_width = max(1, (width - (NUM_BARS - 1) * gap) / NUM_BARS)
+        max_rms = 0.15
+        center_y = height / 2
+        max_half = (height / 2) - 2
+
+        bars = list(self.rms_history)
+
+        r_active, g_active, b_active = self.colors["primary_rgb"]
+        r_muted, g_muted, b_muted = self.colors["on_surface_variant_rgb"]
+
+        for i, rms in enumerate(bars):
+            target = min(rms / max_rms, 1.0)
+            self.smooth_bars[i] += SMOOTHING * (target - self.smooth_bars[i])
+            normalized = self.smooth_bars[i]
+            normalized = normalized ** 0.7
+
+            half_h = max(1, normalized * max_half)
+            x = i * (bar_width + gap)
+
+            if self.state == TRANSCRIBING:
+                cr.set_source_rgba(r_muted, g_muted, b_muted, 0.4)
+            else:
+                cr.set_source_rgba(r_active, g_active, b_active, 0.4 + 0.55 * normalized)
+
+            y = center_y - half_h
+            bar_h = half_h * 2
+            radius = min(bar_width / 2, 3)
+            cr.new_sub_path()
+            cr.arc(x + bar_width - radius, y + radius, radius, -0.5 * 3.14159, 0)
+            cr.arc(x + bar_width - radius, y + bar_h - radius, radius, 0, 0.5 * 3.14159)
+            cr.arc(x + radius, y + bar_h - radius, radius, 0.5 * 3.14159, 3.14159)
+            cr.arc(x + radius, y + radius, radius, 3.14159, 1.5 * 3.14159)
+            cr.close_path()
+            cr.fill()
+
+    def update_ui(self):
+        """Periodic UI update (~30fps)."""
+        if self.window is None or not self.window.get_visible():
+            return False
+
+        elapsed = time.monotonic() - self.start_time
+
+        if self.state == TRANSCRIBING:
+            self.label_time.set_text("Transcribing...")
+            if self.rec_dot.has_css_class("rec-dot"):
+                self.rec_dot.remove_css_class("rec-dot")
+                self.rec_dot.add_css_class("transcribing-dot")
+            opacity = 0.65 + 0.15 * math.sin(elapsed * math.pi)
+            self.rec_dot.set_opacity(opacity)
+        else:
+            minutes = int(elapsed) // 60
+            seconds = int(elapsed) % 60
+            self.label_time.set_text(f"{minutes}:{seconds:02d}")
+            opacity = 0.7 + 0.3 * (0.5 + 0.5 * math.sin(elapsed * 2 * math.pi))
+            self.rec_dot.set_opacity(opacity)
+
+        self.drawing_area.queue_draw()
+        return True
+
+    def build_window(self):
+        """Build the GTK4 layer-shell popup window — compact pill."""
+        window = Gtk.ApplicationWindow(application=self.app)
+        self.window = window
+
+        # Layer shell setup
+        Gtk4LayerShell.init_for_window(window)
+        Gtk4LayerShell.set_layer(window, Gtk4LayerShell.Layer.OVERLAY)
+        Gtk4LayerShell.set_keyboard_mode(window, Gtk4LayerShell.KeyboardMode.NONE)
+        Gtk4LayerShell.set_anchor(window, Gtk4LayerShell.Edge.BOTTOM, True)
+        Gtk4LayerShell.set_margin(window, Gtk4LayerShell.Edge.BOTTOM, 80)
+        Gtk4LayerShell.set_namespace(window, "voice-recorder")
+
+        window.set_default_size(320, 64)
+        window.set_resizable(False)
+        window.set_titlebar(Gtk.Box())
+
+        # CSS with theme colors
+        c = self.colors
+        self.css_provider = Gtk.CssProvider()
+        self.css_provider.load_from_string(f"""
+            window {{
+                background: transparent;
+            }}
+            .pill {{
+                background-color: rgba({int(hex_to_rgb(c['surface'])[0]*255)}, {int(hex_to_rgb(c['surface'])[1]*255)}, {int(hex_to_rgb(c['surface'])[2]*255)}, 0.92);
+                border-radius: 8px;
+                padding: 8px 16px;
+                font-family: monospace;
+            }}
+            .rec-dot {{
+                color: #ff4444;
+                font-size: 18px;
+                font-family: monospace;
+            }}
+            .transcribing-dot {{
+                color: {c['primary']};
+                font-size: 18px;
+                font-family: monospace;
+            }}
+            .time-label {{
+                color: {c['on_surface_variant']};
+                font-size: 13px;
+                font-family: monospace;
+            }}
+        """)
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(), self.css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
-        text = result.stdout.strip()
-        # whisper-cli may include [BLANK_AUDIO] or timing markers — strip them
-        lines = []
-        for line in text.splitlines():
-            line = line.strip()
-            if not line or line == "[BLANK_AUDIO]":
-                continue
-            lines.append(line)
-        return " ".join(lines).strip()
-    except (subprocess.TimeoutExpired, FileNotFoundError) as e:
-        notify(f"Transcription failed: {e}")
-        return ""
 
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        hbox.add_css_class("pill")
+
+        self.rec_dot = Gtk.Label(label="\u25cf")
+        self.rec_dot.add_css_class("rec-dot")
+        self.rec_dot.set_valign(Gtk.Align.CENTER)
+        hbox.append(self.rec_dot)
+
+        self.drawing_area = Gtk.DrawingArea()
+        self.drawing_area.set_hexpand(True)
+        self.drawing_area.set_vexpand(True)
+        self.drawing_area.set_draw_func(self.draw_waveform)
+        hbox.append(self.drawing_area)
+
+        self.label_time = Gtk.Label(label="0:00")
+        self.label_time.add_css_class("time-label")
+        self.label_time.set_valign(Gtk.Align.CENTER)
+        hbox.append(self.label_time)
+
+        window.set_child(hbox)
+        window.present()
+
+
+# --- Notification ---
 
 def notify(message):
     """Send a desktop notification."""
@@ -142,273 +461,44 @@ def notify(message):
         pass
 
 
-# --- UI ---
-
-def draw_waveform(area, cr, width, height):
-    """Draw mirrored waveform bars with exponential smoothing."""
-    gap = 2
-    bar_width = max(1, (width - (NUM_BARS - 1) * gap) / NUM_BARS)
-    max_rms = 0.15
-    center_y = height / 2
-    max_half = (height / 2) - 2  # max extent per side
-
-    bars = list(state.rms_history)
-
-    r_active, g_active, b_active = state.colors["primary_rgb"]
-    r_muted, g_muted, b_muted = state.colors["on_surface_variant_rgb"]
-
-    for i, rms in enumerate(bars):
-        target = min(rms / max_rms, 1.0)
-        # Exponential smoothing for fluid animation
-        state.smooth_bars[i] += SMOOTHING * (target - state.smooth_bars[i])
-        normalized = state.smooth_bars[i]
-
-        # Power curve — exaggerate peaks, suppress lows
-        normalized = normalized ** 0.7
-
-        # Each bar extends up AND down from center (minimum 1px per side)
-        half_h = max(1, normalized * max_half)
-        x = i * (bar_width + gap)
-
-        if state.transcribing:
-            cr.set_source_rgba(r_muted, g_muted, b_muted, 0.4)
-        else:
-            cr.set_source_rgba(r_active, g_active, b_active, 0.4 + 0.55 * normalized)
-
-        # Rounded rectangle from center-half_h to center+half_h
-        y = center_y - half_h
-        bar_h = half_h * 2
-        radius = min(bar_width / 2, 3)
-        cr.new_sub_path()
-        cr.arc(x + bar_width - radius, y + radius, radius, -0.5 * 3.14159, 0)
-        cr.arc(x + bar_width - radius, y + bar_h - radius, radius, 0, 0.5 * 3.14159)
-        cr.arc(x + radius, y + bar_h - radius, radius, 0.5 * 3.14159, 3.14159)
-        cr.arc(x + radius, y + radius, radius, 3.14159, 1.5 * 3.14159)
-        cr.close_path()
-        cr.fill()
-
-
-def update_ui():
-    """Periodic UI update (~30fps)."""
-    if state.window is None or not state.window.get_visible():
-        return False
-
-    elapsed = time.monotonic() - state.start_time
-
-    if state.transcribing:
-        # Transcribing state: primary-colored pulsing dot, "Transcribing..." text
-        state.label_time.set_text("Transcribing...")
-        if state.rec_dot.has_css_class("rec-dot"):
-            state.rec_dot.remove_css_class("rec-dot")
-            state.rec_dot.add_css_class("transcribing-dot")
-        # Gentle pulse at ~0.5Hz (opacity 0.5–0.8)
-        opacity = 0.65 + 0.15 * math.sin(elapsed * math.pi)
-        state.rec_dot.set_opacity(opacity)
-    else:
-        # Recording state: red pulsing dot, timer
-        minutes = int(elapsed) // 60
-        seconds = int(elapsed) % 60
-        state.label_time.set_text(f"{minutes}:{seconds:02d}")
-        # Pulsing red dot — oscillate opacity at ~1Hz
-        opacity = 0.7 + 0.3 * (0.5 + 0.5 * math.sin(elapsed * 2 * math.pi))
-        state.rec_dot.set_opacity(opacity)
-
-    # Redraw waveform
-    state.drawing_area.queue_draw()
-
-    return True  # keep the timer alive
-
-
-def build_window(app):
-    """Build the GTK4 layer-shell popup window — compact pill."""
-    window = Gtk.ApplicationWindow(application=app)
-    state.window = window
-
-    # Layer shell setup
-    Gtk4LayerShell.init_for_window(window)
-    Gtk4LayerShell.set_layer(window, Gtk4LayerShell.Layer.OVERLAY)
-    Gtk4LayerShell.set_keyboard_mode(window, Gtk4LayerShell.KeyboardMode.NONE)
-    Gtk4LayerShell.set_anchor(window, Gtk4LayerShell.Edge.BOTTOM, True)
-    Gtk4LayerShell.set_margin(window, Gtk4LayerShell.Edge.BOTTOM, 80)
-    Gtk4LayerShell.set_namespace(window, "voice-recorder")
-
-    # Compact pill size
-    window.set_default_size(320, 64)
-    window.set_resizable(False)
-
-    # Remove GTK CSD title bar
-    window.set_titlebar(Gtk.Box())
-
-    # CSS with theme colors
-    c = state.colors
-    css = Gtk.CssProvider()
-    css.load_from_string(f"""
-        window {{
-            background: transparent;
-        }}
-        .pill {{
-            background-color: rgba({int(hex_to_rgb(c['surface'])[0]*255)}, {int(hex_to_rgb(c['surface'])[1]*255)}, {int(hex_to_rgb(c['surface'])[2]*255)}, 0.92);
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-family: monospace;
-        }}
-        .rec-dot {{
-            color: #ff4444;
-            font-size: 18px;
-            font-family: monospace;
-        }}
-        .transcribing-dot {{
-            color: {c['primary']};
-            font-size: 18px;
-            font-family: monospace;
-        }}
-        .time-label {{
-            color: {c['on_surface_variant']};
-            font-size: 13px;
-            font-family: monospace;
-        }}
-    """)
-    Gtk.StyleContext.add_provider_for_display(
-        Gdk.Display.get_default(), css,
-        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-    )
-
-    # Layout: single horizontal row — [red dot] [waveform] [timer]
-    hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-    hbox.add_css_class("pill")
-
-    # Recording indicator dot
-    state.rec_dot = Gtk.Label(label="\u25cf")
-    state.rec_dot.add_css_class("rec-dot")
-    state.rec_dot.set_valign(Gtk.Align.CENTER)
-    hbox.append(state.rec_dot)
-
-    # Waveform drawing area
-    state.drawing_area = Gtk.DrawingArea()
-    state.drawing_area.set_hexpand(True)
-    state.drawing_area.set_vexpand(True)
-    state.drawing_area.set_draw_func(draw_waveform)
-    hbox.append(state.drawing_area)
-
-    # Timer
-    state.label_time = Gtk.Label(label="0:00")
-    state.label_time.add_css_class("time-label")
-    state.label_time.set_valign(Gtk.Align.CENTER)
-    hbox.append(state.label_time)
-
-    window.set_child(hbox)
-    window.present()
-
-
-# --- Signal handling ---
-
-def on_sigusr1(*args):
-    """Handle SIGUSR1: stop recording and begin transcription."""
-    if state.transcribing:
-        return  # already stopping, ignore duplicate signals
-
-    state.recording = False
-    state.transcribing = True
-
-    # Stop audio stream
-    if state.stream is not None:
-        state.stream.stop()
-        state.stream.close()
-        state.stream = None
-
-    # Save audio, then transcribe in a thread to keep UI responsive
-    if save_wav():
-        import threading
-        t = threading.Thread(target=_transcribe_then_quit, daemon=True)
-        t.start()
-    else:
-        notify("No audio recorded")
-        GLib.idle_add(state.app.quit)
-
-
-def _transcribe_then_quit():
-    """Run transcription (blocking), then quit the GTK app."""
-    state.transcribed_text = transcribe()
-    GLib.idle_add(state.app.quit)
-
-
 # --- App lifecycle ---
 
-def on_activate(app):
-    """GTK app activate callback."""
-    state.app = app
-    build_window(app)
-
-    # Start audio recording
-    state.stream = sd.InputStream(
-        samplerate=SAMPLE_RATE,
-        channels=CHANNELS,
-        dtype="float32",
-        blocksize=1024,
-        callback=audio_callback,
-    )
-    state.stream.start()
-
-    # UI refresh timer (~30fps)
-    GLib.timeout_add(33, update_ui)
-
-
-def main():
-    # Set proper app name (prevents "python3" showing in window title)
-    GLib.set_prgname("voice-recorder")
-    GLib.set_application_name("Voice Recorder")
-
-    # Load theme colors before building UI
-    state.colors = load_colors()
+def on_activate(app, daemon):
+    """GTK app activate callback — just hold the app open and write PID."""
+    daemon.app = app
+    app.hold()
 
     # Write PID file
     with open(PID_FILE, "w") as f:
         f.write(str(os.getpid()))
 
-    # Register SIGUSR1 via GLib (GTK-safe)
-    GLib.unix_signal_add(GLib.PRIORITY_HIGH, signal.SIGUSR1, on_sigusr1)
+
+def main():
+    GLib.set_prgname("voice-recorder")
+    GLib.set_application_name("Voice Recorder")
+
+    daemon = RecorderDaemon()
+
+    # Register signal handlers via GLib (GTK-safe, runs on main thread)
+    GLib.unix_signal_add(GLib.PRIORITY_HIGH, signal.SIGUSR1, daemon.on_sigusr1)
+    GLib.unix_signal_add(GLib.PRIORITY_HIGH, signal.SIGTERM, daemon.on_sigterm)
+    GLib.unix_signal_add(GLib.PRIORITY_HIGH, signal.SIGINT, daemon.on_sigterm)
 
     app = Gtk.Application(application_id="dev.dotfiles.voice-recorder")
-    app.connect("activate", on_activate)
+    app.connect("activate", on_activate, daemon)
 
     try:
         app.run(None)
     finally:
-        if state.stream is not None:
-            state.stream.stop()
-            state.stream.close()
-
-    # Clean up temp files
-    for f in (PID_FILE, WAV_FILE):
-        try:
-            os.unlink(f)
-        except FileNotFoundError:
-            pass
-
-    text = state.transcribed_text
-    if not text:
-        return
-
-    # Brief sleep to let compositor settle focus after overlay teardown
-    time.sleep(0.3)
-
-    # Type via dotoolc (uinput daemon client) — bypasses Wayland virtual
-    # keyboard protocol which has keymap bugs in niri. dotoold keeps virtual
-    # devices registered so there's no race between device creation and typing.
-    try:
-        result = subprocess.run(
-            ["dotoolc"], input=f"type {text}\n",
-            text=True, timeout=10
-        )
-        if result.returncode != 0:
-            raise RuntimeError("dotoolc failed")
-    except (subprocess.TimeoutExpired, FileNotFoundError, RuntimeError):
-        # dotoolc unavailable or dotoold not running — fall back to clipboard
-        try:
-            subprocess.run(["wl-copy", "--", text], timeout=5)
-            notify("Transcription copied to clipboard (dotool unavailable)")
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            notify("Could not type or copy transcription")
+        # Clean up on exit
+        if daemon.stream is not None:
+            daemon.stream.stop()
+            daemon.stream.close()
+        for f in (PID_FILE, WAV_FILE):
+            try:
+                os.unlink(f)
+            except FileNotFoundError:
+                pass
 
 
 if __name__ == "__main__":

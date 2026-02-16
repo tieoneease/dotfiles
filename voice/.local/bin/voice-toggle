@@ -3,15 +3,14 @@
 set -euo pipefail
 
 # Toggle voice-to-text recording.
-# If voice-recorder is not running, launch it.
-# If it is running, send SIGUSR1 to stop recording and trigger transcription.
+# Sends SIGUSR1 to the voice-recorder daemon (started via systemd).
+# If daemon is not running, shows a notification.
 
 PID_FILE="/tmp/voice-recorder.pid"
 
 if [ -f "$PID_FILE" ]; then
     pid=$(cat "$PID_FILE")
     if kill -0 "$pid" 2>/dev/null; then
-        # Recorder is running — signal it to stop and transcribe
         kill -USR1 "$pid"
         exit 0
     fi
@@ -19,5 +18,6 @@ if [ -f "$PID_FILE" ]; then
     rm -f "$PID_FILE"
 fi
 
-# No recorder running — launch one
-~/.local/bin/voice-recorder &
+# Daemon not running
+notify-send -a "Voice Recorder" -t "5000" "Voice-to-Text" \
+    "Daemon not running. Start with: systemctl --user start voice-recorder"

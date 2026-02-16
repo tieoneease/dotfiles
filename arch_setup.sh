@@ -243,6 +243,7 @@ chmod +x "$DOTFILES_DIR/stow/stow_dotfiles.sh"
 # Enable dotoold after stow deploys the service file with [Install] section
 systemctl --user daemon-reload
 systemctl --user enable --now dotoold.service
+systemctl --user enable voice-recorder.service
 
 # Set GTK dark mode preference
 echo "Setting system-wide dark mode preference..."

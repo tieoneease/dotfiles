@@ -23,6 +23,9 @@ yazi/.config/yazi/flavors/
 nvim/.config/nvim/lua/noctalia_colors.lua
 tmux/.config/tmux/colors.conf
 
+# Python bytecode cache
+voice/.local/bin/__pycache__/
+
 # fcitx5 auto-generated cache
 fcitx5/.config/fcitx5/conf/cached_layouts
 

@@ -1,0 +1,13 @@
+[Unit]
+Description=Voice-to-text recorder daemon
+After=graphical-session.target
+Requires=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/voice-recorder
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target
