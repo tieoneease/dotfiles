@@ -511,41 +511,6 @@ Runtime: `dotoold.service` must be running for typing output
 
 ---
 
-## Hibernate & Power Management
-
-Power button and lid close trigger hibernate via systemd drop-in configs.
-
-| Trigger | Action | Config |
-|---------|--------|--------|
-| Power button short press | Hibernate | `logind.conf.d/hibernate.conf` |
-| Power button long press | Power off | `logind.conf.d/hibernate.conf` |
-| Lid close (battery) | Suspend-then-hibernate | `logind.conf.d/hibernate.conf` |
-| Lid close (docked) | Ignore | systemd default |
-
-**Suspend-then-hibernate** enters s2idle first (instant wake), then transitions to hibernate after 30 minutes (`sleep.conf.d/hibernate-delay.conf`). This balances fast wake for quick peeks with battery protection for extended sleep.
-
-### Config files
-
-- `etc/systemd/logind.conf.d/hibernate.conf` — power button + lid close actions
-- `etc/systemd/sleep.conf.d/hibernate-delay.conf` — s2idle → hibernate delay (30min)
-- `etc/hibernate/setup-hibernate.sh` — one-time swap + resume params setup (run via `arch_setup.sh`)
-
-### Verification
-
-```bash
-# Check active logind config
-systemd-analyze cat-config systemd/logind.conf | grep -E 'HandlePower|HandleLid'
-
-# Check sleep delay
-systemd-analyze cat-config systemd/sleep.conf | grep HibernateDelay
-
-# Check swap + resume params
-swapon --show
-cat /proc/cmdline | grep -o 'resume[^ ]*'
-```
-
----
-
 ## Maintenance
 
 | Task | Command |
