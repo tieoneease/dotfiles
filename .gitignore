@@ -35,6 +35,10 @@ voice/.local/bin/__pycache__/
 # fcitx5 auto-generated cache
 fcitx5/.config/fcitx5/conf/cached_layouts
 
+# RIME deployment artifacts and runtime state
+fcitx5/.local/share/fcitx5/rime/build/
+fcitx5/.local/share/fcitx5/rime/user.yaml
+
 # Noctalia runtime state (written by Noctalia Shell on every UI toggle)
 noctalia/.config/noctalia/settings.json
 noctalia/.config/noctalia/colors.json

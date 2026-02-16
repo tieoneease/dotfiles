@@ -65,7 +65,7 @@ install_packages swayidle playerctl network-manager-applet brightnessctl wl-clip
 
 # Input method framework (Chinese Traditional Pinyin)
 echo "Installing input method framework..."
-install_packages fcitx5 fcitx5-gtk fcitx5-qt fcitx5-chinese-addons fcitx5-configtool noto-fonts-cjk
+install_packages fcitx5 fcitx5-gtk fcitx5-qt fcitx5-rime fcitx5-configtool noto-fonts-cjk rime-ice-git
 
 # Browser
 echo "Installing browser..."
