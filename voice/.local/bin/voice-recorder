@@ -442,7 +442,8 @@ class RecorderDaemon:
         elapsed = time.monotonic() - self.start_time
 
         if self.state == TRANSCRIBING:
-            self.label_time.set_text("Transcribing...")
+            ndots = int(elapsed * 2) % 3 + 1
+            self.label_time.set_text("Transcribing" + "." * ndots + " " * (3 - ndots))
             if self.rec_dot.has_css_class("rec-dot"):
                 self.rec_dot.remove_css_class("rec-dot")
                 self.rec_dot.add_css_class("transcribing-dot")
