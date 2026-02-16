@@ -133,6 +133,16 @@ echo "Configuring xdg-desktop-portal..."
 sudo mkdir -p /etc/xdg-desktop-portal
 sudo cp -f "$DOTFILES_DIR/etc/xdg-desktop-portal/portals.conf" /etc/xdg-desktop-portal/portals.conf
 
+# Copy logind hibernate config (power button → hibernate, long press → poweroff, lid → suspend-then-hibernate)
+echo "Configuring power and lid actions for hibernate..."
+sudo mkdir -p /etc/systemd/logind.conf.d
+sudo cp -f "$DOTFILES_DIR/etc/systemd/logind.conf.d/hibernate.conf" /etc/systemd/logind.conf.d/hibernate.conf
+
+# Copy sleep config (hibernate delay for suspend-then-hibernate)
+echo "Configuring suspend-then-hibernate delay..."
+sudo mkdir -p /etc/systemd/sleep.conf.d
+sudo cp -f "$DOTFILES_DIR/etc/systemd/sleep.conf.d/hibernate-delay.conf" /etc/systemd/sleep.conf.d/hibernate-delay.conf
+
 # Set environment variables
 echo "Setting system environment variables..."
 sudo tee /etc/environment > /dev/null << 'EOF'
@@ -221,6 +231,16 @@ fi
 # --- Workspace directory ---
 
 mkdir -p "$HOME/Workspace"
+
+# --- Hibernate setup (optional) ---
+
+echo ""
+echo "Hibernate support: creates a swapfile, configures resume kernel params,"
+echo "and regenerates initramfs so the power button triggers hibernate."
+read -rp "Enable hibernate setup? [y/N] " response
+if [[ "$response" =~ ^[Yy]$ ]]; then
+    sudo bash "$DOTFILES_DIR/etc/hibernate/setup-hibernate.sh"
+fi
 
 # --- ASUS Zenbook Duo setup (optional) ---
 
