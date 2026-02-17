@@ -9,7 +9,7 @@ Wayland-native tiling setup on Arch Linux.
 | **keyd** | Keyboard daemon for tap-hold and composite layers |
 | **matugen** | Material Design 3 color extraction (called by Noctalia) |
 | **Alacritty** | Terminal emulator |
-| **Fuzzel** | Application launcher (backup; Noctalia has built-in) |
+| **Walker** | Application launcher (Wayland-native, elephant prewarming) |
 | **greetd + tuigreet** | Login greeter — launches niri-session |
 
 ## Architecture
@@ -34,8 +34,8 @@ Wayland-native tiling setup on Arch Linux.
 │  ├── Kanagawa color scheme                          │
 │  ├── useWallpaperColors: true                       │
 │  └── Calls matugen → generates color templates      │
-│       ├── ~/.config/niri/colors.kdl                 │
-│       └── ~/.config/alacritty/colors.toml           │
+│       ├── Built-in: niri, kitty, alacritty, yazi    │
+│       └── User: nvim, tmux, walker                  │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -192,7 +192,7 @@ Workspaces 1–9 are declared with `workspace "1"` through `workspace "9"`.
 | Bind | Action |
 |------|--------|
 | `Mod+T` | Terminal (kitty) |
-| `Alt+Space` | Fuzzel launcher |
+| `Alt+Space` | Walker launcher |
 | `Super+B` | Chrome |
 | `Super+Alt+L` | Turn off screen (DPMS) |
 | `Mod+Q` | Close window |
@@ -238,37 +238,36 @@ Workspaces 1–9 are declared with `workspace "1"` through `workspace "9"`.
 
 These templates tell matugen to generate additional config files beyond Noctalia's built-in targets.
 
-#### Niri border colors
+#### Neovim colors
 
-- **Template:** `~/.config/noctalia/templates/niri-colors.kdl`
-- **Output:** `~/.config/niri/colors.kdl`
-- **Post-hook:** `niri msg action load-config-file`
+- **Template:** `~/.config/noctalia/templates/nvim-colors.lua`
+- **Output:** `~/.config/nvim/lua/noctalia_colors.lua`
+- **Post-hook:** `pkill -SIGUSR1 nvim`
 
-Sets focus-ring, border, and shadow colors using `primary`, `surface_variant`, and `shadow` Material Design tokens.
+Exports Material Design color tokens as a Lua table for base16-nvim dynamic theming.
 
-#### Alacritty colors
+#### Tmux colors
 
-- **Template:** `~/.config/noctalia/templates/alacritty-colors.toml`
-- **Output:** `~/.config/alacritty/colors.toml`
+- **Template:** `~/.config/noctalia/templates/tmux-colors.conf`
+- **Output:** `~/.config/tmux/colors.conf`
+- **Post-hook:** `tmux source-file ~/.config/tmux/tmux.conf`
 
-Maps terminal ANSI colors to Material Design tokens:
+Sets tmux status bar and pane border colors from Material Design tokens.
 
-| ANSI color | Material token |
-|------------|----------------|
-| background | `surface` |
-| foreground | `on_surface` |
-| red | `error` |
-| green, blue | `primary` |
-| yellow, magenta | `tertiary` |
-| cyan | `secondary` |
+#### Walker CSS
+
+- **Template:** `~/.config/noctalia/templates/walker-style.css`
+- **Output:** `~/.config/walker/themes/noctalia/style.css`
+
+Full GTK CSS theme for the walker launcher. Uses `* { all: unset }` then rebuilds styling with Material Design color tokens. Sets `font-family: "Sans Serif", sans-serif` and `font-size: 14px` on `.box-wrapper` so all children inherit Noto Sans at a comfortable size after the reset.
 
 ### Apps themed by Noctalia (built-in)
 
-GTK 3/4, Qt, Kitty, Foot, Ghostty, Fuzzel, Discord, Firefox
+GTK 3/4, Qt, Niri, Kitty, Alacritty, Yazi, Foot, Ghostty, Fuzzel, Discord, Firefox
 
 ### Apps themed via user templates
 
-Niri (focus-ring/border), Alacritty
+Neovim, Tmux, Walker
 
 ---
 
@@ -371,8 +370,9 @@ Displays Quectel EG25G cellular modem status in the bar and control center using
 │   ├── plugins.json                                 # plugin registry (enabled states)
 │   ├── user-templates.toml                          # matugen template registry
 │   ├── templates/
-│   │   ├── niri-colors.kdl                          # niri color template
-│   │   └── alacritty-colors.toml                    # alacritty color template
+│   │   ├── nvim-colors.lua                          # neovim color template
+│   │   ├── tmux-colors.conf                         # tmux color template
+│   │   └── walker-style.css                         # walker GTK CSS template
 │   └── plugins/
 │       └── lte-status/                              # LTE modem indicator plugin
 │           ├── manifest.json
@@ -396,8 +396,16 @@ Displays Quectel EG25G cellular modem status in the bar and control center using
 
 ### Auto-generated files (do not edit)
 
-- `~/.config/niri/colors.kdl`
-- `~/.config/alacritty/colors.toml`
+Built-in templates:
+- `~/.config/niri/noctalia.kdl`
+- `~/.config/kitty/themes/noctalia.conf`
+- `~/.config/alacritty/themes/noctalia.toml`
+- `~/.config/yazi/flavors/noctalia.yazi/`
+
+User templates:
+- `~/.config/nvim/lua/noctalia_colors.lua`
+- `~/.config/tmux/colors.conf`
+- `~/.config/walker/themes/noctalia/style.css`
 
 These are overwritten every time a wallpaper is selected in Noctalia.
 
