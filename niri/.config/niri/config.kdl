@@ -586,5 +586,4 @@ binds {
 // Static color fallback (committed to repo)
 include "./colors.kdl"
 // Dynamic colors from Noctalia built-in template (generated on wallpaper selection)
-include optional=true "./noctalia.kdl"
-
+include "./noctalia.kdl"
