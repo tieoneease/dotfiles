@@ -40,6 +40,7 @@ fcitx5/.local/share/fcitx5/rime/build/
 fcitx5/.local/share/fcitx5/rime/user.yaml
 fcitx5/.local/share/fcitx5/rime/installation.yaml
 fcitx5/.local/share/fcitx5/rime/*.userdb/
+fcitx5/.local/share/fcitx5/rime/sync/
 
 # Noctalia runtime state (written by Noctalia Shell on every UI toggle)
 noctalia/.config/noctalia/settings.json
