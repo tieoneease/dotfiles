@@ -2,6 +2,8 @@ theme = "noctalia"
 force_keyboard_focus = true
 close_when_open = true
 click_to_close = true
+hide_quick_activation = true
+hide_action_hints = true
 
 [shell]
 anchor_top = true
