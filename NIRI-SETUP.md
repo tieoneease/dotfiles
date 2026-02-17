@@ -208,7 +208,7 @@ Workspaces 1–9 are declared with `workspace "1"` through `workspace "9"`.
 | `Mod+V` | Toggle floating |
 | `Mod+W` | Toggle tabbed column |
 | `Mod+R` | Cycle preset widths |
-| `Print` | Screenshot |
+| `Print` / `Mod+Shift+S` | Screenshot (select region → Space to clipboard + save) |
 
 ---
 
