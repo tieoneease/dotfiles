@@ -1,4 +1,6 @@
 patch:
+  # Use Taiwan Traditional Chinese with phrase-level substitutions
+  traditionalize/opencc_config: s2twp.json
   switches:
     - name: ascii_mode
       reset: 0
