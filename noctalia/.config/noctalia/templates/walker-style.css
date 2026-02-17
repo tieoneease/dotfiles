@@ -31,9 +31,11 @@ scrollbar {
 
 .box-wrapper {
     background: @surface;
-    padding: 0;
+    padding: 4px;
     border-radius: 8px;
     border: 1px solid @outline_variant;
+    font-family: "Sans Serif", sans-serif;
+    font-size: 14px;
 }
 
 .preview-box,
@@ -44,7 +46,7 @@ scrollbar {
 
 .box {
     background: transparent;
-    padding: 8px;
+    padding: 12px;
     border-radius: 0;
     border: none;
 }
@@ -62,7 +64,7 @@ scrollbar {
     background: @surface_container;
     color: @on_surface;
     caret-color: @on_surface;
-    padding: 10px;
+    padding: 12px;
 }
 
 .input:focus,
@@ -87,13 +89,13 @@ child {
 
 .item-box {
     border-radius: 4px;
-    padding: 8px;
+    padding: 10px;
 }
 
 .item-quick-activation {
     background: @secondary;
     border-radius: 4px;
-    padding: 8px;
+    padding: 10px;
     color: @surface;
 }
 
@@ -122,7 +124,7 @@ child:selected .item-box {
 
 .preview {
     border-top: 1px solid @outline_variant;
-    padding: 8px;
+    padding: 10px;
     border-radius: 4px;
     color: @on_surface;
 }
@@ -180,7 +182,7 @@ child:selected .item-box {
 }
 
 .error {
-    padding: 8px;
+    padding: 10px;
     background: @error;
     color: @surface;
 }

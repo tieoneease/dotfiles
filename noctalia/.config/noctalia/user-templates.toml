@@ -13,3 +13,4 @@ post_hook = "tmux source-file ~/.config/tmux/tmux.conf"
 [templates.walker]
 input_path = "~/.config/noctalia/templates/walker-style.css"
 output_path = "~/.config/walker/themes/noctalia/style.css"
+
