@@ -333,11 +333,9 @@ binds {
     XF86AudioPrev        allow-when-locked=true { spawn-sh "playerctl previous"; }
     XF86AudioNext        allow-when-locked=true { spawn-sh "playerctl next"; }
 
-    // Example brightness key mappings for brightnessctl.
-    // You can use regular spawn with multiple arguments too (to avoid going through "sh"),
-    // but you need to manually put each argument in separate "" quotes.
-    XF86MonBrightnessUp allow-when-locked=true { spawn "~/.config/niri/brightness.sh" "+5%"; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn "~/.config/niri/brightness.sh" "5%-"; }
+    // Brightness keys: script adjusts primary backlight and triggers Noctalia OSD.
+    XF86MonBrightnessUp allow-when-locked=true { spawn-sh "~/.config/niri/brightness.sh +5%"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn-sh "~/.config/niri/brightness.sh 5%-"; }
 
     // Voice-to-text toggle (leftctrl+v → keyd emits F13 → XKB maps to XF86Tools)
     XF86Tools { spawn-sh "~/.local/bin/voice-toggle"; }
