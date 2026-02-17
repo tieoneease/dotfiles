@@ -12,7 +12,7 @@ anchor_left = true
 anchor_right = true
 
 [providers]
-default = ["desktopapplications"]
+default = ["desktopapplications", "calc"]
 empty = ["desktopapplications"]
 
 [keybinds]
