@@ -19,14 +19,14 @@ format = '([$all_status$ahead_behind]($style) )'
 modified = ' '
 untracked = ' '
 staged = '+${count} '
-ahead = '⇡${count} '
-behind = '⇣${count} '
+ahead = '↑${count} '
+behind = '↓${count} '
 conflicted = ' '
 deleted = ' '
 renamed = '» '
 stashed = ' '
 up_to_date = ''
-diverged = '⇡${ahead_count} ⇣${behind_count} '
+diverged = '↑${ahead_count} ↓${behind_count} '
 
 [git_state]
 format = '\([$state( $progress_current/$progress_total)]($style)\) '
@@ -60,4 +60,7 @@ disabled = true
 symbol = ' '
 
 [python]
-symbol = ' '
+symbol = ' '
+
+[gcloud]
+symbol = ' '
