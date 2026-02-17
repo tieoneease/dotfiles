@@ -149,6 +149,8 @@ sudo systemctl enable --now bluetooth.service
 
 echo "Enabling user services..."
 systemctl --user enable noctalia.service
+elephant service enable
+systemctl --user enable elephant.service
 
 # --- Shell setup ---
 
