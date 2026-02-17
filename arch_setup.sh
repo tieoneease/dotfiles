@@ -44,7 +44,7 @@ install_packages yazi imagemagick poppler ueberzugpp chafa
 
 # Desktop environment
 echo "Installing desktop environment..."
-install_packages niri-git noctalia-shell-git walker-bin elephant-all matugen-bin
+install_packages niri-git noctalia-shell-git walker-bin elephant-all matugen-bin xwayland-satellite
 
 # Greeter
 echo "Installing greeter..."
@@ -238,6 +238,32 @@ if [[ "$response" =~ ^[Yy]$ ]]; then
     echo "  - asusctl manages fn keys, keyboard backlight, and platform profiles"
     echo "  - wev can diagnose function key issues (run 'wev' and press keys)"
     echo "  - Dock/undock script auto-toggles eDP-2 on keyboard attach/detach"
+fi
+
+# --- Gaming (optional) ---
+
+echo ""
+echo "Gaming setup: Steam, gamescope, MangoHud, gamemode, AMD Vulkan drivers, and Proton manager."
+read -rp "Install gaming tools? [y/N] " response
+if [[ "$response" =~ ^[Yy]$ ]]; then
+    echo "Installing gaming tools..."
+    install_packages steam gamescope mangohud lib32-mangohud gamemode lib32-gamemode \
+        vulkan-radeon lib32-vulkan-radeon vulkan-icd-loader lib32-vulkan-icd-loader \
+        vulkan-mesa-layers lib32-vulkan-mesa-layers vulkan-tools \
+        lib32-mesa lib32-systemd lib32-pipewire lib32-openal lib32-alsa-plugins \
+        lib32-fontconfig lib32-gtk3 \
+        lib32-gst-plugins-base lib32-gst-plugins-good lib32-gstreamer \
+        libva lib32-libva ttf-liberation
+    install_packages protonup-qt
+
+    if ! groups "$USER" | grep -q gamemode; then
+        sudo usermod -aG gamemode "$USER"
+    fi
+
+    echo "Gaming setup complete."
+    echo "  - Steam launch option for games: gamescope -f -w 1920 -h 1080 -W 1920 -H 1080 --force-grab-cursor --backend sdl -- %command%"
+    echo "  - Run protonup-qt to install GE-Proton for better game compatibility"
+    echo "  - If Steam shows a black window: Settings → Interface → disable GPU accelerated rendering"
 fi
 
 # --- Stow dotfiles ---

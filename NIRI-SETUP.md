@@ -10,6 +10,7 @@ Wayland-native tiling setup on Arch Linux.
 | **matugen** | Material Design 3 color extraction (called by Noctalia) |
 | **Alacritty** | Terminal emulator |
 | **Walker** | Application launcher (Wayland-native, elephant prewarming) |
+| **xwayland-satellite** | XWayland server for X11 apps (Steam, etc.) |
 | **greetd + tuigreet** | Login greeter — launches niri-session |
 
 ## Architecture
@@ -22,6 +23,7 @@ Wayland-native tiling setup on Arch Linux.
 │ Niri (compositor)                                   │
 │  ├── XKB: ctrl:nocaps, lv3:ralt_switch              │
 │  ├── Key repeat: 200ms delay, 50 chars/sec          │
+│  ├── xwayland-satellite (XWayland for X11 apps)      │
 │  └── includes colors.kdl (auto-generated)           │
 ├─────────────────────────────────────────────────────┤
 │ keyd (system-level, /etc/keyd/default.conf)         │
@@ -286,6 +288,67 @@ chars = "\x1b\r"
 
 - Colors imported from matugen-generated file
 - Shift+Enter sends `ESC CR` (useful for some TUI apps)
+
+---
+
+## XWayland — X11 Compatibility
+
+**Started by:** `spawn-at-startup "xwayland-satellite"` in niri config
+
+`xwayland-satellite` provides an XWayland server for X11 applications (Steam, some games, older tools). It starts with niri and sets `DISPLAY` so X11 apps work transparently.
+
+Without it, X11 apps fail with "Unable to open a connection to X".
+
+---
+
+## Gaming
+
+**Setup:** Optional section in `arch_setup.sh` (prompted during install)
+
+### Packages
+
+| Package | Role |
+|---------|------|
+| `steam` | Game client |
+| `gamescope` | SteamOS session compositor (per-game Wayland/XWayland) |
+| `mangohud` / `lib32-mangohud` | FPS/performance overlay |
+| `gamemode` / `lib32-gamemode` | CPU/GPU performance optimizer |
+| `vulkan-radeon` / `lib32-vulkan-radeon` | AMD Vulkan drivers |
+| `protonup-qt` | Proton-GE version manager |
+
+### Niri window rules
+
+```kdl
+// Steam notification popups — bottom-right instead of center
+window-rule {
+    match app-id="steam" title=r#"^notificationtoasts_\d+_desktop$"#
+    default-floating-position x=10 y=10 relative-to="bottom-right"
+}
+
+// Gamescope and Steam game windows — fullscreen with VRR
+window-rule {
+    match app-id="gamescope"
+    open-fullscreen true
+    variable-refresh-rate true
+}
+window-rule {
+    match app-id=r#"^steam_app_\d+$"#
+    open-fullscreen true
+    variable-refresh-rate true
+}
+```
+
+### Launch options
+
+For gamescope (recommended for most games):
+```
+gamescope -f -w 1920 -h 1080 -W 1920 -H 1080 --force-grab-cursor --backend sdl -- %command%
+```
+
+### Troubleshooting
+
+- **Steam black window:** Settings → Interface → disable GPU accelerated rendering
+- **Proton compatibility:** Run `protonup-qt` to install GE-Proton
 
 ---
 
