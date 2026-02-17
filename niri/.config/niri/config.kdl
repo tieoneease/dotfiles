@@ -304,7 +304,7 @@ binds {
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     Mod+T hotkey-overlay-title="Open a Terminal: kitty" { spawn "kitty"; }
-    Alt+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
+    Alt+Space hotkey-overlay-title="Run an Application: walker" { spawn "walker"; }
     Mod+Alt+L hotkey-overlay-title="Turn Off Screen" { spawn "niri" "msg" "action" "power-off-monitors"; }
     Mod+B { spawn "google-chrome-stable"; }
     Mod+S { spawn-sh "~/.local/bin/focus-or-launch Slack slack"; }

@@ -44,7 +44,7 @@ install_packages yazi imagemagick poppler ueberzugpp chafa
 
 # Desktop environment
 echo "Installing desktop environment..."
-install_packages niri-git noctalia-shell-git fuzzel matugen-bin
+install_packages niri-git noctalia-shell-git walker-bin elephant-all matugen-bin
 
 # Greeter
 echo "Installing greeter..."

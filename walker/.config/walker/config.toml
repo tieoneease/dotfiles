@@ -1,0 +1,17 @@
+theme = "noctalia"
+force_keyboard_focus = true
+close_when_open = true
+click_to_close = true
+
+[shell]
+anchor_top = true
+anchor_bottom = true
+anchor_left = true
+anchor_right = true
+
+[providers]
+default = ["desktopapplications"]
+empty = ["desktopapplications"]
+
+[keybinds]
+close = ["Escape"]

@@ -8,7 +8,7 @@ sort_reverse = true
 sort_dir_first = true
 sort_translit = false
 linemode = "size"
-show_hidden = false
+show_hidden = true
 show_symlink = true
 scrolloff = 5
 
@@ -41,22 +41,26 @@ view = [
 pdf = [
     { run = 'zathura "$@"', desc = "Open PDF with Zathura", orphan = true },
 ]
+browser = [
+    { run = 'google-chrome-stable "$@"', desc = "Open in Chrome", orphan = true },
+]
 
 [open]
 rules = [
-    { name = "*/", use = "edit" },
-    { mime = "text/*", use = "edit" },
-    { mime = "image/*", use = "view" },
-    { mime = "video/*", use = "play" },
-    { mime = "audio/*", use = "play" },
-    { mime = "application/pdf", use = "pdf" },
-    { mime = "application/zip", use = "reveal" },
-    { mime = "application/gzip", use = "reveal" },
-    { mime = "application/x-tar", use = "reveal" },
-    { mime = "application/x-bzip2", use = "reveal" },
-    { mime = "application/x-7z-compressed", use = "reveal" },
-    { mime = "application/x-rar", use = "reveal" },
-    { mime = "application/xz", use = "reveal" },
+    { name = "*/", use = ["edit"] },
+    { mime = "text/*", use = ["edit", "open"] },
+    { mime = "image/*", use = ["view", "edit", "open"] },
+    { mime = "video/*", use = ["play", "open"] },
+    { mime = "audio/*", use = ["play", "open"] },
+    { mime = "application/pdf", use = ["pdf", "browser", "open"] },
+    { mime = "application/zip", use = ["reveal", "open"] },
+    { mime = "application/gzip", use = ["reveal", "open"] },
+    { mime = "application/x-tar", use = ["reveal", "open"] },
+    { mime = "application/x-bzip2", use = ["reveal", "open"] },
+    { mime = "application/x-7z-compressed", use = ["reveal", "open"] },
+    { mime = "application/x-rar", use = ["reveal", "open"] },
+    { mime = "application/xz", use = ["reveal", "open"] },
+    { mime = "text/html", use = ["browser", "edit", "open"] },
 ]
 
 [tasks]
