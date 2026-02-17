@@ -33,8 +33,9 @@ tmux/.config/tmux/colors.conf
 # Python bytecode cache
 voice/.local/bin/__pycache__/
 
-# fcitx5 auto-generated cache
-fcitx5/.config/fcitx5/conf/cached_layouts
+# fcitx5 runtime state (rewritten on every input method switch)
+fcitx5/.config/fcitx5/profile
+fcitx5/.config/fcitx5/conf/
 
 # RIME deployment artifacts and runtime state
 fcitx5/.local/share/fcitx5/rime/build/
