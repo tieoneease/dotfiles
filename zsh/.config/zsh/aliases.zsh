@@ -42,7 +42,7 @@ alias ppx='llm -m sonar-deep-research'
 alias ppq='llm -m sonar'
 alias csn='llm -m claude-3.7-sonnet'
 alias cmd='llm cmd -m claude-3.7-sonnet'
-alias claude='claude --chrome'
+alias claude='claude --chrome --dangerously-skip-permissions'
 alias code='claude --chrome --dangerously-skip-permissions'
 alias sonnet='code --model sonnet'
 
