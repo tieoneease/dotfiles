@@ -1,0 +1,13 @@
+# Fix DWT (disable-while-typing) for ASUS Zenbook Duo + keyd.
+# keyd grabs the physical keyboard and re-emits via a virtual keyboard,
+# breaking libinput's DWT device pairing. Mark both as internal to fix.
+
+[keyd virtual keyboard]
+MatchUdevType=keyboard
+MatchName=keyd virtual keyboard
+AttrKeyboardIntegration=internal
+
+[ASUS Zenbook Duo Keyboard Touchpad]
+MatchUdevType=touchpad
+MatchName=ASUS Zenbook Duo Keyboard Touchpad
+AttrTouchpadIntegration=internal

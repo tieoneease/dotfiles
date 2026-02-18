@@ -133,6 +133,13 @@ echo "Configuring xdg-desktop-portal..."
 sudo mkdir -p /etc/xdg-desktop-portal
 sudo cp -f "$DOTFILES_DIR/etc/xdg-desktop-portal/portals.conf" /etc/xdg-desktop-portal/portals.conf
 
+# Copy libinput quirks for Zenbook Duo (DWT fix for keyd + detachable keyboard touchpad)
+if [[ "$(hostname)" == "sam-duomoon" ]]; then
+    echo "Configuring libinput quirks for Zenbook Duo..."
+    sudo mkdir -p /etc/libinput
+    sudo cp -f "$DOTFILES_DIR/etc/libinput/local-overrides.quirks" /etc/libinput/local-overrides.quirks
+fi
+
 # Set environment variables
 echo "Setting system environment variables..."
 sudo tee /etc/environment > /dev/null << 'EOF'
