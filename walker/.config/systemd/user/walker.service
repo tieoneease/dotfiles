@@ -1,6 +1,5 @@
 [Unit]
 Description=Walker Launcher Service
-After=elephant.service
 
 [Service]
 Type=simple
