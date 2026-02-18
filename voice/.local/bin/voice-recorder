@@ -482,8 +482,13 @@ class RecorderDaemon:
         c = self.colors
         self.css_provider = Gtk.CssProvider()
         self.css_provider.load_from_string(f"""
-            window {{
+            window, window.csd, window.background.csd {{
                 background: transparent;
+                box-shadow: none;
+                border: none;
+                border-radius: 0;
+                margin: 0;
+                padding: 0;
             }}
             .pill {{
                 background-color: rgba({int(hex_to_rgb(c['surface'])[0]*255)}, {int(hex_to_rgb(c['surface'])[1]*255)}, {int(hex_to_rgb(c['surface'])[2]*255)}, 0.92);
