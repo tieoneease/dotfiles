@@ -474,7 +474,9 @@ class RecorderDaemon:
 
         window.set_default_size(380, 80)
         window.set_resizable(False)
-        window.set_titlebar(Gtk.Box())
+        header = Gtk.Box()
+        header.set_visible(False)
+        window.set_titlebar(header)
 
         # CSS with theme colors
         c = self.colors
