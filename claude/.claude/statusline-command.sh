@@ -1,57 +1,206 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Read JSON input from stdin
+# --- ANSI Colors ---
+RST='\033[0m'
+BOLD='\033[1m'
+RED='\033[31m'
+GREEN='\033[32m'
+YELLOW='\033[33m'
+BLUE='\033[34m'
+MAGENTA='\033[35m'
+CYAN='\033[36m'
+
+# --- Read stdin + extract fields in one jq call ---
 input=$(cat)
+IFS=$'\t' read -r model_name model_id context_remaining project_dir <<< "$(
+    echo "$input" | jq -r '[
+        (.model.display_name // .model.id // "unknown"),
+        (.model.id // "unknown"),
+        (.context_window.remaining_percentage // "null"),
+        (.workspace.project_dir // .workspace.current_dir // "unknown")
+    ] | @tsv'
+)"
 
-# Extract user and hostname
 user=$(whoami)
 host=$(hostname -s)
-
-# Extract context remaining percentage - handle both null and numeric values
-context_remaining=$(echo "$input" | jq -r '.context_window.remaining_percentage // "null"')
-
-# Extract current project directory
-project_dir=$(echo "$input" | jq -r '.workspace.project_dir // .workspace.current_dir')
 project_name=$(basename "$project_dir")
 
-# Extract model display name
-model_name=$(echo "$input" | jq -r '.model.display_name // .model.id')
-
-# Get git branch/worktree info (skip optional locks for performance)
+# --- Git branch ---
+branch=""
 if [ -d "$project_dir/.git" ]; then
     cd "$project_dir" 2>/dev/null || true
-    git_info=$(git -c core.useBuiltinFSMonitor=false config --get-regexp 'core.bare|core.worktree' 2>/dev/null)
-
+    git_info=$(git -c core.useBuiltinFSMonitor=false config --get-regexp 'core.bare|core.worktree' 2>/dev/null || true)
     if echo "$git_info" | grep -q "core.bare true"; then
-        # Bare repository
         branch="(bare)"
     elif echo "$git_info" | grep -q "core.worktree"; then
-        # Worktree
-        worktree_dir=$(git rev-parse --git-dir 2>/dev/null | sed 's/\.git.*/.git/')
-        branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
-        [ -n "$branch" ] && branch="worktree:$branch" || branch="(worktree)"
+        branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null || echo "(worktree)")
+        [ -n "$branch" ] && branch="worktree:$branch"
     else
-        # Normal git repository
         branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null || echo "(no branch)")
     fi
-else
-    branch=""
 fi
 
-# Build the status line
-status="[$user@$host $project_name | $model_name"
+# --- Model color ---
+color_model() {
+    local id="$1" name="$2"
+    case "$id" in
+        *opus*)   printf '%b%s%b' "$MAGENTA" "$name" "$RST" ;;
+        *sonnet*) printf '%b%s%b' "$CYAN" "$name" "$RST" ;;
+        *haiku*)  printf '%b%s%b' "$BLUE" "$name" "$RST" ;;
+        *)        printf '%s' "$name" ;;
+    esac
+}
+
+# --- Context color ---
+color_context() {
+    local pct="$1"
+    local color="$GREEN"
+    if (( pct < 25 )); then
+        color="$RED"
+    elif (( pct < 50 )); then
+        color="$YELLOW"
+    fi
+    printf '%b%d%% left%b' "$color" "$pct" "$RST"
+}
+
+# --- Usage color (with optional countdown) ---
+color_usage() {
+    local label="$1" pct="$2" reset_at="$3"
+    local color="$GREEN"
+    if (( pct >= 80 )); then
+        color="$RED"
+    elif (( pct >= 60 )); then
+        color="$YELLOW"
+    fi
+
+    local countdown=""
+    if (( pct >= 60 )) && [ -n "$reset_at" ] && [ "$reset_at" != "null" ]; then
+        countdown=$(format_countdown "$reset_at")
+        [ -n "$countdown" ] && countdown=" ($countdown)"
+    fi
+
+    printf '%s: %b%d%%%b%s' "$label" "$color" "$pct" "$RST" "$countdown"
+}
+
+# --- Countdown formatter ---
+format_countdown() {
+    local reset_at="$1"
+    local reset_epoch now_epoch diff_s
+
+    # Parse ISO8601 timestamp
+    reset_epoch=$(date -d "$reset_at" +%s 2>/dev/null) || return 0
+    now_epoch=$(date +%s)
+    diff_s=$(( reset_epoch - now_epoch ))
+    (( diff_s <= 0 )) && return 0
+
+    local hours=$(( diff_s / 3600 ))
+    local minutes=$(( (diff_s % 3600) / 60 ))
+
+    if (( hours > 0 )); then
+        printf '%dh%02dm' "$hours" "$minutes"
+    else
+        printf '%dm' "$minutes"
+    fi
+}
+
+# --- Fetch usage (cached) ---
+CACHE_DIR="$HOME/.claude/hud"
+CACHE_FILE="$CACHE_DIR/.usage-cache.json"
+CREDS_FILE="$HOME/.claude/.credentials.json"
+CACHE_MAX_AGE=60
+
+fetch_usage() {
+    # No credentials → no usage data
+    [ -f "$CREDS_FILE" ] || return 1
+    local token
+    token=$(jq -r '.claudeAiOauth.accessToken // empty' "$CREDS_FILE" 2>/dev/null) || return 1
+    [ -n "$token" ] || return 1
+
+    # Check cache freshness
+    if [ -f "$CACHE_FILE" ]; then
+        local now file_mtime age
+        now=$(date +%s)
+        # Cross-platform stat: Linux vs macOS
+        if stat --version &>/dev/null; then
+            file_mtime=$(stat -c %Y "$CACHE_FILE" 2>/dev/null) || file_mtime=0
+        else
+            file_mtime=$(stat -f %m "$CACHE_FILE" 2>/dev/null) || file_mtime=0
+        fi
+        age=$(( now - file_mtime ))
+        if (( age < CACHE_MAX_AGE )); then
+            cat "$CACHE_FILE"
+            return 0
+        fi
+    fi
+
+    # Fetch from API
+    mkdir -p "$CACHE_DIR"
+    local tmp_file response
+    tmp_file=$(mktemp "${CACHE_DIR}/.usage-tmp.XXXXXX")
+
+    response=$(curl -s --connect-timeout 3 --max-time 5 \
+        -H "Authorization: Bearer $token" \
+        -H "Content-Type: application/json" \
+        -H "User-Agent: claude-code/2.0.32" \
+        -H "anthropic-beta: oauth-2025-04-20" \
+        "https://api.anthropic.com/api/oauth/usage" 2>/dev/null) || true
+
+    # Validate response has expected fields
+    if [ -n "$response" ] && echo "$response" | jq -e '.five_hour.utilization' &>/dev/null; then
+        echo "$response" > "$tmp_file"
+        mv -f "$tmp_file" "$CACHE_FILE"
+        echo "$response"
+        return 0
+    fi
+
+    rm -f "$tmp_file"
+
+    # Fall back to stale cache
+    if [ -f "$CACHE_FILE" ]; then
+        cat "$CACHE_FILE"
+        return 0
+    fi
+
+    return 1
+}
+
+# --- Build status line ---
+status="${BOLD}[$RST"
+status+="$user@$host $project_name"
 
 if [ -n "$branch" ]; then
-    status="$status ($branch)"
+    status+=" ($branch)"
 fi
 
-# Show context if we have a value (not "null" string and not empty)
-if [ -n "$context_remaining" ] && [ "$context_remaining" != "null" ]; then
-    # Round to integer if it's a decimal
+status+=" | $(color_model "$model_id" "$model_name")"
+
+# Context remaining
+if [ "$context_remaining" != "null" ] && [ -n "$context_remaining" ]; then
     context_int=$(printf "%.0f" "$context_remaining" 2>/dev/null || echo "$context_remaining")
-    status="$status | ${context_int}% left"
+    status+=" | $(color_context "$context_int")"
 fi
 
-status="$status]"
+# Usage limits
+usage_json=$(fetch_usage 2>/dev/null) || usage_json=""
 
-echo "$status"
+if [ -n "$usage_json" ]; then
+    read -r five_pct five_reset seven_pct seven_reset <<< "$(
+        echo "$usage_json" | jq -r '[
+            (.five_hour.utilization // 0 | floor),
+            (.five_hour.resets_at // "null"),
+            (.seven_day.utilization // 0 | floor),
+            (.seven_day.resets_at // "null")
+        ] | @tsv'
+    )"
+
+    status+=" | $(color_usage "5h" "$five_pct" "$five_reset")"
+    status+=" | $(color_usage "7d" "$seven_pct" "$seven_reset")"
+elif [ -f "$CREDS_FILE" ]; then
+    # Have credentials but API failed and no cache
+    status+=" | 5h: -- | 7d: --"
+fi
+
+status+="${BOLD}]$RST"
+
+echo -e "$status"
