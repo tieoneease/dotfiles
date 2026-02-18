@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Navigate to the next non-empty workspace in the given direction (up/down),
+# skipping empty named workspaces. Stays on the current monitor; no wrap-around.
+
+direction="${1:-}"
+if [[ "$direction" != "up" && "$direction" != "down" ]]; then
+    echo "Usage: focus-nonempty-workspace up|down" >&2
+    exit 1
+fi
+
+data=$(niri msg --json workspaces)
+
+# Get focused workspace's output and idx
+focused_output=$(echo "$data" | jq -r '.[] | select(.is_focused) | .output')
+focused_idx=$(echo "$data" | jq -r '.[] | select(.is_focused) | .idx')
+
+# Find non-empty workspaces on the same output (has an active window)
+# For "up" (lower idx): pick the highest idx that is < focused_idx
+# For "down" (higher idx): pick the lowest idx that is > focused_idx
+if [[ "$direction" == "up" ]]; then
+    target=$(echo "$data" | jq -r --arg out "$focused_output" --argjson idx "$focused_idx" '
+        [.[] | select(.output == $out and .active_window_id != null and .idx < $idx)]
+        | sort_by(.idx) | last | .idx // empty
+    ')
+else
+    target=$(echo "$data" | jq -r --arg out "$focused_output" --argjson idx "$focused_idx" '
+        [.[] | select(.output == $out and .active_window_id != null and .idx > $idx)]
+        | sort_by(.idx) | first | .idx // empty
+    ')
+fi
+
+# No-op if no target found
+if [[ -n "$target" ]]; then
+    niri msg action focus-workspace "$target"
+fi

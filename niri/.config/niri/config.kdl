@@ -579,8 +579,8 @@ binds {
     Mod+Shift+P { power-off-monitors; }
 
     // Right Alt (ISO_Level3_Shift) — workspace navigation
-    ISO_Level3_Shift+M     { focus-workspace-up; }
-    ISO_Level3_Shift+Comma { focus-workspace-down; }
+    ISO_Level3_Shift+M     { spawn-sh "~/.local/bin/focus-nonempty-workspace up"; }
+    ISO_Level3_Shift+Comma { spawn-sh "~/.local/bin/focus-nonempty-workspace down"; }
 
     // Right Alt + numpad letters — focus workspace by index
     ISO_Level3_Shift+X { focus-workspace 1; }

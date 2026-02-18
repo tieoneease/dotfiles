@@ -204,7 +204,7 @@ Workspaces 1–9 are declared with `workspace "1"` through `workspace "9"`.
 | `Mod+Ctrl+1-9` | Move column to workspace N |
 | `ISO_Level3_Shift+X/C/V/S/D/F/W/E/R` | Focus workspace 1–9 (RightAlt) |
 | `ISO_Level3_Shift+Shift+...` | Move column to workspace 1–9 |
-| `ISO_Level3_Shift+M/Comma` | Focus workspace up/down |
+| `ISO_Level3_Shift+M/Comma` | Focus next non-empty workspace up/down (skips empty) |
 | `Mod+F` | Maximize column |
 | `Mod+Shift+F` | Fullscreen |
 | `Mod+V` | Toggle floating |
