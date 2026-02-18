@@ -24,6 +24,7 @@ input {
     // All commented-out settings here are examples, not defaults.
     touchpad {
         // off
+        scroll-factor 0.5
         tap
         dwt
         // dwtp
@@ -38,6 +39,7 @@ input {
 
     mouse {
         // off
+        scroll-factor 0.5
         // natural-scroll
         // accel-speed 0.2
         accel-profile "flat"
