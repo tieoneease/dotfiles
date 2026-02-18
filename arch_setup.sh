@@ -81,7 +81,7 @@ install_packages slack-desktop  # XWayland version for better stability
 
 # Productivity applications
 echo "Installing productivity applications..."
-install_packages obsidian
+install_packages obsidian zathura zathura-pdf-mupdf
 
 # Voice-to-text
 echo "Installing voice-to-text tools..."
@@ -157,7 +157,6 @@ sudo systemctl enable --now bluetooth.service
 echo "Enabling user services..."
 systemctl --user enable noctalia.service
 systemctl --user enable elephant.service
-systemctl --user enable walker.service
 
 # --- Shell setup ---
 
@@ -279,10 +278,11 @@ echo "Running stow script..."
 chmod +x "$DOTFILES_DIR/stow/stow_dotfiles.sh"
 "$DOTFILES_DIR/stow/stow_dotfiles.sh"
 
-# Enable dotoold after stow deploys the service file with [Install] section
+# Enable services that depend on stow-deployed unit files
 systemctl --user daemon-reload
 systemctl --user enable --now dotoold.service
 systemctl --user enable voice-recorder.service
+systemctl --user enable walker.service
 
 # Set GTK dark mode preference
 echo "Setting system-wide dark mode preference..."
@@ -292,6 +292,10 @@ if command -v gsettings >/dev/null 2>&1; then
 else
     echo "⚠ gsettings not found, skipping"
 fi
+
+# Set zathura as default PDF viewer
+echo "Setting zathura as default PDF viewer..."
+xdg-mime default org.pwmt.zathura.desktop application/pdf
 
 # Sync default wallpapers (add new ones without overwriting existing)
 echo "Syncing default wallpapers..."

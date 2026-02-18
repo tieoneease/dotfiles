@@ -1,0 +1,17 @@
+# Zathura PDF viewer configuration
+
+# Use system clipboard for selections
+set selection-clipboard clipboard
+
+# Dark mode recoloring (invert colors for comfortable reading)
+set recolor true
+set recolor-keephue true
+
+# Fit page width on open
+set adjust-open "best-fit"
+
+# Scroll step (pixels per scroll action)
+set scroll-step 80
+
+# Statusbar font
+set font "monospace 11"
