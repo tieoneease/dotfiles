@@ -61,7 +61,7 @@ install_packages kitty alacritty
 # Desktop utilities
 echo "Installing desktop utilities..."
 install_packages swayidle playerctl network-manager-applet brightnessctl wl-clipboard bluez bluez-utils \
-    xdg-desktop-portal xdg-desktop-portal-gtk wlsunset localsend-bin
+    xdg-desktop-portal xdg-desktop-portal-gtk wlsunset localsend-bin libinput-tools
 
 # Input method framework (Chinese Traditional Pinyin)
 echo "Installing input method framework..."
@@ -138,6 +138,11 @@ if [[ "$(hostname)" == "sam-duomoon" ]]; then
     echo "Configuring libinput quirks for Zenbook Duo..."
     sudo mkdir -p /etc/libinput
     sudo cp -f "$DOTFILES_DIR/etc/libinput/local-overrides.quirks" /etc/libinput/local-overrides.quirks
+
+    echo "Configuring udev hwdb for Zenbook Duo BT touchpad..."
+    sudo mkdir -p /etc/udev/hwdb.d
+    sudo cp -f "$DOTFILES_DIR/etc/udev/hwdb.d/71-touchpad-local.hwdb" /etc/udev/hwdb.d/
+    sudo systemd-hwdb update
 fi
 
 # Set environment variables

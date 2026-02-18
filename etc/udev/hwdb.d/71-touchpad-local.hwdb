@@ -1,0 +1,4 @@
+# ASUS Zenbook Duo detachable keyboard touchpad — mark as internal for DWT.
+# Default 70-touchpad.hwdb tags all bluetooth touchpads as external.
+touchpad:bluetooth:v0b05p1b2d:*
+ ID_INPUT_TOUCHPAD_INTEGRATION=internal
