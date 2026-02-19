@@ -13,12 +13,13 @@ CYAN='\033[36m'
 
 # --- Read stdin + extract fields in one jq call ---
 input=$(cat)
-IFS=$'\t' read -r model_name model_id context_remaining project_dir <<< "$(
+IFS=$'\t' read -r model_name model_id context_remaining project_dir transcript_path <<< "$(
     echo "$input" | jq -r '[
         (.model.display_name // .model.id // "unknown"),
         (.model.id // "unknown"),
         (.context_window.remaining_percentage // "null"),
-        (.workspace.project_dir // .workspace.current_dir // "unknown")
+        (.workspace.project_dir // .workspace.current_dir // "unknown"),
+        (.transcript_path // "")
     ] | @tsv'
 )"
 
@@ -66,7 +67,7 @@ color_context() {
 
 # --- Usage color (with optional countdown) ---
 color_usage() {
-    local label="$1" pct="$2" reset_at="$3"
+    local label="$1" pct="$2" reset_at="$3" always_countdown="${4:-0}"
     local color="$GREEN"
     if (( pct >= 80 )); then
         color="$RED"
@@ -75,7 +76,7 @@ color_usage() {
     fi
 
     local countdown=""
-    if (( pct >= 60 )) && [ -n "$reset_at" ] && [ "$reset_at" != "null" ]; then
+    if (( always_countdown || pct >= 60 )) && [ -n "$reset_at" ] && [ "$reset_at" != "null" ]; then
         countdown=$(format_countdown "$reset_at")
         [ -n "$countdown" ] && countdown=" ($countdown)"
     fi
@@ -94,14 +95,98 @@ format_countdown() {
     diff_s=$(( reset_epoch - now_epoch ))
     (( diff_s <= 0 )) && return 0
 
-    local hours=$(( diff_s / 3600 ))
+    local days=$(( diff_s / 86400 ))
+    local hours=$(( (diff_s % 86400) / 3600 ))
     local minutes=$(( (diff_s % 3600) / 60 ))
 
-    if (( hours > 0 )); then
+    if (( days > 0 )); then
+        printf '%dd%02dh%02dm' "$days" "$hours" "$minutes"
+    elif (( hours > 0 )); then
         printf '%dh%02dm' "$hours" "$minutes"
     else
         printf '%dm' "$minutes"
     fi
+}
+
+# --- Parse running subagents from transcript ---
+parse_running_agents() {
+    local transcript="$1"
+    [ -n "$transcript" ] && [ -f "$transcript" ] || return 0
+    local now_epoch
+    now_epoch=$(date +%s)
+
+    # Read last 512KB, skip first (potentially truncated) line
+    tail -c 524288 "$transcript" 2>/dev/null | sed '1d' | jq -s -r --argjson now "$now_epoch" '
+        # Collect Task tool_use entries (started agents)
+        [.[] | select(.type == "assistant") |
+            . as $line |
+            .message.content[]? |
+            select(.type == "tool_use" and (.name == "Task" or .name == "proxy_Task")) |
+            {
+                id: .id,
+                model: (.input.model // "unknown"),
+                subagent_type: (.input.subagent_type // "unknown"),
+                description: (.input.description // ""),
+                timestamp: $line.timestamp
+            }
+        ] as $started |
+        # Collect completed tool_result IDs
+        [.[] | select(.type == "user") |
+            .message.content[]? |
+            select(.type == "tool_result") |
+            .tool_use_id
+        ] as $completed |
+        # Filter to running (started but not completed), exclude stale (>30 min)
+        [$started[] | select(
+            (.id as $id | $completed | index($id) | not) and
+            ((.timestamp // null) as $ts |
+                if $ts then
+                    (($ts | sub("\\.[0-9]+Z$"; "Z") | fromdate) as $epoch |
+                    ($now - $epoch) < 1800)
+                else true end)
+        )] |
+        # Take up to 5, output TSV: model, subagent_type, description, elapsed_seconds
+        .[:5][] |
+        ((.timestamp // null) as $ts |
+            if $ts then
+                (($ts | sub("\\.[0-9]+Z$"; "Z") | fromdate) as $epoch | ($now - $epoch))
+            else 0 end) as $elapsed |
+        [.model, .subagent_type, .description, ($elapsed | tostring)] | @tsv
+    ' 2>/dev/null || true
+}
+
+# --- Format agent tree display ---
+format_agent_tree() {
+    local agents="$1"
+    [ -z "$agents" ] && return 0
+    local count=0 total
+    total=$(echo "$agents" | wc -l)
+
+    while IFS=$'\t' read -r model subagent_type description elapsed_s; do
+        count=$((count + 1))
+        # Model badge with color
+        local badge
+        case "$model" in
+            *opus*)   badge="${MAGENTA}O${RST}" ;;
+            *sonnet*) badge="${CYAN}s${RST}" ;;
+            *haiku*)  badge="${GREEN}h${RST}" ;;
+            *)        badge="?" ;;
+        esac
+
+        # Elapsed time formatted
+        local mins=$(( elapsed_s / 60 ))
+        local secs=$(( elapsed_s % 60 ))
+        local elapsed_fmt="${mins}m${secs}s"
+
+        # Truncate description
+        [ ${#description} -gt 40 ] && description="${description:0:37}..."
+
+        # Tree connector
+        local connector="├─"
+        [ "$count" -eq "$total" ] && connector="└─"
+
+        printf '  %s %b %-14s %-7s %s\n' "$connector" "$badge" "$subagent_type" "$elapsed_fmt" "$description"
+    done <<< "$agents"
 }
 
 # --- Fetch usage (cached) ---
@@ -194,13 +279,30 @@ if [ -n "$usage_json" ]; then
         ] | @tsv'
     )"
 
-    status+=" | $(color_usage "5h" "$five_pct" "$five_reset")"
-    status+=" | $(color_usage "7d" "$seven_pct" "$seven_reset")"
+    status+=" | $(color_usage "5h" "$five_pct" "$five_reset" 0)"
+    status+=" | $(color_usage "7d" "$seven_pct" "$seven_reset" 1)"
 elif [ -f "$CREDS_FILE" ]; then
     # Have credentials but API failed and no cache
     status+=" | 5h: -- | 7d: --"
 fi
 
+# Running agents
+agent_lines=""
+if [ -n "${transcript_path:-}" ] && [ -f "${transcript_path:-}" ]; then
+    agent_lines=$(parse_running_agents "$transcript_path")
+fi
+
+agent_count=0
+if [ -n "$agent_lines" ]; then
+    agent_count=$(echo "$agent_lines" | wc -l)
+    status+=" | $agent_count agent"
+    (( agent_count > 1 )) && status+="s"
+fi
+
 status+="${BOLD}]$RST"
 
 echo -e "$status"
+
+if [ -n "$agent_lines" ]; then
+    format_agent_tree "$agent_lines"
+fi
