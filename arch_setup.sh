@@ -209,6 +209,22 @@ if ! command -v tms &> /dev/null; then
     cargo install tmux-sessionizer
 fi
 
+# --- Node.js (via nvm) ---
+
+if [ ! -d "$HOME/.nvm" ]; then
+    echo "Installing nvm..."
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+fi
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+if ! command -v node &> /dev/null; then
+    echo "Installing Node.js LTS..."
+    nvm install --lts
+    nvm alias default lts/*
+fi
+
 # --- Claude Code ---
 
 if ! command -v claude &> /dev/null; then
