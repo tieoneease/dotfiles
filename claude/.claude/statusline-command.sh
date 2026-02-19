@@ -111,12 +111,13 @@ format_countdown() {
 # --- Parse running subagents from transcript ---
 parse_running_agents() {
     local transcript="$1"
+    local parent_model="${2:-unknown}"
     [ -n "$transcript" ] && [ -f "$transcript" ] || return 0
     local now_epoch
     now_epoch=$(date +%s)
 
     # Read last 512KB, skip first (potentially truncated) line
-    tail -c 524288 "$transcript" 2>/dev/null | sed '1d' | jq -s -r --argjson now "$now_epoch" '
+    tail -c 524288 "$transcript" 2>/dev/null | sed '1d' | jq -s -r --argjson now "$now_epoch" --arg parent_model "$parent_model" '
         # Collect Task tool_use entries (started agents)
         [.[] | select(.type == "assistant") |
             . as $line |
@@ -124,7 +125,14 @@ parse_running_agents() {
             select(.type == "tool_use" and (.name == "Task" or .name == "proxy_Task")) |
             {
                 id: .id,
-                model: (.input.model // "unknown"),
+                # Most Task calls omit model param. Default by subagent_type:
+                # Plan inherits parent, Explore uses haiku, others use sonnet.
+                model: (.input.model // (
+                    if .input.subagent_type == "Plan" then $parent_model
+                    elif .input.subagent_type == "Explore" then "haiku"
+                    else "sonnet"
+                    end
+                )),
                 subagent_type: (.input.subagent_type // "unknown"),
                 description: (.input.description // ""),
                 timestamp: $line.timestamp
@@ -289,7 +297,7 @@ fi
 # Running agents
 agent_lines=""
 if [ -n "${transcript_path:-}" ] && [ -f "${transcript_path:-}" ]; then
-    agent_lines=$(parse_running_agents "$transcript_path")
+    agent_lines=$(parse_running_agents "$transcript_path" "$model_id")
 fi
 
 agent_count=0
