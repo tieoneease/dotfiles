@@ -142,6 +142,10 @@ if [[ "$(hostname)" == "sam-duomoon" ]]; then
     echo "Configuring udev hwdb for Zenbook Duo BT touchpad..."
     sudo mkdir -p /etc/udev/hwdb.d
     sudo cp -f "$DOTFILES_DIR/etc/udev/hwdb.d/71-touchpad-local.hwdb" /etc/udev/hwdb.d/
+
+    echo "Suppressing phantom WMI media key events..."
+    sudo cp -f "$DOTFILES_DIR/etc/udev/hwdb.d/72-asus-wmi-suppress.hwdb" /etc/udev/hwdb.d/
+
     sudo systemd-hwdb update
 fi
 

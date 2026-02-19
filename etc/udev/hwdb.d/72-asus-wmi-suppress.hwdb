@@ -1,0 +1,9 @@
+# Suppress phantom media key events from ASUS WMI BIOS during audio activity.
+# The asus-nb-wmi driver generates spurious KEY_MICMUTE and KEY_VOLUMEUP/DOWN
+# events during Slack huddles on the Zenbook Duo.
+# Scancodes are WMI notification codes from the asus-nb-wmi keymap table.
+evdev:name:Asus WMI hotkeys:*
+ KEYBOARD_KEY_7c=reserved
+ KEYBOARD_KEY_30=reserved
+ KEYBOARD_KEY_31=reserved
+ KEYBOARD_KEY_32=reserved
