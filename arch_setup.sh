@@ -106,7 +106,6 @@ fc-cache -f -v
 echo "Configuring keyd..."
 sudo mkdir -p /etc/keyd
 sudo cp -f "$DOTFILES_DIR/etc/keyd/default.conf" /etc/keyd/default.conf
-sudo cp -f "$DOTFILES_DIR/etc/keyd/acpi-block.conf" /etc/keyd/acpi-block.conf
 
 # Copy greetd config
 echo "Configuring greetd..."
