@@ -38,19 +38,16 @@ reorder_workspaces() {
 
 # Generate single-monitor defaults if include files don't exist yet.
 # Ensures non-Zenbook devices get valid include files on first boot.
+# Icons must match EDP1_WORKSPACES to stay in sync.
 generate_defaults() {
     if [[ ! -f "$NIRI_CONFIG_DIR/monitor-workspaces.kdl" ]]; then
-        write_atomic "$NIRI_CONFIG_DIR/monitor-workspaces.kdl" << 'EOF'
-workspace "󰇧"
-workspace "󰭹"
-workspace "󰆍"
-workspace "󰈙"
-workspace "󰈤"
-workspace "󰄨"
-workspace "󰍉"
-workspace "󰧑"
-workspace "󰳪"
-EOF
+        local f="$NIRI_CONFIG_DIR/monitor-workspaces.kdl"
+        local ws
+        {
+            for ws in "${EDP1_WORKSPACES[@]}"; do
+                printf 'workspace "%s"\n' "$ws"
+            done
+        } | write_atomic "$f"
     fi
     if [[ ! -f "$NIRI_CONFIG_DIR/monitor-nav.kdl" ]]; then
         printf 'binds {\n    Alt+J { focus-window-or-workspace-down; }\n    Alt+K { focus-window-or-workspace-up; }\n}\n' | write_atomic "$NIRI_CONFIG_DIR/monitor-nav.kdl"
@@ -147,7 +144,14 @@ apply_undocked() {
     sleep 0.1
     reorder_workspaces "${EDP1_WORKSPACES[@]}"
     position_edp2_below
-    sleep 0.1
+    # Wait for workspaces to migrate to eDP-2 before reordering (bounded poll)
+    local attempt
+    for attempt in {1..20}; do
+        local count
+        count=$(niri msg -j workspaces | jq '[.[] | select(.output == "eDP-2")] | length')
+        [[ "$count" -ge 9 ]] && break
+        sleep 0.05
+    done
     reorder_workspaces "${EDP2_WORKSPACES[@]}"
 }
 
