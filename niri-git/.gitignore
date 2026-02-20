@@ -1,0 +1,5 @@
+niri
+*.log
+*.pkg.tar.zst
+pkg/
+src/

@@ -44,7 +44,22 @@ install_packages yazi imagemagick poppler ueberzugpp chafa
 
 # Desktop environment
 echo "Installing desktop environment..."
-install_packages niri-git noctalia-shell-git walker-bin elephant-all matugen-bin xwayland-satellite
+# niri — use custom build with per-device tablet/touch config on Zenbook Duo
+if [[ "$(hostname)" == "sam-duomoon" ]]; then
+    if ! pacman -Qi niri-git &> /dev/null; then
+        echo "Building niri-git from PR #1856 fork (per-device tablet/touch config)..."
+        pushd "$DOTFILES_DIR/niri-git"
+        makepkg -si --noconfirm
+        popd
+    fi
+    # Prevent yay from overwriting the custom build
+    if ! grep -q "IgnorePkg.*niri-git" /etc/pacman.conf; then
+        sudo sed -i '/^\[options\]/a IgnorePkg = niri-git' /etc/pacman.conf
+    fi
+else
+    install_packages niri-git
+fi
+install_packages noctalia-shell-git walker-bin elephant-all matugen-bin xwayland-satellite
 
 # Greeter
 echo "Installing greeter..."

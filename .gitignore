@@ -14,8 +14,10 @@ karabiner/.config/karabiner/automatic_backups/
 walker/.config/walker/themes/noctalia/style.css
 niri/.config/niri/noctalia.kdl
 niri/.config/niri/device-outputs.kdl
+niri/.config/niri/device-inputs.kdl
 niri/.config/niri/monitor-nav.kdl
 niri/.config/niri/monitor-workspaces.kdl
+niri/.config/niri/*.bak
 kitty/.config/kitty/current-theme.conf
 kitty/.config/kitty/themes/
 kitty/.config/kitty/*.bak
