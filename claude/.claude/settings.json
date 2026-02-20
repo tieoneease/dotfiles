@@ -5,6 +5,8 @@
   },
   "skipDangerousModePermissionPrompt": true,
   "permissions": {
-    "allow": []
+    "allow": [
+      "mcp__pencil"
+    ]
   }
 }
