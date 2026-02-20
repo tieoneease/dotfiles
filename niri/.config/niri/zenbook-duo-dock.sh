@@ -10,8 +10,9 @@ DEVICE_CONFIG_DIR="$NIRI_CONFIG_DIR/devices"
 ZENBOOK_HOSTNAME="sam-duomoon"
 
 # Workspace icon arrays — single source of truth for intended ordering.
-# Workspaces are declared in config so niri creates them, then
-# reorder_workspaces() sets the correct positions via IPC after each reload.
+# Used by ensure_workspace_config() on first-time creation to declare all 18
+# workspaces, then reorder them via IPC (niri prepends new workspaces at index 0).
+# During steady-state dock/undock, niri preserves workspace order natively.
 EDP1_WORKSPACES=("󰇧" "󰭹" "󰆍" "󰈚" "󰅴" "󰄨" "󰍉" "󰧑" "󰳪")
 EDP2_WORKSPACES=("󰖟" "󰍡" "󰞷" "󰧭" "󰘦" "󱁉" "󱎸" "󰠮" "󰂓")
 
@@ -36,11 +37,11 @@ reorder_workspaces() {
     done
 }
 
-# Generate single-monitor defaults if include files don't exist yet.
-# Ensures non-Zenbook devices get valid include files on first boot.
-# Icons must match EDP1_WORKSPACES to stay in sync.
+# Generate include-file defaults if they don't exist yet.
+# Workspace config: non-Zenbook gets 9 single-monitor workspaces here;
+# Zenbook gets 18 dual-monitor workspaces via ensure_workspace_config() later.
 generate_defaults() {
-    if [[ ! -f "$NIRI_CONFIG_DIR/monitor-workspaces.kdl" ]]; then
+    if [[ "$(hostname)" != "$ZENBOOK_HOSTNAME" ]] && [[ ! -f "$NIRI_CONFIG_DIR/monitor-workspaces.kdl" ]]; then
         local f="$NIRI_CONFIG_DIR/monitor-workspaces.kdl"
         local ws
         {
@@ -60,43 +61,13 @@ generate_defaults() {
     fi
 }
 
-generate_defaults
-
-# Only run dock/undock logic on the Zenbook Duo
-if [[ "$(hostname)" != "$ZENBOOK_HOSTNAME" ]]; then
-    exit 0
-fi
-
-is_docked() {
-    lsusb -d "0b05:1b2c" &>/dev/null
-}
-
-position_edp2_below() {
-    # Niri uses ceiling for overlap detection but reports floor in JSON,
-    # so add 1 to avoid silent overlap fallback to side-by-side placement
-    local y
-    y=$(niri msg -j outputs | jq -r '.["eDP-1"].logical.height + 1')
-    niri msg output eDP-2 on
-    niri msg output eDP-2 position set 0 "$y"
-}
-
-# Write Alt+J/K binds — monitor navigation when undocked, window/workspace when docked.
-# Niri auto-reloads on file change, so bindings swap instantly.
-write_nav_binds() {
-    local f="$NIRI_CONFIG_DIR/monitor-nav.kdl"
-    if is_docked; then
-        printf 'binds {\n    Alt+J { focus-window-or-workspace-down; }\n    Alt+K { focus-window-or-workspace-up; }\n}\n' | write_atomic "$f"
-    else
-        printf 'binds {\n    Alt+J { focus-monitor-down; }\n    Alt+K { focus-monitor-up; }\n}\n' | write_atomic "$f"
-    fi
-}
-
-# Write workspace declarations — always all 18 with open-on-output constraints.
-# Single config for both docked and undocked modes. When eDP-2 is off, its
-# workspaces live on eDP-1 but retain original_output="eDP-2", so they
-# auto-migrate back when eDP-2 is enabled. No mode-specific branching needed.
-write_workspace_config() {
+# Ensure the 18-workspace config with open-on-output constraints exists.
+# Skips if already correct (grep for eDP-2 marker). On first creation or
+# upgrade from 9-workspace default, writes the file, reloads, and reorders
+# via IPC (new workspaces get prepended at index 0).
+ensure_workspace_config() {
     local f="$NIRI_CONFIG_DIR/monitor-workspaces.kdl"
+    [[ -f "$f" ]] && grep -q 'open-on-output "eDP-2"' "$f" && return
     write_atomic "$f" << 'EOF'
 // eDP-1 (top screen)
 workspace "󰇧" { open-on-output "eDP-1"; }
@@ -122,37 +93,60 @@ workspace "󱎸" { open-on-output "eDP-2"; }
 workspace "󰠮" { open-on-output "eDP-2"; }
 workspace "󰂓" { open-on-output "eDP-2"; }
 EOF
-}
-
-# Docked: disable eDP-2 (workspaces auto-migrate to eDP-1 with original_output
-# preserved), reload config, reorder all 18 workspaces on eDP-1
-apply_docked() {
-    niri msg output eDP-2 off
-    write_workspace_config
-    write_nav_binds
+    # First-time: new workspaces get prepended at index 0, need reorder
     niri msg action load-config-file 2>/dev/null || true
-    sleep 0.1
+    sleep 0.3
     reorder_workspaces "${EDP1_WORKSPACES[@]}" "${EDP2_WORKSPACES[@]}"
 }
 
-# Undocked: reload config, enable eDP-2 (workspaces with original_output="eDP-2"
-# auto-migrate back), reorder both monitors
-apply_undocked() {
-    write_workspace_config
+generate_defaults
+
+# Only run dock/undock logic on the Zenbook Duo
+if [[ "$(hostname)" != "$ZENBOOK_HOSTNAME" ]]; then
+    exit 0
+fi
+
+# One-time: create 18-workspace config with open-on-output constraints.
+# Niri preserves workspace order across output on/off cycles natively,
+# so we only need IPC reordering when workspaces are first created.
+ensure_workspace_config
+
+is_docked() {
+    lsusb -d "0b05:1b2c" &>/dev/null
+}
+
+position_edp2_below() {
+    # Niri uses ceiling for overlap detection but reports floor in JSON,
+    # so add 1 to avoid silent overlap fallback to side-by-side placement
+    local y
+    y=$(niri msg -j outputs | jq -r '.["eDP-1"].logical.height + 1')
+    niri msg output eDP-2 on
+    niri msg output eDP-2 position set 0 "$y"
+}
+
+# Write Alt+J/K binds — monitor navigation when undocked, window/workspace when docked.
+# Niri auto-reloads on file change, so bindings swap instantly.
+write_nav_binds() {
+    local f="$NIRI_CONFIG_DIR/monitor-nav.kdl"
+    if is_docked; then
+        printf 'binds {\n    Alt+J { focus-window-or-workspace-down; }\n    Alt+K { focus-window-or-workspace-up; }\n}\n' | write_atomic "$f"
+    else
+        printf 'binds {\n    Alt+J { focus-monitor-down; }\n    Alt+K { focus-monitor-up; }\n}\n' | write_atomic "$f"
+    fi
+}
+
+# Docked: disable eDP-2, workspaces auto-migrate to eDP-1 with order preserved.
+# Niri's remove_output appends migrated workspaces in their existing order.
+apply_docked() {
+    niri msg output eDP-2 off
     write_nav_binds
-    niri msg action load-config-file 2>/dev/null || true
-    sleep 0.1
-    reorder_workspaces "${EDP1_WORKSPACES[@]}"
+}
+
+# Undocked: enable eDP-2, workspaces with original_output="eDP-2" auto-migrate
+# back with order preserved. Niri's add_output extracts matching workspaces.
+apply_undocked() {
+    write_nav_binds
     position_edp2_below
-    # Wait for workspaces to migrate to eDP-2 before reordering (bounded poll)
-    local attempt
-    for attempt in {1..20}; do
-        local count
-        count=$(niri msg -j workspaces | jq '[.[] | select(.output == "eDP-2")] | length')
-        [[ "$count" -ge 9 ]] && break
-        sleep 0.05
-    done
-    reorder_workspaces "${EDP2_WORKSPACES[@]}"
 }
 
 apply_dock_state() {
