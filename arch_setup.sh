@@ -76,7 +76,7 @@ install_packages kitty alacritty
 # Desktop utilities
 echo "Installing desktop utilities..."
 install_packages swayidle playerctl network-manager-applet brightnessctl wl-clipboard bluez bluez-utils \
-    xdg-desktop-portal xdg-desktop-portal-gtk wlsunset localsend-bin libinput-tools
+    xdg-desktop-portal xdg-desktop-portal-gtk wlsunset localsend-bin libinput-tools fuse2
 
 # Input method framework (Chinese Traditional Pinyin)
 echo "Installing input method framework..."
@@ -97,6 +97,16 @@ install_packages slack-desktop  # XWayland version for better stability
 # Productivity applications
 echo "Installing productivity applications..."
 install_packages obsidian zathura zathura-pdf-mupdf
+
+# Pencil.dev design tool
+echo "Installing Pencil.dev..."
+PENCIL_DIR="$HOME/.local/share/pencil"
+if [ ! -f "$PENCIL_DIR/Pencil.AppImage" ]; then
+    mkdir -p "$PENCIL_DIR"
+    curl -fSL -o "$PENCIL_DIR/Pencil.AppImage" \
+        "https://5ykymftd1soethh5.public.blob.vercel-storage.com/Pencil-linux-x86_64.AppImage"
+    chmod +x "$PENCIL_DIR/Pencil.AppImage"
+fi
 
 # Voice-to-text
 echo "Installing voice-to-text tools..."
