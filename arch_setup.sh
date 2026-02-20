@@ -363,6 +363,25 @@ if [ ! -f "$WHISPER_MODEL_DIR/ggml-base.en.bin" ]; then
         "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin"
 fi
 
+# --- Web apps ---
+
+echo "Installing web apps..."
+WEBAPP_ICONS="$HOME/.local/share/icons"
+
+if [ ! -f "$WEBAPP_ICONS/webapp-gemini.png" ]; then
+    echo "Installing Gemini web app..."
+    ~/.local/bin/webapp-install "Gemini" "https://gemini.google.com/app" \
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Google_Gemini_logo.svg/1200px-Google_Gemini_logo.svg.png"
+fi
+
+if [ ! -f "$WEBAPP_ICONS/webapp-perplexity.png" ]; then
+    echo "Installing Perplexity web app..."
+    # Note: perplexity.ai/favicon.ico fails — magick can't decode ICO on this system.
+    # apple-touch-icon.png (180×180 PNG) works reliably.
+    ~/.local/bin/webapp-install "Perplexity" "https://www.perplexity.ai/" \
+        "https://www.perplexity.ai/apple-touch-icon.png"
+fi
+
 # --- Done ---
 
 echo ""
