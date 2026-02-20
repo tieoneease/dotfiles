@@ -26,8 +26,8 @@ require('lualine').setup {
             cond = require("noice").api.statusline.mode.has,
         }
     },
-    lualine_x = {},
-    lualine_y = {},
+    lualine_x = {'filetype'},
+    lualine_y = {'progress'},
     lualine_z = {'location'}
   },
   inactive_sections = {

@@ -11,6 +11,8 @@ local colors_file = vim.fn.stdpath("config") .. "/lua/noctalia_colors.lua"
 local function apply_colors()
     if vim.fn.filereadable(colors_file) == 0 then return end
     dofile(colors_file)
+    -- Redraw tabline so bufferline picks up new highlights
+    vim.cmd("redrawtabline")
 end
 
 apply_colors()

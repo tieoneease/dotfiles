@@ -122,6 +122,12 @@ local plugins = {
         dependencies = { 'nvim-lua/plenary.nvim' }
     },
     {
+        'akinsho/bufferline.nvim',
+        version = "*",
+        dependencies = { 'nvim-tree/nvim-web-devicons' },
+        event = "VeryLazy",
+    },
+    {
         'MeanderingProgrammer/render-markdown.nvim',
         ft = { "markdown" },
         dependencies = {

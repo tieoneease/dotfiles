@@ -12,6 +12,9 @@
 @define-color outline {{colors.outline.default.hex}};
 @define-color outline_variant {{colors.outline_variant.default.hex}};
 @define-color error {{colors.error.default.hex}};
+@define-color green {{colors.green.default.hex}};
+@define-color orange {{colors.orange.default.hex}};
+@define-color yellow {{colors.yellow.default.hex}};
 
 * {
     all: unset;

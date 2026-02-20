@@ -18,28 +18,50 @@ require('base16-colorscheme').setup({
     base0F = "{{colors.error.default.hex | lighten: -15.0}}",
 })
 
--- Highlight overrides (only where base16 defaults aren't enough)
+-- Highlight overrides (layered on top of base16 — additive, removable)
+-- Editor groups
 vim.api.nvim_set_hl(0, "Visual", { bg = "{{colors.primary_container.default.hex}}", fg = "{{colors.on_primary_container.default.hex}}" })
 vim.api.nvim_set_hl(0, "Comment", { fg = "{{colors.outline.default.hex}}", italic = true })
+vim.api.nvim_set_hl(0, "CursorLine", { bg = "{{colors.surface_container_low.default.hex}}" })
+vim.api.nvim_set_hl(0, "ColorColumn", { bg = "{{colors.surface_container_low.default.hex}}" })
+
+-- Standard vim groups (covers non-Treesitter files too)
+vim.api.nvim_set_hl(0, "String", { fg = "{{colors.green.default.hex}}" })
+vim.api.nvim_set_hl(0, "Number", { fg = "{{colors.orange.default.hex}}" })
+vim.api.nvim_set_hl(0, "Boolean", { fg = "{{colors.orange.default.hex}}" })
+vim.api.nvim_set_hl(0, "Float", { fg = "{{colors.orange.default.hex}}" })
+vim.api.nvim_set_hl(0, "Type", { fg = "{{colors.yellow.default.hex}}" })
 vim.api.nvim_set_hl(0, "Conditional", { italic = true })
 
--- Telescope: MD3 surface elevation hierarchy (flat/borderless)
+-- Treesitter groups (override base16's links for Treesitter-parsed files)
+vim.api.nvim_set_hl(0, "@string", { fg = "{{colors.green.default.hex}}" })
+vim.api.nvim_set_hl(0, "@number", { fg = "{{colors.orange.default.hex}}" })
+vim.api.nvim_set_hl(0, "@boolean", { fg = "{{colors.orange.default.hex}}" })
+vim.api.nvim_set_hl(0, "@number.float", { fg = "{{colors.orange.default.hex}}" })
+vim.api.nvim_set_hl(0, "@type", { fg = "{{colors.yellow.default.hex}}" })
+vim.api.nvim_set_hl(0, "@type.builtin", { fg = "{{colors.yellow.default.hex}}", bold = true })
+vim.api.nvim_set_hl(0, "@function.builtin", { fg = "{{colors.primary.default.hex}}", italic = true })
+vim.api.nvim_set_hl(0, "@constant.builtin", { fg = "{{colors.orange.default.hex}}", bold = true })
+vim.api.nvim_set_hl(0, "@string.escape", { fg = "{{colors.primary_fixed_dim.default.hex}}", bold = true })
+vim.api.nvim_set_hl(0, "@keyword.return", { fg = "{{colors.error.default.hex}}", italic = true })
+
+-- Telescope: MD3 surface elevation hierarchy with visible borders
 -- Preview = surface (darkest), Results = surface_container (mid), Prompt = surface_container_high (lightest)
 local tel = {
     -- Preview panel (darkest — blends with editor)
     TelescopePreviewNormal  = { bg = "{{colors.surface.default.hex}}", fg = "{{colors.on_surface.default.hex}}" },
-    TelescopePreviewBorder  = { bg = "{{colors.surface.default.hex}}", fg = "{{colors.surface.default.hex}}" },
+    TelescopePreviewBorder  = { bg = "{{colors.surface.default.hex}}", fg = "{{colors.outline_variant.default.hex}}" },
     TelescopePreviewTitle   = { bg = "{{colors.tertiary.default.hex}}", fg = "{{colors.on_tertiary.default.hex}}", bold = true },
 
     -- Results panel (mid elevation)
     TelescopeNormal         = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.on_surface.default.hex}}" },
     TelescopeResultsNormal  = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.on_surface.default.hex}}" },
-    TelescopeResultsBorder  = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.surface_container.default.hex}}" },
+    TelescopeResultsBorder  = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.outline_variant.default.hex}}" },
     TelescopeResultsTitle   = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.surface_container.default.hex}}" },
 
     -- Prompt panel (lightest — input area stands out)
     TelescopePromptNormal   = { bg = "{{colors.surface_container_high.default.hex}}", fg = "{{colors.on_surface.default.hex}}" },
-    TelescopePromptBorder   = { bg = "{{colors.surface_container_high.default.hex}}", fg = "{{colors.surface_container_high.default.hex}}" },
+    TelescopePromptBorder   = { bg = "{{colors.surface_container_high.default.hex}}", fg = "{{colors.outline_variant.default.hex}}" },
     TelescopePromptTitle    = { bg = "{{colors.primary.default.hex}}", fg = "{{colors.on_primary.default.hex}}", bold = true },
     TelescopePromptCounter  = { fg = "{{colors.outline.default.hex}}" },
     TelescopePromptPrefix   = { fg = "{{colors.primary.default.hex}}" },
@@ -55,6 +77,25 @@ for group, opts in pairs(tel) do
     vim.api.nvim_set_hl(0, group, opts)
 end
 
+-- Bufferline highlight overrides
+local bl = {
+    BufferLineFill          = { bg = "{{colors.surface.default.hex}}" },
+    BufferLineBackground    = { bg = "{{colors.surface.default.hex}}", fg = "{{colors.on_surface_variant.default.hex}}" },
+    BufferLineTab           = { bg = "{{colors.surface.default.hex}}", fg = "{{colors.on_surface_variant.default.hex}}" },
+    BufferLineTabSelected   = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.primary.default.hex}}", bold = true },
+    BufferLineTabSeparator  = { bg = "{{colors.surface.default.hex}}", fg = "{{colors.surface.default.hex}}" },
+    BufferLineTabSeparatorSelected = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.surface.default.hex}}" },
+    BufferLineBufferSelected = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.primary.default.hex}}", bold = true },
+    BufferLineModified      = { fg = "{{colors.tertiary.default.hex}}" },
+    BufferLineModifiedSelected = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.tertiary.default.hex}}" },
+    BufferLineIndicatorSelected = { fg = "{{colors.primary.default.hex}}" },
+    BufferLineSeparator      = { bg = "{{colors.surface.default.hex}}", fg = "{{colors.surface.default.hex}}" },
+    BufferLineSeparatorSelected = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.surface.default.hex}}" },
+}
+for group, opts in pairs(bl) do
+    vim.api.nvim_set_hl(0, group, opts)
+end
+
 -- Re-source lualine for hot-reload
 local ll_ok, lualine = pcall(require, "lualine")
 if ll_ok then
@@ -62,3 +103,6 @@ if ll_ok then
     config.options.theme = "base16"
     lualine.setup(config)
 end
+
+-- Redraw tabline so bufferline picks up new highlights
+vim.cmd("redrawtabline")
