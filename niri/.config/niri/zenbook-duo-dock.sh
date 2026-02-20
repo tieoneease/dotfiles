@@ -85,8 +85,8 @@ write_workspace_config() {
 workspace "󰇧"
 workspace "󰭹"
 workspace "󰆍"
-workspace "󰈙"
-workspace "󰈤"
+workspace "󰈚"
+workspace "󰅴"
 workspace "󰄨"
 workspace "󰍉"
 workspace "󰧑"
@@ -98,8 +98,8 @@ EOF
 workspace "󰇧" { open-on-output "eDP-1"; }
 workspace "󰭹" { open-on-output "eDP-1"; }
 workspace "󰆍" { open-on-output "eDP-1"; }
-workspace "󰈙" { open-on-output "eDP-1"; }
-workspace "󰈤" { open-on-output "eDP-1"; }
+workspace "󰈚" { open-on-output "eDP-1"; }
+workspace "󰅴" { open-on-output "eDP-1"; }
 workspace "󰄨" { open-on-output "eDP-1"; }
 workspace "󰍉" { open-on-output "eDP-1"; }
 workspace "󰧑" { open-on-output "eDP-1"; }
@@ -112,8 +112,8 @@ workspace "󰂓" { open-on-output "eDP-2"; }
 workspace "󰠮" { open-on-output "eDP-2"; }
 workspace "󱎸" { open-on-output "eDP-2"; }
 workspace "󱁉" { open-on-output "eDP-2"; }
-workspace "󰅴" { open-on-output "eDP-2"; }
-workspace "󰎚" { open-on-output "eDP-2"; }
+workspace "󰘦" { open-on-output "eDP-2"; }
+workspace "󰧭" { open-on-output "eDP-2"; }
 workspace "󰞷" { open-on-output "eDP-2"; }
 workspace "󰍡" { open-on-output "eDP-2"; }
 workspace "󰖟" { open-on-output "eDP-2"; }
