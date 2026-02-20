@@ -9,6 +9,12 @@ NIRI_CONFIG_DIR="$HOME/.config/niri"
 DEVICE_CONFIG_DIR="$NIRI_CONFIG_DIR/devices"
 ZENBOOK_HOSTNAME="sam-duomoon"
 
+# Workspace icon arrays — single source of truth for intended ordering.
+# Workspaces are declared in config so niri creates them, then
+# reorder_workspaces() sets the correct positions via IPC after each reload.
+EDP1_WORKSPACES=("󰇧" "󰭹" "󰆍" "󰈚" "󰅴" "󰄨" "󰍉" "󰧑" "󰳪")
+EDP2_WORKSPACES=("󰖟" "󰍡" "󰞷" "󰧭" "󰘦" "󱁉" "󱎸" "󰠮" "󰂓")
+
 # Write file atomically via temp+rename to avoid niri seeing truncated/partial content
 write_atomic() {
     local target="$1"
@@ -16,6 +22,18 @@ write_atomic() {
     tmp=$(mktemp "${target}.XXXXXX")
     cat > "$tmp"
     mv -f "$tmp" "$target"
+}
+
+# Reorder named workspaces to their intended positions after config reload.
+# Niri prepends newly-declared workspaces to index 0 on reload, scrambling order.
+# This function uses move-workspace-to-index IPC to set positions deterministically.
+# The command is per-monitor, so eDP-1 and eDP-2 workspace names don't collide.
+reorder_workspaces() {
+    local i=1
+    for name in "$@"; do
+        niri msg action move-workspace-to-index "$i" --reference "$name" 2>/dev/null || true
+        ((i++))
+    done
 }
 
 # Generate single-monitor defaults if include files don't exist yet.
@@ -76,24 +94,13 @@ write_nav_binds() {
     fi
 }
 
-# Write workspace declarations — 9 named workspaces when docked,
-# 18 (9 per monitor with different icons) when undocked.
+# Write workspace declarations — always all 18 with open-on-output constraints.
+# Single config for both docked and undocked modes. When eDP-2 is off, its
+# workspaces live on eDP-1 but retain original_output="eDP-2", so they
+# auto-migrate back when eDP-2 is enabled. No mode-specific branching needed.
 write_workspace_config() {
     local f="$NIRI_CONFIG_DIR/monitor-workspaces.kdl"
-    if is_docked; then
-        write_atomic "$f" << 'EOF'
-workspace "󰇧"
-workspace "󰭹"
-workspace "󰆍"
-workspace "󰈚"
-workspace "󰅴"
-workspace "󰄨"
-workspace "󰍉"
-workspace "󰧑"
-workspace "󰳪"
-EOF
-    else
-        write_atomic "$f" << 'EOF'
+    write_atomic "$f" << 'EOF'
 // eDP-1 (top screen)
 workspace "󰇧" { open-on-output "eDP-1"; }
 workspace "󰭹" { open-on-output "eDP-1"; }
@@ -105,36 +112,43 @@ workspace "󰍉" { open-on-output "eDP-1"; }
 workspace "󰧑" { open-on-output "eDP-1"; }
 workspace "󰳪" { open-on-output "eDP-1"; }
 
-// eDP-2 (bottom screen) — declared in reverse because niri prepends
-// each new workspace to the top during config reload, so 9→1 yields 1→9
-// Uses MDI variant icons to distinguish from eDP-1 while keeping same meanings
-workspace "󰂓" { open-on-output "eDP-2"; }
-workspace "󰠮" { open-on-output "eDP-2"; }
-workspace "󱎸" { open-on-output "eDP-2"; }
-workspace "󱁉" { open-on-output "eDP-2"; }
-workspace "󰘦" { open-on-output "eDP-2"; }
-workspace "󰧭" { open-on-output "eDP-2"; }
-workspace "󰞷" { open-on-output "eDP-2"; }
-workspace "󰍡" { open-on-output "eDP-2"; }
+// eDP-2 (bottom screen)
+// Uses MDI variant icons to distinguish from eDP-1 while keeping same meanings.
+// When eDP-2 is off (docked), these persist on eDP-1 at positions 10-18.
 workspace "󰖟" { open-on-output "eDP-2"; }
+workspace "󰍡" { open-on-output "eDP-2"; }
+workspace "󰞷" { open-on-output "eDP-2"; }
+workspace "󰧭" { open-on-output "eDP-2"; }
+workspace "󰘦" { open-on-output "eDP-2"; }
+workspace "󱁉" { open-on-output "eDP-2"; }
+workspace "󱎸" { open-on-output "eDP-2"; }
+workspace "󰠮" { open-on-output "eDP-2"; }
+workspace "󰂓" { open-on-output "eDP-2"; }
 EOF
-    fi
 }
 
-# Docked: disable eDP-2, shrink to 9 workspaces, reload
+# Docked: disable eDP-2 (workspaces auto-migrate to eDP-1 with original_output
+# preserved), reload config, reorder all 18 workspaces on eDP-1
 apply_docked() {
     niri msg output eDP-2 off
     write_workspace_config
     write_nav_binds
     niri msg action load-config-file 2>/dev/null || true
+    sleep 0.1
+    reorder_workspaces "${EDP1_WORKSPACES[@]}" "${EDP2_WORKSPACES[@]}"
 }
 
-# Undocked: write 18-workspace config and reload, then enable eDP-2.
+# Undocked: reload config, enable eDP-2 (workspaces with original_output="eDP-2"
+# auto-migrate back), reorder both monitors
 apply_undocked() {
     write_workspace_config
     write_nav_binds
     niri msg action load-config-file 2>/dev/null || true
+    sleep 0.1
+    reorder_workspaces "${EDP1_WORKSPACES[@]}"
     position_edp2_below
+    sleep 0.1
+    reorder_workspaces "${EDP2_WORKSPACES[@]}"
 }
 
 apply_dock_state() {
