@@ -86,6 +86,8 @@ local bl = {
     BufferLineTabSeparator  = { bg = "{{colors.surface.default.hex}}", fg = "{{colors.surface.default.hex}}" },
     BufferLineTabSeparatorSelected = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.surface.default.hex}}" },
     BufferLineBufferSelected = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.primary.default.hex}}", bold = true },
+    BufferLineCloseButtonSelected = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.on_surface.default.hex}}" },
+    BufferLineDuplicateSelected = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.on_surface_variant.default.hex}}", italic = true },
     BufferLineModified      = { fg = "{{colors.tertiary.default.hex}}" },
     BufferLineModifiedSelected = { bg = "{{colors.surface_container.default.hex}}", fg = "{{colors.tertiary.default.hex}}" },
     BufferLineIndicatorSelected = { fg = "{{colors.primary.default.hex}}" },
@@ -94,6 +96,38 @@ local bl = {
 }
 for group, opts in pairs(bl) do
     vim.api.nvim_set_hl(0, group, opts)
+end
+
+-- Sync bufferline's internal highlight state so lazily-created icon highlights
+-- inherit the correct bg. Without this, bufferline derives icon bg from its
+-- cached config (captured during ColorScheme, before our overrides above).
+local bl_ok, bl_config_mod = pcall(require, "bufferline.config")
+if bl_ok then
+    local cfg = bl_config_mod.get()
+    if cfg and cfg.highlights then
+        local sc = "{{colors.surface_container.default.hex}}"
+        local s = "{{colors.surface.default.hex}}"
+        -- Patch parent highlights so future icon derivation uses correct bg
+        if cfg.highlights.buffer_selected then cfg.highlights.buffer_selected.bg = sc end
+        if cfg.highlights.background then cfg.highlights.background.bg = s end
+        if cfg.highlights.buffer_visible then cfg.highlights.buffer_visible.bg = s end
+        if cfg.highlights.close_button_selected then cfg.highlights.close_button_selected.bg = sc end
+        require("bufferline.highlights").reset_icon_hl_cache()
+        -- Fix existing icon highlights directly. Bufferline uses default=true
+        -- (themable), so re-creation after cache reset would skip already-defined
+        -- groups. This handles hot-reload and between-plugin-load renders.
+        local sc_int = tonumber(sc:sub(2), 16)
+        local s_int = tonumber(s:sub(2), 16)
+        for name, _ in pairs(vim.api.nvim_get_hl(0, {})) do
+            if type(name) == "string" and name:match("^BufferLineDevIcon") then
+                local val = vim.api.nvim_get_hl(0, { name = name })
+                if name:match("Selected$") then val.bg = sc_int
+                elseif name:match("Inactive$") then val.bg = s_int
+                else val.bg = s_int end
+                vim.api.nvim_set_hl(0, name, val)
+            end
+        end
+    end
 end
 
 -- Re-source lualine for hot-reload
