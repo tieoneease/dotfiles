@@ -280,7 +280,7 @@ window-rule {
 // Obsidian → workspace 8 (brain), full width
 window-rule {
     match app-id="obsidian"
-    open-on-workspace ""
+    open-on-workspace "󰧑"
     open-maximized true
 }
 

@@ -23,14 +23,14 @@ write_atomic() {
 generate_defaults() {
     if [[ ! -f "$NIRI_CONFIG_DIR/monitor-workspaces.kdl" ]]; then
         write_atomic "$NIRI_CONFIG_DIR/monitor-workspaces.kdl" << 'EOF'
-workspace "󰊯"
+workspace "󰇧"
 workspace "󰭹"
 workspace "󰆍"
 workspace "󰈙"
-workspace ""
+workspace "󰈤"
 workspace "󰄨"
 workspace "󰍉"
-workspace ""
+workspace "󰧑"
 workspace "󰳪"
 EOF
     fi
@@ -82,34 +82,34 @@ write_workspace_config() {
     local f="$NIRI_CONFIG_DIR/monitor-workspaces.kdl"
     if is_docked; then
         write_atomic "$f" << 'EOF'
-workspace "󰊯"
+workspace "󰇧"
 workspace "󰭹"
 workspace "󰆍"
 workspace "󰈙"
-workspace ""
+workspace "󰈤"
 workspace "󰄨"
 workspace "󰍉"
-workspace ""
+workspace "󰧑"
 workspace "󰳪"
 EOF
     else
         write_atomic "$f" << 'EOF'
 // eDP-1 (top screen)
-workspace "󰊯" { open-on-output "eDP-1"; }
+workspace "󰇧" { open-on-output "eDP-1"; }
 workspace "󰭹" { open-on-output "eDP-1"; }
 workspace "󰆍" { open-on-output "eDP-1"; }
 workspace "󰈙" { open-on-output "eDP-1"; }
-workspace "" { open-on-output "eDP-1"; }
+workspace "󰈤" { open-on-output "eDP-1"; }
 workspace "󰄨" { open-on-output "eDP-1"; }
 workspace "󰍉" { open-on-output "eDP-1"; }
-workspace "" { open-on-output "eDP-1"; }
+workspace "󰧑" { open-on-output "eDP-1"; }
 workspace "󰳪" { open-on-output "eDP-1"; }
 
 // eDP-2 (bottom screen) — declared in reverse because niri prepends
 // each new workspace to the top during config reload, so 9→1 yields 1→9
 // Uses MDI variant icons to distinguish from eDP-1 while keeping same meanings
 workspace "󰂓" { open-on-output "eDP-2"; }
-workspace "󰧑" { open-on-output "eDP-2"; }
+workspace "󰠮" { open-on-output "eDP-2"; }
 workspace "󱎸" { open-on-output "eDP-2"; }
 workspace "󱁉" { open-on-output "eDP-2"; }
 workspace "󰅴" { open-on-output "eDP-2"; }
