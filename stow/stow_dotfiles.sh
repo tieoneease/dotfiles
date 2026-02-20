@@ -116,6 +116,13 @@ setup_niri_includes() {
         cp "$devices_dir/$(hostname).kdl" "$niri_dir/device-outputs.kdl"
     fi
 
+    # Copy device-specific input config (hostname-matched)
+    local inputs_file="$devices_dir/$(hostname)-inputs.kdl"
+    if [ -f "$inputs_file" ]; then
+        echo "  Copying device input config for $(hostname)"
+        cp "$inputs_file" "$niri_dir/device-inputs.kdl"
+    fi
+
     # Create stub noctalia.kdl if Noctalia hasn't generated it yet
     # (empty file is valid KDL; static fallback colors in config.kdl apply)
     if [ ! -e "$niri_dir/noctalia.kdl" ]; then
