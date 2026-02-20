@@ -107,15 +107,16 @@ workspace "󰳪" { open-on-output "eDP-1"; }
 
 // eDP-2 (bottom screen) — declared in reverse because niri prepends
 // each new workspace to the top during config reload, so 9→1 yields 1→9
-workspace "9" { open-on-output "eDP-2"; }
-workspace "8" { open-on-output "eDP-2"; }
-workspace "7" { open-on-output "eDP-2"; }
-workspace "6" { open-on-output "eDP-2"; }
-workspace "5" { open-on-output "eDP-2"; }
-workspace "4" { open-on-output "eDP-2"; }
-workspace "3" { open-on-output "eDP-2"; }
-workspace "2" { open-on-output "eDP-2"; }
-workspace "1" { open-on-output "eDP-2"; }
+// Uses MDI variant icons to distinguish from eDP-1 while keeping same meanings
+workspace "󰂓" { open-on-output "eDP-2"; }
+workspace "󰧑" { open-on-output "eDP-2"; }
+workspace "󱎸" { open-on-output "eDP-2"; }
+workspace "󱁉" { open-on-output "eDP-2"; }
+workspace "󰅴" { open-on-output "eDP-2"; }
+workspace "󰎚" { open-on-output "eDP-2"; }
+workspace "󰞷" { open-on-output "eDP-2"; }
+workspace "󰍡" { open-on-output "eDP-2"; }
+workspace "󰖟" { open-on-output "eDP-2"; }
 EOF
     fi
 }
