@@ -120,7 +120,16 @@ local plugins = {
         'nvim-telescope/telescope.nvim',
         tag = '0.1.5',
         dependencies = { 'nvim-lua/plenary.nvim' }
-    }
+    },
+    {
+        'MeanderingProgrammer/render-markdown.nvim',
+        ft = { "markdown" },
+        dependencies = {
+            'nvim-treesitter/nvim-treesitter',
+            'nvim-tree/nvim-web-devicons',
+        },
+        opts = {},
+    },
 }
 
 local options = {}
