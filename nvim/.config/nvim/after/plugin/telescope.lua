@@ -14,17 +14,17 @@ require('telescope').setup({
         prompt_prefix = "   ",
         selection_caret = "  ",
         entry_prefix = "  ",
+        find_command = { "fd", "--type", "f", "--hidden", "--exclude", ".git" },
     },
 })
 
 local builtin = require('telescope.builtin')
 vim.keymap.set('n', '<C-p>', function()
-    local ok = pcall(builtin.git_files, {})
-    if not ok then
-        builtin.find_files({})
-    end
+    builtin.find_files({})
 end, {})
-vim.keymap.set('n', '<leader>ff', builtin.find_files, {})
+vim.keymap.set('n', '<leader>ff', function()
+    builtin.find_files({ no_ignore = true })
+end, {})
 vim.keymap.set('n', '<leader>fa', builtin.live_grep, {})
 vim.keymap.set('n', '<leader>fw', builtin.grep_string, {})
 vim.keymap.set('n', '<leader>fb', builtin.buffers, {})
