@@ -83,8 +83,9 @@ echo "Installing input method framework..."
 install_packages fcitx5 fcitx5-gtk fcitx5-qt fcitx5-rime fcitx5-configtool noto-fonts-cjk rime-ice-git
 
 # Browser
+# google-chrome: daily browsing; chromium: required by webapp-launch for Gemini/Perplexity shortcuts
 echo "Installing browser..."
-install_packages google-chrome
+install_packages google-chrome chromium
 
 # Editor
 echo "Installing editor..."
@@ -252,6 +253,24 @@ if ! command -v node &> /dev/null; then
     echo "Installing Node.js LTS..."
     nvm install --lts
     nvm alias default lts/*
+fi
+
+# --- Nix package manager ---
+
+if ! command -v nix &> /dev/null; then
+    echo "Installing Nix via Determinate Systems installer..."
+    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix \
+        | sh -s -- install --no-confirm
+    # Source Nix for the rest of this setup session
+    if [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    fi
+fi
+
+# Install nix-direnv (enables `use flake` / `use nix` in .envrc files)
+if [ ! -f "$HOME/.nix-profile/share/nix-direnv/direnvrc" ]; then
+    echo "Installing nix-direnv..."
+    nix profile install nixpkgs#nix-direnv
 fi
 
 # --- Claude Code ---
