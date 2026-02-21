@@ -399,6 +399,8 @@ if [ ! -f "$WEBAPP_ICONS/webapp-perplexity.png" ]; then
     # apple-touch-icon.png (180×180 PNG) works reliably.
     ~/.local/bin/webapp-install "Perplexity" "https://www.perplexity.ai/" \
         "https://www.perplexity.ai/apple-touch-icon.png"
+    ~/.local/bin/webapp-install "NotebookLM" "https://notebooklm.google.com/" \
+        "https://www.gstatic.com/images/branding/product/2x/notebooklm_512dp.png"
 fi
 
 # --- Done ---

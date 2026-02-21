@@ -183,7 +183,7 @@ hotkey-overlay {
 // Additionally, clients will be informed that they are tiled, removing some client-side rounded corners.
 // This option will also fix border/focus ring drawing behind some semitransparent windows.
 // After enabling or disabling this, you need to restart the apps for this to take effect.
-// prefer-no-csd
+prefer-no-csd
 
 // You can change the path where screenshots are saved.
 // A ~ at the front will be expanded to the home directory.
@@ -296,6 +296,12 @@ window-rule {
     open-on-workspace "󰧑"
 }
 
+// NotebookLM → workspace 8 (brain) on eDP-1
+window-rule {
+    match app-id="chrome-notebooklm.google.com__-Default"
+    open-on-workspace "󰧑"
+}
+
 // Steam notification popups — position at bottom-right instead of center
 window-rule {
     match app-id="steam" title=r#"^notificationtoasts\_\d+_desktop$"#
@@ -348,6 +354,7 @@ binds {
     Mod+O { spawn-sh "~/.local/bin/focus-or-launch obsidian obsidian"; }
     Mod+G { spawn-sh "~/.local/bin/focus-or-launch chrome-gemini.google.com__app-Default ~/.local/bin/webapp-launch gemini https://gemini.google.com/app"; }
     Mod+P { spawn-sh "~/.local/bin/focus-or-launch chrome-www.perplexity.ai__-Default ~/.local/bin/webapp-launch perplexity https://www.perplexity.ai/"; }
+    Mod+N { spawn-sh "~/.local/bin/focus-or-launch chrome-notebooklm.google.com__-Default ~/.local/bin/webapp-launch notebooklm https://notebooklm.google.com/"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
