@@ -264,7 +264,7 @@ window-rule {
 
 // Communication apps → workspace 2 (chat)
 window-rule {
-    match app-id="discord"
+    match app-id="vesktop"
     open-on-workspace "󰭹"
 }
 window-rule {
@@ -348,7 +348,7 @@ binds {
     Mod+Alt+L hotkey-overlay-title="Turn Off Screen" { spawn "niri" "msg" "action" "power-off-monitors"; }
     Mod+B { spawn "google-chrome-stable"; }
     Mod+S { spawn-sh "~/.local/bin/focus-or-launch Slack slack --ozone-platform=wayland --disable-features=WaylandWindowDecorations"; }
-    Mod+D { spawn-sh "~/.local/bin/focus-or-launch discord discord"; }
+    Mod+D { spawn-sh "~/.local/bin/focus-or-launch vesktop vesktop"; }
     Mod+W { spawn-sh "~/.local/bin/focus-or-launch chrome-web.whatsapp.com__-Default ~/.local/bin/webapp-launch whatsapp https://web.whatsapp.com"; }
     Mod+O { spawn-sh "~/.local/bin/focus-or-launch obsidian obsidian"; }
     Mod+G { spawn-sh "~/.local/bin/focus-or-launch chrome-gemini.google.com__app-Default ~/.local/bin/webapp-launch gemini https://gemini.google.com/app"; }

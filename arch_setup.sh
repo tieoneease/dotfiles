@@ -94,6 +94,7 @@ install_packages visual-studio-code-bin
 # Communication
 echo "Installing communication tools..."
 install_packages slack-desktop  # XWayland version for better stability
+install_packages vesktop-bin
 
 # Productivity applications
 echo "Installing productivity applications..."
