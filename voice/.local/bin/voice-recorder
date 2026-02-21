@@ -159,6 +159,19 @@ class RecorderDaemon:
 
     # --- Audio ---
 
+    def ensure_mic_unmuted(self):
+        """Unmute the default PipeWire source if muted."""
+        try:
+            result = subprocess.run(
+                ["wpctl", "get-volume", "@DEFAULT_SOURCE@"],
+                capture_output=True, text=True, timeout=2
+            )
+            if "[MUTED]" in result.stdout:
+                subprocess.run(["wpctl", "set-mute", "@DEFAULT_SOURCE@", "0"], timeout=2)
+                notify("Microphone was muted — unmuted automatically")
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass  # wpctl unavailable, proceed anyway
+
     def audio_callback(self, indata, frames, time_info, status):
         """Called by sounddevice for each audio block."""
         self.audio_chunks.append(indata.copy())
@@ -210,6 +223,9 @@ class RecorderDaemon:
         self.colors = load_colors()
         self.reset_session()
         self.start_time = time.monotonic()
+
+        # Ensure mic is not muted before recording
+        self.ensure_mic_unmuted()
 
         # Open audio stream
         try:
