@@ -35,9 +35,8 @@ bindkey "^[[1;5D" backward-word
 [[ -f "$HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] && source "$HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh"
 [[ -f "$HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] && source "$HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 
-# Initialize NVM
-[[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"
-[[ -s "$NVM_DIR/bash_completion" ]] && \. "$NVM_DIR/bash_completion"
+# Initialize mise (version manager for node, python, etc.)
+command -v mise >/dev/null && eval "$(mise activate zsh)"
 
 # Initialize Starship prompt
 command -v starship >/dev/null && eval "$(starship init zsh)"

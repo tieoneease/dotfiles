@@ -209,7 +209,7 @@ if [ ! -f "$HOME/.zshrc" ]; then
 [[ -f ~/.config/zsh/base.zsh ]] && source ~/.config/zsh/base.zsh
 
 # Machine-specific configuration and installer additions below
-# (nvm, conda, rustup, etc. can safely append here)
+# (mise, conda, rustup, etc. can safely append here)
 ZSHRC
 fi
 
@@ -239,21 +239,10 @@ if ! command -v tms &> /dev/null; then
     cargo install tmux-sessionizer
 fi
 
-# --- Node.js (via nvm) ---
+# --- mise (version manager for node, python, etc.) ---
 
-if [ ! -d "$HOME/.nvm" ]; then
-    echo "Installing nvm..."
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-fi
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-if ! command -v node &> /dev/null; then
-    echo "Installing Node.js LTS..."
-    nvm install --lts
-    nvm alias default lts/*
-fi
+echo "Installing mise..."
+install_packages mise
 
 # --- Nix package manager ---
 
@@ -352,6 +341,12 @@ systemctl --user daemon-reload
 systemctl --user enable --now dotoold.service
 systemctl --user enable voice-recorder.service
 systemctl --user enable walker.service
+
+# Install mise-managed tools (needs stow-deployed config)
+if command -v mise &> /dev/null; then
+    echo "Installing mise-managed tools (node LTS, etc.)..."
+    mise install
+fi
 
 # Set GTK dark mode preference
 echo "Setting system-wide dark mode preference..."

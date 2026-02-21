@@ -31,9 +31,9 @@ curl -o ~/.local/bin/tmux-sessionizer https://raw.githubusercontent.com/ThePrime
 chmod +x ~/.local/bin/tmux-sessionizer
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
 
-# Install nvm (Node Version Manager)
-echo "Installing nvm..."
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+# Install mise (version manager for node, python, etc.)
+echo "Installing mise..."
+brew install mise
 
 # Install Nerd Fonts
 echo "Installing Nerd Fonts..."
