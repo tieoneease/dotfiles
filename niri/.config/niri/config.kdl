@@ -348,7 +348,7 @@ binds {
     Alt+Space hotkey-overlay-title="Run an Application: walker" { spawn "gdbus" "call" "--session" "--dest" "dev.benz.walker" "--object-path" "/dev/benz/walker" "--method" "org.freedesktop.Application.Activate" "[]"; }
     Mod+Alt+L hotkey-overlay-title="Turn Off Screen" { spawn "niri" "msg" "action" "power-off-monitors"; }
     Mod+B { spawn "google-chrome-stable"; }
-    Mod+S { spawn-sh "~/.local/bin/focus-or-launch Slack slack"; }
+    Mod+S { spawn-sh "~/.local/bin/focus-or-launch Slack slack --ozone-platform=wayland --disable-features=WaylandWindowDecorations"; }
     Mod+D { spawn-sh "~/.local/bin/focus-or-launch discord discord"; }
     Mod+W { spawn-sh "~/.local/bin/focus-or-launch chrome-web.whatsapp.com__-Default ~/.local/bin/webapp-launch whatsapp https://web.whatsapp.com"; }
     Mod+O { spawn-sh "~/.local/bin/focus-or-launch obsidian obsidian"; }

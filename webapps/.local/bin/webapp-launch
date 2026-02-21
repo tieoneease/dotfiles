@@ -16,4 +16,4 @@ fi
 name="$1"
 url="$2"
 
-exec chromium --app="$url" --class="webapp-${name}"
+exec chromium --app="$url" --class="webapp-${name}" --disable-features=WaylandWindowDecorations

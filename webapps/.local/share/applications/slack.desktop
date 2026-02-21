@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Slack
+StartupWMClass=Slack
+Comment=Slack Desktop
+Exec=/usr/bin/slack --ozone-platform=wayland --disable-features=WaylandWindowDecorations -s %U
+Icon=slack
+Type=Application
+StartupNotify=true
+Categories=GNOME;GTK;Network;InstantMessaging;
+MimeType=x-scheme-handler/slack;
