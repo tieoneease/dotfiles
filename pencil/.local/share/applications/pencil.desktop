@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Pencil
 Comment=Design on canvas, land in code
-Exec=/home/chungsam/.local/share/pencil/Pencil.AppImage %U
+Exec=/home/chungsam/.local/share/pencil/Pencil.AppImage --disable-features=WaylandWindowDecorations %U
 Icon=pencil
 Type=Application
 StartupWMClass=Pencil
