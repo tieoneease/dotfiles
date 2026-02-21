@@ -1,3 +1,5 @@
-# nix-direnv: Cache Nix flake/shell environments for instant loads
-# Installed via: nix profile install nixpkgs#nix-direnv
-source ~/.nix-profile/share/nix-direnv/direnvrc
+# mise: activate mise tool version manager for direnv
+# See: https://mise.jdx.dev/direnv.html
+use_mise() {
+  direnv_load mise direnv exec
+}
