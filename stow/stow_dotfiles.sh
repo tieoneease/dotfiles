@@ -134,14 +134,14 @@ setup_niri_includes() {
     if [ ! -e "$niri_dir/monitor-workspaces.kdl" ]; then
         echo "  Creating default monitor-workspaces.kdl"
         cat > "$niri_dir/monitor-workspaces.kdl" << 'NIRI'
-workspace "󰊯"
+workspace "󰇧"
 workspace "󰭹"
 workspace "󰆍"
-workspace "󰈙"
-workspace ""
+workspace "󰈚"
+workspace "󰅴"
 workspace "󰄨"
 workspace "󰍉"
-workspace ""
+workspace "󰧑"
 workspace "󰳪"
 NIRI
     fi

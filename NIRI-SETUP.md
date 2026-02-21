@@ -187,7 +187,27 @@ include "./colors.kdl"
 
 ### Named workspaces
 
-Workspaces 1–9 are declared with `workspace "1"` through `workspace "9"`.
+Workspaces 1–9 are declared in `monitor-workspaces.kdl` (gitignored, generated on fresh
+install by `stow_dotfiles.sh`). Each workspace is named with an MDI Nerd Font glyph
+(all from the Supplementary PUA, U+F0xxx range) — the same icon set used by the Zenbook
+Duo's eDP-1. The icon set is the single source of truth for both single-monitor and Zenbook
+Duo eDP-1 workspaces:
+
+| WS | Icon | Codepoint | Semantic use |
+|----|------|-----------|--------------|
+| 1 | 󰇧 | U+F01E7 | Home/general |
+| 2 | 󰭹 | U+F0B79 | Chat/comms |
+| 3 | 󰆍 | U+F018D | Code |
+| 4 | 󰈚 | U+F021A | Docs |
+| 5 | 󰅴 | U+F0174 | Terminal |
+| 6 | 󰄨 | U+F0128 | Files |
+| 7 | 󰍉 | U+F0349 | Media |
+| 8 | 󰧑 | U+F09D1 | Brain (Obsidian/Gemini/Perplexity) |
+| 9 | 󰳪 | U+F0CEA | Archive |
+
+> **Note:** These icons are Supplementary PUA characters (4-byte UTF-8). They appear as
+> blank boxes in Claude Code's Read tool output, making them tricky to edit directly — use
+> Python with explicit codepoints when modifying workspace names in config files.
 
 ### Key bindings (niri-native)
 
