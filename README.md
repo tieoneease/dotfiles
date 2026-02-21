@@ -73,11 +73,13 @@ Layered to keep the repo clean while allowing installer additions:
 
 ## Nix + direnv
 
-For projects using Nix flakes, install nix-direnv for cached environments:
+Nix and nix-direnv are installed automatically by `arch_setup.sh`. For projects using Nix flakes, add a `.envrc` with:
 
 ```bash
-nix profile install nixpkgs#nix-direnv
+use flake
 ```
+
+Then run `direnv allow`. nix-direnv caches the flake environment so subsequent shell entries are instant.
 
 ## License
 
