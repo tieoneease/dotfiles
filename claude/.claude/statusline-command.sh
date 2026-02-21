@@ -10,17 +10,20 @@ YELLOW='\033[33m'
 BLUE='\033[34m'
 MAGENTA='\033[35m'
 CYAN='\033[36m'
+DIM='\033[2m'
 
 # --- Read stdin + extract fields in one jq call ---
 input=$(cat)
-IFS=$'\t' read -r model_name model_id context_remaining project_dir transcript_path <<< "$(
+IFS=$'\x1f' read -r model_name model_id context_remaining project_dir transcript_path lines_added lines_removed <<< "$(
     echo "$input" | jq -r '[
         (.model.display_name // .model.id // "unknown"),
         (.model.id // "unknown"),
         (.context_window.remaining_percentage // "null"),
         (.workspace.project_dir // .workspace.current_dir // "unknown"),
-        (.transcript_path // "")
-    ] | @tsv'
+        (.transcript_path // ""),
+        (.cost.total_lines_added // 0),
+        (.cost.total_lines_removed // 0)
+    ] | join("\u001f")'
 )"
 
 user=$(whoami)
@@ -108,93 +111,154 @@ format_countdown() {
     fi
 }
 
-# --- Parse running subagents from transcript ---
-parse_running_agents() {
+# --- Parse running agents and tool calls from transcript ---
+parse_running_items() {
     local transcript="$1"
     local parent_model="${2:-unknown}"
     [ -n "$transcript" ] && [ -f "$transcript" ] || return 0
     local now_epoch
     now_epoch=$(date +%s)
 
-    # Read last 512KB, skip first (potentially truncated) line
-    tail -c 524288 "$transcript" 2>/dev/null | sed '1d' | jq -s -r --argjson now "$now_epoch" --arg parent_model "$parent_model" '
-        # Collect Task tool_use entries (started agents)
+    # Read last 512KB, skip first (potentially truncated) line, filter to valid JSON
+    tail -c 524288 "$transcript" 2>/dev/null \
+        | sed '1d' \
+        | grep -a '^{' \
+        | jq -R 'fromjson? // empty' \
+        | jq -s -r --argjson now "$now_epoch" --arg parent_model "$parent_model" '
+        # --- Collect ALL tool_use entries ---
         [.[] | select(.type == "assistant") |
             . as $line |
             .message.content[]? |
-            select(.type == "tool_use" and (.name == "Task" or .name == "proxy_Task")) |
+            select(.type == "tool_use") |
             {
                 id: .id,
-                # Most Task calls omit model param. Default by subagent_type:
-                # Plan inherits parent, Explore uses haiku, others use sonnet.
-                model: (.input.model // (
-                    if .input.subagent_type == "Plan" then $parent_model
-                    elif .input.subagent_type == "Explore" then "haiku"
-                    else "sonnet"
+                name: .name,
+                is_agent: (.name == "Task" or .name == "proxy_Task"),
+                model: (
+                    if (.name == "Task" or .name == "proxy_Task") then
+                        (.input.model // (
+                            if .input.subagent_type == "Plan" then $parent_model
+                            elif .input.subagent_type == "Explore" then "haiku"
+                            else "sonnet"
+                            end
+                        ))
+                    else null end
+                ),
+                subagent_type: (.input.subagent_type // null),
+                description: (.input.description // null),
+                # Extract a brief summary from tool input for non-agent tools
+                tool_summary: (
+                    if .name == "Bash" then (.input.command // "" | split("\n")[0] | .[:40])
+                    elif .name == "WebFetch" then (.input.url // "" | .[:40])
+                    elif .name == "WebSearch" then (.input.query // "" | .[:40])
+                    elif (.name == "Read") then (.input.file_path // "" | split("/") | last // "")
+                    elif (.name == "Grep") then (.input.pattern // "" | .[:30])
+                    elif (.name == "Glob") then (.input.pattern // "" | .[:30])
+                    elif (.name | startswith("mcp__")) then (.name | split("__") | .[1:] | join("/") | .[:30])
+                    else ""
                     end
-                )),
-                subagent_type: (.input.subagent_type // "unknown"),
-                description: (.input.description // ""),
+                ),
+                bg: ((.name == "Task" or .name == "proxy_Task") and (.input.run_in_background == true)),
                 timestamp: $line.timestamp
             }
         ] as $started |
-        # Collect completed tool_result IDs
+
+        # --- Collect tool_results, separating background-launch from real completions ---
         [.[] | select(.type == "user") |
             .message.content[]? |
             select(.type == "tool_result") |
+            {
+                tool_use_id: .tool_use_id,
+                text: ((.content // "") | if type == "array" then (map(.text // "") | join(" ")) elif type == "string" then . else "" end),
+            }
+        ] as $results |
+
+        # IDs that have a tool_result but it is a background-launch acknowledgement (still running)
+        [$results[] |
+            select(.text | test("Background task started|Async agent launched|output_file|task_id"; "i")) |
+            .tool_use_id
+        ] as $bg_launched_ids |
+
+        # IDs that are truly completed (have a result that is NOT a background-launch ack)
+        [$results[] |
+            select(.tool_use_id as $id | $bg_launched_ids | index($id) | not) |
             .tool_use_id
         ] as $completed |
-        # Filter to running (started but not completed), exclude stale (>30 min)
+
+        # Background agents completed via TaskOutput (result text indicates final state)
+        [$results[] |
+            select(.text | test("completed|finished|agent .* done|final result"; "i")) |
+            select(.tool_use_id as $id | $bg_launched_ids | index($id)) |
+            .tool_use_id
+        ] as $bg_completed |
+
+        # --- Filter to running items ---
         [$started[] | select(
+            # Not completed normally AND not a bg-completed agent
             (.id as $id | $completed | index($id) | not) and
+            (.id as $id | $bg_completed | index($id) | not) and
+            # Exclude stale (>30 min)
             ((.timestamp // null) as $ts |
                 if $ts then
                     (($ts | sub("\\.[0-9]+Z$"; "Z") | fromdate) as $epoch |
                     ($now - $epoch) < 1800)
                 else true end)
         )] |
-        # Take up to 5, output TSV: model, subagent_type, description, elapsed_seconds
+        # Sort: agents first, then tool calls
+        sort_by(if .is_agent then 0 else 1 end) |
+        # Cap at 5
         .[:5][] |
         ((.timestamp // null) as $ts |
             if $ts then
                 (($ts | sub("\\.[0-9]+Z$"; "Z") | fromdate) as $epoch | ($now - $epoch))
             else 0 end) as $elapsed |
-        [.model, .subagent_type, .description, ($elapsed | tostring)] | @tsv
+        # Output TSV: kind, model_or_name, type_or_name, description_or_summary, elapsed
+        if .is_agent then
+            ["agent", .model, (.subagent_type // "unknown"), (.description // ""), ($elapsed | tostring)] | @tsv
+        else
+            ["tool", .name, .name, (.tool_summary // ""), ($elapsed | tostring)] | @tsv
+        end
     ' 2>/dev/null || true
 }
 
-# --- Format agent tree display ---
-format_agent_tree() {
-    local agents="$1"
-    [ -z "$agents" ] && return 0
+# --- Format detail tree display ---
+format_detail_tree() {
+    local items="$1"
+    [ -z "$items" ] && return 0
     local count=0 total
-    total=$(echo "$agents" | wc -l)
+    total=$(echo "$items" | wc -l)
 
-    while IFS=$'\t' read -r model subagent_type description elapsed_s; do
+    while IFS=$'\t' read -r kind model_or_name type_or_name desc elapsed_s; do
         count=$((count + 1))
-        # Model badge with color
-        local badge
-        case "$model" in
-            *opus*)   badge="${MAGENTA}O${RST}" ;;
-            *sonnet*) badge="${CYAN}s${RST}" ;;
-            *haiku*)  badge="${GREEN}h${RST}" ;;
-            *)        badge="?" ;;
-        esac
+
+        local badge icon
+        if [ "$kind" = "agent" ]; then
+            # Model badge with color for agents
+            case "$model_or_name" in
+                *opus*)   badge="${MAGENTA}O${RST}" ;;
+                *sonnet*) badge="${CYAN}s${RST}" ;;
+                *haiku*)  badge="${GREEN}h${RST}" ;;
+                *)        badge="?" ;;
+            esac
+        else
+            # Tool icon (nf-md-cog_sync)
+            badge="${DIM}󰒓${RST}"
+        fi
 
         # Elapsed time formatted
         local mins=$(( elapsed_s / 60 ))
         local secs=$(( elapsed_s % 60 ))
         local elapsed_fmt="${mins}m${secs}s"
 
-        # Truncate description
-        [ ${#description} -gt 40 ] && description="${description:0:37}..."
+        # Truncate description/summary
+        [ ${#desc} -gt 40 ] && desc="${desc:0:37}..."
 
         # Tree connector
         local connector="├─"
         [ "$count" -eq "$total" ] && connector="└─"
 
-        printf '  %s %b %-14s %-7s %s\n' "$connector" "$badge" "$subagent_type" "$elapsed_fmt" "$description"
-    done <<< "$agents"
+        printf '  %s %b %-14s %-7s %s\n' "$connector" "$badge" "$type_or_name" "$elapsed_fmt" "$desc"
+    done <<< "$items"
 }
 
 # --- Fetch usage (cached) ---
@@ -204,7 +268,7 @@ CREDS_FILE="$HOME/.claude/.credentials.json"
 CACHE_MAX_AGE=60
 
 fetch_usage() {
-    # No credentials → no usage data
+    # No credentials -> no usage data
     [ -f "$CREDS_FILE" ] || return 1
     local token
     token=$(jq -r '.claudeAiOauth.accessToken // empty' "$CREDS_FILE" 2>/dev/null) || return 1
@@ -231,6 +295,8 @@ fetch_usage() {
     mkdir -p "$CACHE_DIR"
     local tmp_file response
     tmp_file=$(mktemp "${CACHE_DIR}/.usage-tmp.XXXXXX")
+    # Clean up temp file on any exit from this function
+    trap 'rm -f "$tmp_file" 2>/dev/null' RETURN
 
     response=$(curl -s --connect-timeout 3 --max-time 5 \
         -H "Authorization: Bearer $token" \
@@ -247,8 +313,6 @@ fetch_usage() {
         return 0
     fi
 
-    rm -f "$tmp_file"
-
     # Fall back to stale cache
     if [ -f "$CACHE_FILE" ]; then
         cat "$CACHE_FILE"
@@ -257,6 +321,9 @@ fetch_usage() {
 
     return 1
 }
+
+# --- Clean up stale temp files (older than 5 min) ---
+[ -d "$CACHE_DIR" ] && find "$CACHE_DIR" -maxdepth 1 -name '.usage-tmp.*' -mmin +5 -delete 2>/dev/null || true
 
 # --- Build status line ---
 status="${BOLD}[$RST"
@@ -272,6 +339,11 @@ status+=" | $(color_model "$model_id" "$model_name")"
 if [ "$context_remaining" != "null" ] && [ -n "$context_remaining" ]; then
     context_int=$(printf "%.0f" "$context_remaining" 2>/dev/null || echo "$context_remaining")
     status+=" | $(color_context "$context_int")"
+fi
+
+# Code changes (+N/-M)
+if [ "${lines_added:-0}" != "0" ] || [ "${lines_removed:-0}" != "0" ]; then
+    status+=" | ${GREEN}+${lines_added}${RST}/${RED}-${lines_removed}${RST}"
 fi
 
 # Usage limits
@@ -294,23 +366,32 @@ elif [ -f "$CREDS_FILE" ]; then
     status+=" | 5h: -- | 7d: --"
 fi
 
-# Running agents
-agent_lines=""
+# Running agents and tool calls
+detail_lines=""
 if [ -n "${transcript_path:-}" ] && [ -f "${transcript_path:-}" ]; then
-    agent_lines=$(parse_running_agents "$transcript_path" "$model_id")
+    detail_lines=$(parse_running_items "$transcript_path" "$model_id")
 fi
 
 agent_count=0
-if [ -n "$agent_lines" ]; then
-    agent_count=$(echo "$agent_lines" | wc -l)
-    status+=" | $agent_count agent"
-    (( agent_count > 1 )) && status+="s"
+tool_count=0
+if [ -n "$detail_lines" ]; then
+    agent_count=$(echo "$detail_lines" | grep -c '^agent' || true)
+    tool_count=$(echo "$detail_lines" | grep -c '^tool' || true)
+    if (( agent_count > 0 )); then
+        status+=" | ${agent_count} agent"
+        (( agent_count > 1 )) && status+="s"
+    fi
+    if (( tool_count > 0 )); then
+        [ "$agent_count" -gt 0 ] && status+=","
+        status+=" ${tool_count} tool"
+        (( tool_count > 1 )) && status+="s"
+    fi
 fi
 
 status+="${BOLD}]$RST"
 
 echo -e "$status"
 
-if [ -n "$agent_lines" ]; then
-    format_agent_tree "$agent_lines"
+if [ -n "$detail_lines" ]; then
+    format_detail_tree "$detail_lines"
 fi
