@@ -301,6 +301,12 @@ window-rule {
     open-on-workspace "󰧑"
 }
 
+// Claude → workspace 8 (brain) on eDP-1
+window-rule {
+    match app-id="chrome-claude.ai__-Default"
+    open-on-workspace "󰧑"
+}
+
 // Steam notification popups — position at bottom-right instead of center
 window-rule {
     match app-id="steam" title=r#"^notificationtoasts\_\d+_desktop$"#
@@ -540,7 +546,8 @@ binds {
     // Makes the column "fill the rest of the space".
     Mod+Ctrl+F { expand-column-to-available-width; }
 
-    Mod+C { center-column; }
+    Mod+C { spawn-sh "~/.local/bin/focus-or-launch chrome-claude.ai__-Default ~/.local/bin/webapp-launch claude https://claude.ai"; }
+    Mod+Shift+C { center-column; }
 
     // Center all fully visible columns on screen.
     Mod+Ctrl+C { center-visible-columns; }
