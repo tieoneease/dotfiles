@@ -3,10 +3,5 @@
     "type": "command",
     "command": "/bin/bash $HOME/.claude/statusline-command.sh"
   },
-  "skipDangerousModePermissionPrompt": true,
-  "permissions": {
-    "allow": [
-      "mcp__pencil"
-    ]
-  }
+  "skipDangerousModePermissionPrompt": true
 }
