@@ -71,7 +71,7 @@ install_packages keyd
 
 # Terminals
 echo "Installing terminal emulators..."
-install_packages kitty alacritty
+install_packages kitty
 
 # Desktop utilities
 echo "Installing desktop utilities..."

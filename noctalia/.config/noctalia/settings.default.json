@@ -557,10 +557,6 @@
             {
                 "enabled": false,
                 "id": "walker"
-            },
-            {
-                "enabled": true,
-                "id": "alacritty"
             }
         ],
         "enableUserTheming": true

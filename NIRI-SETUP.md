@@ -321,12 +321,25 @@ Neovim, Tmux, Walker
 
 ### Clickable URLs
 
+**Kitty** (primary terminal):
+
 | Action | Behavior |
 |--------|----------|
-| `Ctrl+Shift+U` | Hint mode — labels each visible URL, type label to open |
-| `Ctrl+Click` | Opens URL under cursor directly |
+| `Ctrl+Click` | Opens URL under cursor (works inside tmux) |
+| `Ctrl+Shift+E` | Hint mode — labels each visible URL, type label to open |
+| `Shift+Click` | Opens URL under cursor (Kitty default, works inside tmux) |
 
-Uses `xdg-open` to open in the default browser. `hyperlinks = true` also catches OSC 8 hyperlinks (e.g. from `ls --hyperlink`, `gcc` diagnostics). Works inside tmux since Alacritty operates on its own visual buffer.
+Uses `xdg-open` to open in the default browser. `Ctrl+Click` works inside tmux because `mouse_map` is configured with `grabbed` mode and `discard_event` prevents tmux from intercepting the click.
+
+**Alacritty** (secondary terminal):
+
+| Action | Behavior |
+|--------|----------|
+| `Ctrl+Click` | Opens URL under cursor (outside tmux only) |
+| `Ctrl+Shift+Click` | Opens URL under cursor (inside tmux — Shift bypasses tmux mouse grab) |
+| `Ctrl+Shift+U` | Hint mode — labels each visible URL, type label to open |
+
+Uses `xdg-open` to open in the default browser. `hyperlinks = true` also catches OSC 8 hyperlinks (e.g. from `ls --hyperlink`, `gcc` diagnostics).
 
 ---
 
