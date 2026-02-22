@@ -14,11 +14,23 @@ PACKAGES=(nvim kitty tmux tms zsh starship fontconfig direnv nix niri noctalia c
 # macOS-only packages
 MACOS_PACKAGES=(aerospace sketchybar karabiner)
 
-# Determine platform
+# VPS-only packages (headless server — no desktop apps)
+VPS_PACKAGES=(zsh tmux tms starship direnv mise nvim claude)
+
+# Parse flags
+VPS_MODE=false
+for arg in "$@"; do
+    case "$arg" in
+        --vps) VPS_MODE=true ;;
+    esac
+done
+
+# Determine platform and select packages
 OS="$(uname -s)"
 
-# Add platform-specific packages
-if [[ "$OS" == "Darwin" ]]; then
+if $VPS_MODE; then
+    PACKAGES=("${VPS_PACKAGES[@]}")
+elif [[ "$OS" == "Darwin" ]]; then
     PACKAGES+=("${MACOS_PACKAGES[@]}")
 fi
 
@@ -160,8 +172,11 @@ main() {
     backup_toplevel_dotfiles
     stow_packages
     setup_tmux_plugins
-    setup_noctalia_defaults
-    setup_niri_includes
+
+    if ! $VPS_MODE; then
+        setup_noctalia_defaults
+        setup_niri_includes
+    fi
 
     echo ""
     echo "Dotfiles setup completed successfully!"
