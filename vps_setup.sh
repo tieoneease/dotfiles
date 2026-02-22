@@ -160,10 +160,7 @@ if [ ! -f "$LOCAL_ZSH" ]; then
     echo "Creating VPS-specific aliases..."
     mkdir -p "$(dirname "$LOCAL_ZSH")"
     cat > "$LOCAL_ZSH" << 'LOCAL'
-# VPS overrides (headless — no Chrome, no desktop apps)
-alias claude='claude --dangerously-skip-permissions'
-alias code='claude --dangerously-skip-permissions'
-alias sonnet='code --model sonnet'
+# VPS overrides
 alias ws="cd ~/sambot"
 LOCAL
 fi

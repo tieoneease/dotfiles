@@ -46,6 +46,9 @@ alias claude='claude --chrome --dangerously-skip-permissions'
 alias code='claude --chrome --dangerously-skip-permissions'
 alias sonnet='code --model sonnet'
 
+# Dotfiles
+alias dotfiles-sync='cd ~/dotfiles && git pull --ff-only && ./stow/stow_dotfiles.sh $([ "$(uname)" = "Linux" ] && [ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] && echo "--vps")'
+
 # File manager
 alias y="ya"
 

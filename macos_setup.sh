@@ -15,7 +15,7 @@ echo "Installing applications via Homebrew..."
 
 # Install essential CLI tools
 echo "Installing essential CLI tools..."
-brew install docker direnv fontconfig fzf jq neovim sketchybar sqlite starship superwhisper tmux tmux-sessionizer uv yazi
+brew install docker direnv fd fontconfig fzf jq neovim ripgrep sketchybar sqlite starship stow superwhisper tmux tmux-sessionizer uv yazi
 
 # Create workspace directory for tmux-sessionizer
 mkdir -p "$HOME/Workspace"
@@ -34,6 +34,12 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
 # Install mise (version manager for node, python, etc.)
 echo "Installing mise..."
 brew install mise
+
+# Install Claude Code
+if ! command -v claude &> /dev/null; then
+    echo "Installing Claude Code..."
+    curl -fsSL https://claude.ai/install.sh | bash
+fi
 
 # Install Nerd Fonts
 echo "Installing Nerd Fonts..."
@@ -79,16 +85,25 @@ defaults write NSGlobalDomain _HIHideMenuBar -bool false
 defaults write NSGlobalDomain AppleMenuBarVisibleOnAllDisplays -bool true
 
 # Enable menu bar auto-hide in System Settings programmatically
-osascript -e 'tell application "System Settings"
-    activate
-    delay 1
-    tell application "System Events"
-        select menu item "Control Centre" of menu "View" of menu bar 1
+# Only run on first setup (skip on re-runs to avoid disrupting running apps)
+if [ "${MACOS_FIRST_RUN:-false}" = "true" ]; then
+    osascript -e 'tell application "System Settings"
+        activate
         delay 1
-        click checkbox "Automatically hide and show the menu bar" of window 1
-    end tell
-    quit
-end tell'
+        tell application "System Events"
+            select menu item "Control Centre" of menu "View" of menu bar 1
+            delay 1
+            click checkbox "Automatically hide and show the menu bar" of window 1
+        end tell
+        quit
+    end tell'
+
+    # Kill affected applications
+    echo "Restarting affected applications..."
+    for app in "Finder" "SystemUIServer" "Dock"; do
+        killall "${app}" &> /dev/null || true
+    done
+fi
 
 # Configure key repeat rate and delay
 echo "Configuring keyboard settings..."
@@ -107,11 +122,13 @@ defaults write -g NSWindowResizeTime -float 0.001
 defaults write com.apple.dock workspaces-edge-delay -float 0
 defaults write com.apple.dock expose-animation-duration -float 0
 
-# Kill affected applications
-echo "Restarting affected applications..."
-for app in "Finder" "SystemUIServer" "Dock"; do
-    killall "${app}" &> /dev/null || true
-done
+# --- Stow dotfiles ---
 
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+echo "Stowing dotfiles..."
+chmod +x "$DOTFILES_DIR/stow/stow_dotfiles.sh"
+"$DOTFILES_DIR/stow/stow_dotfiles.sh"
+
+echo ""
 echo "macOS setup completed! Please log out and back in for all changes to take effect."
 echo "Note: You may need to add kitty.app to System Settings > Privacy & Security > Full Disk Access"
