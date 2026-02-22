@@ -386,6 +386,40 @@ gamescope -f -w 1920 -h 1080 -W 1920 -H 1080 --force-grab-cursor --backend sdl -
 
 ---
 
+## GPU Stability — AMD Phoenix (GPD Win Max 2)
+
+**Configs:** `/etc/modprobe.d/amdgpu.conf`, `/etc/udev/rules.d/99-amdgpu-power-stable.rules`
+**Machine:** `sam-ganymede` only (deployed by `arch_setup.sh` hostname guard)
+
+The AMD Phoenix1 iGPU (RDNA 3, amdgpu driver) freezes the display pipe when `power-profiles-daemon` switches profiles on charger plug/unplug. Two configs mitigate this:
+
+### modprobe: gpu_recovery
+
+```
+options amdgpu gpu_recovery=1
+```
+
+Enables automatic GPU reset after a 10-second hang timeout. The default (`-1`) only enables recovery for SR-IOV (virtualization), so desktop use needs an explicit `1`. Does NOT set `dpm=` (default already enables DPM on Phoenix) or `runpm=0` (kills battery life on handhelds).
+
+### udev: DPM stabilization on AC power change
+
+On `power_supply` change events, briefly locks GPU DPM to `high` for 3 seconds (via `systemd-run --no-block` to avoid blocking udev), then restores `auto`. This prevents the GPU from being mid-DPM-transition when the power profile switch arrives.
+
+### Verification
+
+```bash
+# Check modprobe params (after reboot)
+cat /sys/module/amdgpu/parameters/gpu_recovery    # should be 1
+
+# Monitor DPM level during charger plug/unplug
+cat /sys/class/drm/card1/device/power_dpm_force_performance_level
+
+# Watch udev events
+udevadm monitor --property
+```
+
+---
+
 ## Wallpapers
 
 **Directory:** `~/Pictures/Wallpapers/`
@@ -458,6 +492,8 @@ Displays Quectel EG25G cellular modem status in the bar and control center using
 ```
 /etc/greetd/config.toml                              # greetd greeter config (sudo)
 /etc/keyd/default.conf                              # keyd layers (sudo)
+/etc/modprobe.d/amdgpu.conf                          # amdgpu gpu_recovery (sam-ganymede only)
+/etc/udev/rules.d/99-amdgpu-power-stable.rules       # DPM stabilization on AC change (sam-ganymede only)
 ~/.config/
 ├── niri/
 │   ├── config.kdl                                   # compositor config
