@@ -106,6 +106,19 @@ The `:G` (AltGr) suffix means unmapped keys pass through as ISO_Level3_Shift —
 | `k` | Ctrl+Tab | Next tab |
 | `l` | Ctrl+Shift+PageDown | Move tab right |
 
+#### `[altgr+shift]` — RightAlt+Shift held (column/monitor movement)
+
+Sends `Alt+Shift+H/J/K/L` so niri's move-column/move-column-to-monitor bindings work consistently from both Alt keys.
+
+| Key | Sends | Niri action |
+|-----|-------|-------------|
+| `h` | Alt+Shift+H | Move column left |
+| `j` | Alt+Shift+J | Move column to monitor down |
+| `k` | Alt+Shift+K | Move column to monitor up |
+| `l` | Alt+Shift+L | Move column right |
+
+Unmapped keys fall through as `AltGr+Shift` → `ISO_Level3_Shift+Shift` → niri workspace move binds.
+
 #### `[alt+altgr]` — Both Alts held (arrows and navigation)
 
 This is a composite layer that activates when both LeftAlt and RightAlt are held simultaneously. It **must** appear after both constituent layers in the config file.
@@ -220,11 +233,13 @@ Duo eDP-1 workspaces:
 | `Mod+Q` | Close window |
 | `Alt+H/J/K/L` | Focus left/down/up/right |
 | `Alt+Shift+H/J/K/L` | Move window left/down/up/right |
-| `Mod+1-9` | Focus workspace N |
-| `Mod+Ctrl+1-9` | Move column to workspace N |
-| `ISO_Level3_Shift+X/C/V/S/D/F/W/E/R` | Focus workspace 1–9 (RightAlt) |
+| `ISO_Level3_Shift+1-9` | Focus workspace N (RightAlt+number) |
+| `ISO_Level3_Shift+Shift+1-9` | Move column to workspace N (RightAlt+Shift+number) |
+| `ISO_Level3_Shift+X/C/V/S/D/F/W/E/R` | Focus workspace 1–9 (RightAlt+numpad letter) |
 | `ISO_Level3_Shift+Shift+...` | Move column to workspace 1–9 |
 | `ISO_Level3_Shift+M/Comma` | Focus next non-empty workspace up/down (skips empty) |
+| `Alt+P/N` | Focus next non-empty workspace up/down (skips empty) |
+| `Alt+Shift+P/N` | Move column to workspace up/down |
 | `Mod+F` | Maximize column |
 | `Mod+Shift+F` | Fullscreen |
 | `Mod+V` | Toggle floating |
@@ -276,6 +291,10 @@ Exports Material Design color tokens as a Lua table for base16-nvim dynamic them
 
 Sets tmux status bar and pane border colors from Material Design tokens.
 
+#### Tmux hyperlink passthrough
+
+`terminal-features` includes `:hyperlinks` for all terminals so tmux forwards OSC 8 sequences (clickable links from `ls --hyperlink`, `gcc`, `grep`) to the outer terminal. `allow-passthrough on` enables escape sequence passthrough for kitty graphics protocol and other OSC sequences.
+
 #### Walker CSS
 
 - **Template:** `~/.config/noctalia/templates/walker-style.css`
@@ -297,17 +316,17 @@ Neovim, Tmux, Walker
 
 **Config:** `~/.config/alacritty/alacritty.toml`
 
-```toml
-import = ["~/.config/alacritty/colors.toml"]
-
-[[keyboard.bindings]]
-key = "Return"
-mods = "Shift"
-chars = "\x1b\r"
-```
-
-- Colors imported from matugen-generated file
+- Colors imported from Noctalia-generated theme
 - Shift+Enter sends `ESC CR` (useful for some TUI apps)
+
+### Clickable URLs
+
+| Action | Behavior |
+|--------|----------|
+| `Ctrl+Shift+U` | Hint mode — labels each visible URL, type label to open |
+| `Ctrl+Click` | Opens URL under cursor directly |
+
+Uses `xdg-open` to open in the default browser. `hyperlinks = true` also catches OSC 8 hyperlinks (e.g. from `ls --hyperlink`, `gcc` diagnostics). Works inside tmux since Alacritty operates on its own visual buffer.
 
 ---
 

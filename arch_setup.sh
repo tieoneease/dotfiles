@@ -76,7 +76,7 @@ install_packages kitty alacritty
 # Desktop utilities
 echo "Installing desktop utilities..."
 install_packages swayidle playerctl network-manager-applet brightnessctl wl-clipboard bluez bluez-utils \
-    xdg-desktop-portal xdg-desktop-portal-gtk wlsunset localsend-bin libinput-tools fuse2
+    xdg-desktop-portal xdg-desktop-portal-gtk wlsunset localsend-bin libinput-tools fuse2 xdg-utils
 
 # Input method framework (Chinese Traditional Pinyin)
 echo "Installing input method framework..."
@@ -95,6 +95,10 @@ install_packages visual-studio-code-bin
 echo "Installing communication tools..."
 install_packages slack-desktop  # XWayland version for better stability
 install_packages vesktop-bin
+
+# Networking / VPN
+echo "Installing networking tools..."
+install_packages tailscale
 
 # Productivity applications
 echo "Installing productivity applications..."
@@ -189,6 +193,7 @@ echo "Enabling system services..."
 sudo systemctl enable --now keyd.service
 sudo systemctl enable greetd.service
 sudo systemctl enable --now bluetooth.service
+sudo systemctl enable --now tailscaled.service
 
 echo "Enabling user services..."
 systemctl --user enable noctalia.service
@@ -402,6 +407,7 @@ fi
 # --- Done ---
 
 echo ""
-echo "Setup complete! Reboot to start niri via greetd."
+echo "Setup complete! Run 'sudo tailscale up' to authenticate with Tailscale."
+echo "Reboot to start niri via greetd."
 echo "If greetd fails, switch to TTY2 (Ctrl+Alt+F2) and run:"
 echo "  sudo bash ~/dotfiles/rollback-greetd.sh"
