@@ -40,7 +40,7 @@ Each package mirrors the home directory:
 
 ## Main Components
 - **Shell:** Zsh with Starship prompt (layered: .zshenv + base.zsh + aliases.zsh)
-- **Terminals:** Alacritty (primary), Kitty
+- **Terminals:** Kitty
 - **Editor:** Neovim (base16-nvim for dynamic theming)
 - **Multiplexer:** Tmux with tmux-sessionizer
 - **Compositor:** Niri (scrollable tiling Wayland)
@@ -55,9 +55,9 @@ Each package mirrors the home directory:
 
 Dynamic Material Design 3 colors generated from the current wallpaper:
 - **Engine:** matugen extracts colors from wallpaper, Noctalia Shell triggers generation
-- **Built-in templates:** Noctalia has built-in templates for niri, kitty, yazi, fuzzel, and alacritty — enabled in `settings.default.json` `activeTemplates`. Do NOT create stow files at their output paths (they would conflict).
+- **Built-in templates:** Noctalia has built-in templates for niri, kitty, yazi, and fuzzel — enabled in `settings.default.json` `activeTemplates`. Do NOT create stow files at their output paths (they would conflict).
 - **Custom user templates:** `noctalia/.config/noctalia/templates/` + `user-templates.toml` for apps without built-in support (nvim, tmux)
-- **Generated files (all gitignored):** `noctalia.kdl` (niri), `themes/noctalia.conf` (kitty), `flavors/noctalia.yazi/` (yazi), `themes/noctalia.toml` (alacritty), `noctalia_colors.lua` (nvim), `colors.conf` (tmux)
+- **Generated files (all gitignored):** `noctalia.kdl` (niri), `themes/noctalia.conf` (kitty), `flavors/noctalia.yazi/` (yazi), `noctalia_colors.lua` (nvim), `colors.conf` (tmux)
 - **Wallpapers:** `wallpapers/` contains defaults, copied to `~/Pictures/Wallpapers/` by setup script (not stowed — directory holds user content)
 
 ## Arch Linux / EndeavourOS Setup

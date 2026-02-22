@@ -30,8 +30,7 @@ cd ~/dotfiles
 | **Noctalia Shell** | Desktop shell — bar, launcher, notifications, Material Design 3 theming |
 | **keyd** | Keyboard daemon — tap-hold numpad, tab nav, arrow layers |
 | **greetd + tuigreet** | Login greeter → launches niri-session |
-| **Alacritty** | Primary terminal (dynamic wallpaper-based colors) |
-| **Kitty** | Secondary terminal |
+| **Kitty** | Terminal emulator |
 
 See [NIRI-SETUP.md](NIRI-SETUP.md) for detailed architecture documentation.
 
@@ -43,7 +42,6 @@ Each package mirrors `$HOME`. Stow creates symlinks from `~/` into the repo:
 dotfiles/
 ├── nvim/.config/nvim/          → ~/.config/nvim/
 ├── kitty/.config/kitty/        → ~/.config/kitty/
-├── alacritty/.config/alacritty/→ ~/.config/alacritty/
 ├── tmux/.config/tmux/          → ~/.config/tmux/
 ├── tms/.config/tms/            → ~/.config/tms/
 ├── zsh/.zshenv                 → ~/.zshenv
