@@ -1,0 +1,11 @@
+# GPD Win Max 2 — prevent amdgpu display freeze on AC power state change
+#
+# When the charger is plugged/unplugged, power-profiles-daemon auto-switches
+# profiles (e.g. power-saver → balanced), triggering amdgpu DPM transitions
+# that can freeze the display pipe on Phoenix1 (RDNA 3) iGPUs.
+#
+# Fix: briefly lock GPU DPM to "high" during the transition, then restore "auto".
+# Uses systemd-run --no-block to avoid blocking the udev event queue.
+
+ACTION=="change", SUBSYSTEM=="power_supply", ATTR{type}=="Mains", \
+    RUN+="/usr/bin/systemd-run --no-block /bin/bash -c 'for dpm in /sys/class/drm/card*/device/power_dpm_force_performance_level; do echo high > \"$dpm\" && sleep 3 && echo auto > \"$dpm\"; done'"

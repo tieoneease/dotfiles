@@ -260,6 +260,18 @@ if [[ "$(hostname)" == "sam-duomoon" ]]; then
     sudo systemd-hwdb update
 fi
 
+# Copy GPD Win Max 2 amdgpu configs (DPM stability + GPU recovery)
+if [[ "$(hostname)" == "sam-ganymede" ]]; then
+    echo "Configuring amdgpu for GPD Win Max 2..."
+    sudo mkdir -p /etc/modprobe.d
+    sudo cp -f "$DOTFILES_DIR/etc/modprobe.d/amdgpu.conf" /etc/modprobe.d/amdgpu.conf
+
+    echo "Installing amdgpu power-stable udev rule..."
+    sudo mkdir -p /etc/udev/rules.d
+    sudo cp -f "$DOTFILES_DIR/etc/udev/rules.d/99-amdgpu-power-stable.rules" /etc/udev/rules.d/
+    sudo udevadm control --reload-rules
+fi
+
 # Set environment variables
 echo "Setting system environment variables..."
 sudo tee /etc/environment > /dev/null << 'EOF'
