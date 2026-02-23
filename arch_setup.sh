@@ -170,6 +170,16 @@ echo "Patching Noctalia workspace text ratio..."
 sudo sed -i 's/readonly property real textRatio: 0\.50/readonly property real textRatio: 0.75/' \
     /etc/xdg/quickshell/noctalia-shell/Modules/Bar/Widgets/Workspace.qml
 
+# Patch Noctalia calendar: cap event dots at 3 per day + increase dot-to-number spacing
+echo "Patching Noctalia calendar month card..."
+CALENDAR_QML=/etc/xdg/quickshell/noctalia-shell/Modules/Cards/CalendarMonthCard.qml
+# Cap dots at 3 to avoid crowding on busy days
+sudo sed -i 's/getEventsForDate(modelData\.year, modelData\.month, modelData\.day)$/getEventsForDate(modelData.year, modelData.month, modelData.day).slice(0, 3)/' \
+    "$CALENDAR_QML"
+# Push dots to bottom of cell for more gap from date numbers (marginXS → fixed 2px)
+sudo sed -i '/Event indicator dots/,/Repeater/ s/anchors\.bottomMargin: Style\.marginXS/anchors.bottomMargin: 2/' \
+    "$CALENDAR_QML"
+
 # Copy portal config
 echo "Configuring xdg-desktop-portal..."
 sudo mkdir -p /etc/xdg-desktop-portal
