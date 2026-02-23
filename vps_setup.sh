@@ -37,7 +37,7 @@ fi
 
 # CLI tools
 echo "Installing CLI tools..."
-install_packages stow zsh neovim fzf ripgrep fd direnv starship jq zsh-autosuggestions zsh-syntax-highlighting
+install_packages stow zsh neovim fzf ripgrep fd direnv starship jq zsh-autosuggestions zsh-syntax-highlighting openai-codex
 
 # --- Rust + cargo tools ---
 
