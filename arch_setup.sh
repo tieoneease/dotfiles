@@ -148,6 +148,13 @@ echo "Configuring bluetooth..."
 sudo mkdir -p /etc/bluetooth
 sudo cp -f "$DOTFILES_DIR/etc/bluetooth/main.conf" /etc/bluetooth/main.conf
 
+# Copy udev rules (HID device access for VIA/Vial keyboard configurators)
+echo "Configuring udev rules..."
+sudo mkdir -p /etc/udev/rules.d
+sudo cp -f "$DOTFILES_DIR/etc/udev/rules.d/50-qmk.rules" /etc/udev/rules.d/
+sudo cp -f "$DOTFILES_DIR/etc/udev/rules.d/59-vial.rules" /etc/udev/rules.d/
+sudo udevadm control --reload-rules
+
 # Copy modules-load.d configs (uhid for BT keyboard/trackpad input)
 echo "Configuring kernel modules..."
 sudo mkdir -p /etc/modules-load.d

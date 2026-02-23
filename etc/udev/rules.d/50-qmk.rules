@@ -1,0 +1,5 @@
+# Grant logged-in user access to HID devices (keyboards, gamepads, etc.)
+# Required for VIA/Vial keyboard configurators.
+# Uses GROUP="users" instead of "plugdev" (Arch doesn't have plugdev;
+# systemd 258+ rejects non-existent groups and silently drops the entire rule).
+KERNEL=="hidraw*", MODE="0660", GROUP="users", TAG+="uaccess"
