@@ -170,6 +170,14 @@ echo "Patching Noctalia workspace text ratio..."
 sudo sed -i 's/readonly property real textRatio: 0\.50/readonly property real textRatio: 0.75/' \
     /etc/xdg/quickshell/noctalia-shell/Modules/Bar/Widgets/Workspace.qml
 
+# Patch Noctalia tooltip for grid mode: wider max, constrained grid width, last-column elide
+TOOLTIP_QML=/etc/xdg/quickshell/noctalia-shell/Modules/Tooltip/Tooltip.qml
+sudo sed -i 's/property int maxWidth: 340/property int maxWidth: isGridMode ? 560 : 340/' "$TOOLTIP_QML"
+sudo sed -i '/id: gridContent/,/columnSpacing/ {
+    /columns: root.columnCount/a\        width: parent.width - (root.padding * 2)
+}' "$TOOLTIP_QML"
+sudo sed -i '/Layout.preferredHeight: rowHeightMeasure.implicitHeight/a\            Layout.fillWidth: (index % root.columnCount) === (root.columnCount - 1)' "$TOOLTIP_QML"
+
 # Patch Noctalia calendar: cap event dots at 3 per day + increase dot-to-number spacing
 echo "Patching Noctalia calendar month card..."
 CALENDAR_QML=/etc/xdg/quickshell/noctalia-shell/Modules/Cards/CalendarMonthCard.qml
@@ -179,6 +187,57 @@ sudo sed -i 's/getEventsForDate(modelData\.year, modelData\.month, modelData\.da
 # Push dots to bottom of cell for more gap from date numbers (marginXS → fixed 2px)
 sudo sed -i '/Event indicator dots/,/Repeater/ s/anchors\.bottomMargin: Style\.marginXS/anchors.bottomMargin: 2/' \
     "$CALENDAR_QML"
+# Redesign calendar tooltip: sort events (all-day first, then chronological), use grid mode,
+# AM/PM format with en-dash separator, two-column layout via TooltipService rows API
+sudo python3 << 'PATCH_EOF'
+import re, sys
+
+path = "/etc/xdg/quickshell/noctalia-shell/Modules/Cards/CalendarMonthCard.qml"
+with open(path) as f:
+    src = f.read()
+
+pattern = re.compile(
+    r'(onEntered:\s*\{\s*\n)'
+    r'\s*const events = parent\.parent\.parent\.parent\.getEventsForDate'
+    r'.*?'
+    r'TooltipService\.show\(parent,\s*summaries.*?\);'
+    r'\s*\}',
+    re.DOTALL
+)
+
+REPLACEMENT_BODY = '''\
+                  const events = parent.parent.parent.parent.getEventsForDate(modelData.year, modelData.month, modelData.day);
+                  if (events.length > 0) {
+                    // Sort: all-day first, then chronological by start time
+                    const sorted = events.slice().sort((a, b) => {
+                      const aAllDay = root.isAllDayEvent(a);
+                      const bAllDay = root.isAllDayEvent(b);
+                      if (aAllDay !== bAllDay) return aAllDay ? -1 : 1;
+                      return a.start - b.start;
+                    });
+                    const timeFormat = Settings.data.location.use12hourFormat ? "hh:mm AP" : "HH:mm";
+                    const rows = sorted.map(event => {
+                      if (root.isAllDayEvent(event)) {
+                        return ["ALL DAY", event.summary];
+                      } else {
+                        const start = new Date(event.start * 1000);
+                        const end = new Date(event.end * 1000);
+                        const startF = I18n.locale.toString(start, timeFormat);
+                        const endF = I18n.locale.toString(end, timeFormat);
+                        return [startF + "\u2013" + endF, event.summary];
+                      }
+                    });
+                    TooltipService.show(parent, rows, "auto", Style.tooltipDelay, Settings.data.ui.fontFixed);
+                  }'''
+
+result, count = pattern.subn(lambda m: m.group(1) + REPLACEMENT_BODY, src)
+if count == 0:
+    print("WARNING: Calendar tooltip patch pattern not found \u2014 skipping", file=sys.stderr)
+    sys.exit(0)
+with open(path, "w") as f:
+    f.write(result)
+print("Patched calendar tooltip to grid mode")
+PATCH_EOF
 
 # Copy portal config
 echo "Configuring xdg-desktop-portal..."
