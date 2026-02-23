@@ -1,0 +1,243 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Interactive setup for Google Calendar sync via vdirsyncer + khal.
+# Creates an isolated GCP project for OAuth credentials, then adds
+# as many Google accounts as you need.
+#
+# Usage: setup-google-calendar
+#
+# Re-running is safe — existing config is detected and preserved.
+
+PROJECT="vdirsyncer-cal-859530"
+VDIRSYNCER_DIR="$HOME/.config/vdirsyncer"
+KHAL_DIR="$HOME/.config/khal"
+DATA_DIR="$HOME/.local/share/vdirsyncer"
+CALENDARS_DIR="$HOME/.local/share/calendars"
+
+mkdir -p "$VDIRSYNCER_DIR" "$KHAL_DIR" "$DATA_DIR/status" "$CALENDARS_DIR"
+
+# --- GCP project setup (one-time, idempotent) ---
+
+setup_gcp_project() {
+    if ! command -v gcloud &> /dev/null; then
+        echo "gcloud CLI not found. Install it first:"
+        echo "  https://cloud.google.com/sdk/docs/install"
+        exit 1
+    fi
+
+    echo "=== GCP Project Setup ==="
+    echo "Creating isolated project '$PROJECT' (won't affect your other projects)..."
+
+    # Create project (--project= flag keeps it isolated)
+    if gcloud projects describe "$PROJECT" &> /dev/null; then
+        echo "Project '$PROJECT' already exists — skipping creation."
+    else
+        gcloud projects create "$PROJECT" --name="vdirsyncer Calendar Sync" --quiet
+        echo "Project '$PROJECT' created."
+    fi
+
+    # Enable CalDAV API
+    echo "Enabling CalDAV API..."
+    gcloud services enable caldav.googleapis.com --project="$PROJECT" 2>/dev/null || true
+
+    echo ""
+    echo "Now create an OAuth client ID in the Cloud Console:"
+    echo "  1. Open the link below"
+    echo "  2. Click '+ CREATE CREDENTIALS' → 'OAuth client ID'"
+    echo "  3. If prompted to configure consent screen: select 'External', fill in app name"
+    echo "     (e.g. 'vdirsyncer'), add your email as test user, save"
+    echo "  4. Application type: 'Desktop app'"
+    echo "  5. Copy the Client ID and Client Secret"
+    echo ""
+    xdg-open "https://console.cloud.google.com/apis/credentials?project=$PROJECT" 2>/dev/null || \
+        echo "  https://console.cloud.google.com/apis/credentials?project=$PROJECT"
+    echo ""
+}
+
+setup_credentials() {
+    if [[ -f "$VDIRSYNCER_DIR/client_id" ]] && [[ -f "$VDIRSYNCER_DIR/client_secret" ]]; then
+        echo "OAuth credentials already saved."
+        read -rp "Re-enter credentials? [y/N] " response
+        if [[ ! "$response" =~ ^[Yy]$ ]]; then
+            return
+        fi
+    fi
+
+    read -rp "Paste Client ID: " client_id
+    read -rp "Paste Client Secret: " client_secret
+
+    echo -n "$client_id" > "$VDIRSYNCER_DIR/client_id"
+    echo -n "$client_secret" > "$VDIRSYNCER_DIR/client_secret"
+    chmod 600 "$VDIRSYNCER_DIR/client_id" "$VDIRSYNCER_DIR/client_secret"
+    echo "Credentials saved."
+}
+
+# --- Account management ---
+
+# Collect existing account labels from config
+get_existing_accounts() {
+    local accounts=()
+    if [[ -f "$VDIRSYNCER_DIR/config" ]]; then
+        while IFS= read -r line; do
+            if [[ "$line" =~ ^\[pair\ google_(.*)\]$ ]]; then
+                accounts+=("${BASH_REMATCH[1]}")
+            fi
+        done < "$VDIRSYNCER_DIR/config"
+    fi
+    echo "${accounts[@]}"
+}
+
+add_accounts() {
+    local accounts=()
+    local existing
+    existing=($(get_existing_accounts))
+
+    if [[ ${#existing[@]} -gt 0 ]]; then
+        echo ""
+        echo "Existing accounts: ${existing[*]}"
+        accounts=("${existing[@]}")
+    fi
+
+    while true; do
+        echo ""
+        read -rp "Add a Google Calendar account? [y/N] " response
+        if [[ ! "$response" =~ ^[Yy]$ ]]; then
+            break
+        fi
+
+        read -rp "Label (e.g. personal, work, freelance): " label
+        label="${label,,}"  # lowercase
+        label="${label// /_}"  # replace spaces with underscores
+
+        if [[ " ${accounts[*]} " =~ " $label " ]]; then
+            echo "Account '$label' already exists — skipping."
+            continue
+        fi
+
+        accounts+=("$label")
+        mkdir -p "$CALENDARS_DIR/$label"
+        echo "Added account '$label'."
+    done
+
+    if [[ ${#accounts[@]} -eq 0 ]]; then
+        echo "No accounts configured. Run this script again to add accounts."
+        exit 0
+    fi
+
+    generate_vdirsyncer_config "${accounts[@]}"
+    generate_khal_config "${accounts[@]}"
+    auth_accounts "${accounts[@]}"
+}
+
+# --- Config generation ---
+
+generate_vdirsyncer_config() {
+    local accounts=("$@")
+
+    cat > "$VDIRSYNCER_DIR/config" << EOF
+[general]
+status_path = "~/.local/share/vdirsyncer/status/"
+EOF
+
+    for label in "${accounts[@]}"; do
+        cat >> "$VDIRSYNCER_DIR/config" << EOF
+
+[pair google_${label}]
+a = "${label}_local"
+b = "${label}_remote"
+collections = ["from b"]
+metadata = ["color", "displayname"]
+
+[storage ${label}_local]
+type = "filesystem"
+path = "~/.local/share/calendars/${label}/"
+fileext = ".ics"
+
+[storage ${label}_remote]
+type = "google_calendar"
+token_file = "~/.local/share/vdirsyncer/token_${label}"
+client_id.fetch = ["command", "cat", "$VDIRSYNCER_DIR/client_id"]
+client_secret.fetch = ["command", "cat", "$VDIRSYNCER_DIR/client_secret"]
+EOF
+    done
+
+    echo "vdirsyncer config written to $VDIRSYNCER_DIR/config"
+}
+
+generate_khal_config() {
+    local accounts=("$@")
+
+    cat > "$KHAL_DIR/config" << 'EOF'
+[calendars]
+EOF
+
+    for label in "${accounts[@]}"; do
+        cat >> "$KHAL_DIR/config" << EOF
+[[${label}]]
+path = ~/.local/share/calendars/${label}/*
+type = discover
+
+EOF
+    done
+
+    cat >> "$KHAL_DIR/config" << 'EOF'
+[locale]
+timeformat = %H:%M
+dateformat = %Y-%m-%d
+longdatetimeformat = %Y-%m-%d %H:%M
+EOF
+
+    echo "khal config written to $KHAL_DIR/config"
+}
+
+# --- OAuth authorization ---
+
+auth_accounts() {
+    local accounts=("$@")
+
+    echo ""
+    echo "=== Authorizing accounts ==="
+    echo "A browser window will open for each account. Sign in and click 'Allow'."
+    echo ""
+
+    for label in "${accounts[@]}"; do
+        if [[ -f "$DATA_DIR/token_${label}" ]]; then
+            echo "Account '$label' already authorized — skipping."
+            continue
+        fi
+
+        echo "Discovering calendars for '$label'..."
+        echo "  (Sign in with the Google account for '$label' in the browser)"
+        yes | vdirsyncer discover "google_${label}"
+        echo "Account '$label' authorized."
+        echo ""
+    done
+
+    echo "Running initial sync..."
+    vdirsyncer sync
+    echo ""
+
+    echo "=== Verification ==="
+    echo "Available calendars:"
+    khal printcalendars
+    echo ""
+    echo "Upcoming events (next 7 days):"
+    khal list today 7d
+}
+
+# --- Main ---
+
+echo "Google Calendar Setup for Noctalia Shell"
+echo "========================================="
+echo ""
+
+setup_gcp_project
+setup_credentials
+add_accounts
+
+echo ""
+echo "Done! Your calendars will sync every 5 minutes via systemd timer."
+echo "Check timer status: systemctl --user status vdirsyncer.timer"
+echo "Noctalia Shell will show calendar events automatically."

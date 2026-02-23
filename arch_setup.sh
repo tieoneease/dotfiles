@@ -78,6 +78,10 @@ echo "Installing desktop utilities..."
 install_packages swayidle playerctl network-manager-applet brightnessctl wl-clipboard bluez bluez-utils \
     xdg-desktop-portal xdg-desktop-portal-gtk wlsunset localsend-bin libinput-tools fuse2 xdg-utils
 
+# Calendar sync (khal + vdirsyncer for Noctalia calendar events)
+echo "Installing calendar sync tools..."
+install_packages khal vdirsyncer python-aiohttp-oauthlib
+
 # Input method framework (Chinese Traditional Pinyin)
 echo "Installing input method framework..."
 install_packages fcitx5 fcitx5-gtk fcitx5-qt fcitx5-rime fcitx5-configtool noto-fonts-cjk rime-ice-git
@@ -364,6 +368,7 @@ systemctl --user daemon-reload
 systemctl --user enable --now dotoold.service
 systemctl --user enable voice-recorder.service
 systemctl --user enable walker.service
+systemctl --user enable --now vdirsyncer.timer
 
 # Install mise-managed tools (needs stow-deployed config)
 if command -v mise &> /dev/null; then
@@ -424,7 +429,9 @@ fi
 # --- Done ---
 
 echo ""
-echo "Setup complete! Run 'sudo tailscale up' to authenticate with Tailscale."
+echo "Setup complete!"
+echo "  - Run 'sudo tailscale up' to authenticate with Tailscale."
+echo "  - Run 'setup-google-calendar' to connect Google Calendar (one-time)."
 echo "Reboot to start niri via greetd."
 echo "If greetd fails, switch to TTY2 (Ctrl+Alt+F2) and run:"
 echo "  sudo bash ~/dotfiles/rollback-greetd.sh"
