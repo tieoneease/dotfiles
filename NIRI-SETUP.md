@@ -585,15 +585,24 @@ IDLE ─SIGUSR1→ RECORDING ─SIGUSR1→ TRANSCRIBING ─done→ TYPING ─don
 | TRANSCRIBING | Stream closed, pill shows "Transcribing..." with pulsing dot. |
 | TYPING | Window destroyed, text typed via dotoolc (clipboard fallback). |
 
-### Trigger chain
+### Trigger chain — voice-to-text
 
 ```
-Physical key: LeftCtrl + V
-  → keyd [custom] layer: v = F13
-    → XKB maps F13 → XF86Tools
-      → niri keybind: XF86Tools → spawn-sh voice-toggle
+Physical key: BothAlts + T (LeftAlt + RightAlt + T)
+  → keyd [lower+altgr] layer: t = F14
+    → XKB maps F14 → XF86Launch5
+      → niri keybind: XF86Launch5 → spawn-sh voice-toggle
         → voice-toggle sends SIGUSR1 to daemon PID
           → daemon toggles IDLE ↔ RECORDING
+```
+
+### Trigger chain — eDP-2 toggle (Zenbook Duo)
+
+```
+Physical key: F13 (screen-off icon on detachable keyboard)
+  → XKB maps F13 → XF86Tools
+    → niri keybind: XF86Tools → spawn-sh toggle-edp2
+      → toggle-edp2 queries niri outputs, toggles eDP-2 on/off
 ```
 
 ### Services

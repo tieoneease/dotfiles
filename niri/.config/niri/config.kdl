@@ -386,8 +386,11 @@ binds {
     XF86MonBrightnessUp allow-when-locked=true { spawn-sh "~/.config/niri/brightness.sh +5%"; }
     XF86MonBrightnessDown allow-when-locked=true { spawn-sh "~/.config/niri/brightness.sh 5%-"; }
 
-    // Voice-to-text toggle (leftctrl+v → keyd emits F13 → XKB maps to XF86Tools)
-    XF86Tools { spawn-sh "~/.local/bin/voice-toggle"; }
+    // Toggle eDP-2 bottom screen (physical F13 key → XKB maps to XF86Tools)
+    XF86Tools { spawn-sh "~/.local/bin/toggle-edp2"; }
+
+    // Voice-to-text toggle (both alts + t → keyd emits F14 → XKB maps to XF86Launch5)
+    XF86Launch5 { spawn-sh "~/.local/bin/voice-toggle"; }
 
     // Open/close the Overview: a zoomed-out view of workspaces and windows.
     // You can also move the mouse into the top-left hot corner,

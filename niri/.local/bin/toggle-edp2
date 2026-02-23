@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Toggle eDP-2 (Zenbook Duo bottom screen) on/off.
+# Replicates the Noctalia screen-toggle plugin logic.
+# When turning on, positions eDP-2 directly below eDP-1.
+
+OUTPUT="eDP-2"
+
+outputs=$(niri msg -j outputs)
+
+# Check if eDP-2 exists
+if ! echo "$outputs" | jq -e ".\"$OUTPUT\"" > /dev/null 2>&1; then
+    notify-send -a "Screen Toggle" -t 3000 "Screen Toggle" \
+        "No secondary screen ($OUTPUT) detected"
+    exit 0
+fi
+
+# Check if eDP-2 is currently on (current_mode is non-null)
+is_on=$(echo "$outputs" | jq -r ".\"$OUTPUT\".current_mode != null")
+
+if [[ "$is_on" == "true" ]]; then
+    niri msg output "$OUTPUT" off
+else
+    niri msg output "$OUTPUT" on
+    sleep 0.5
+    y=$(niri msg -j outputs | jq -r '.["eDP-1"].logical.height + 1')
+    niri msg output "$OUTPUT" position set 0 "$y"
+fi
