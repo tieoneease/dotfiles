@@ -315,6 +315,12 @@ if [[ "$response" =~ ^[Yy]$ ]]; then
     echo "Installing ASUS Zenbook Duo packages..."
     install_packages asusctl wev
 
+    # asusd restart drop-in (work around hidraw FD leak)
+    echo "Configuring asusd restart drop-in..."
+    sudo mkdir -p /etc/systemd/system/asusd.service.d
+    sudo cp -f "$DOTFILES_DIR/etc/systemd/system/asusd.service.d/restart.conf" /etc/systemd/system/asusd.service.d/
+    sudo systemctl daemon-reload
+
     echo "ASUS Zenbook Duo setup complete."
     echo "  - asusctl manages fn keys, keyboard backlight, and platform profiles"
     echo "  - wev can diagnose function key issues (run 'wev' and press keys)"
