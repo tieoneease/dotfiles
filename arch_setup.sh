@@ -80,7 +80,7 @@ install_packages swayidle playerctl network-manager-applet brightnessctl wl-clip
 
 # Calendar sync (khal + vdirsyncer for Noctalia calendar events)
 echo "Installing calendar sync tools..."
-install_packages khal vdirsyncer python-aiohttp-oauthlib
+install_packages khal vdirsyncer python-aiohttp-oauthlib google-cloud-cli
 
 # Input method framework (Chinese Traditional Pinyin)
 echo "Installing input method framework..."

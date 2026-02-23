@@ -9,45 +9,90 @@ set -euo pipefail
 # Usage: setup-google-calendar
 #
 # Re-running is safe — existing config is detected and preserved.
+# On a new machine with the same GCP project, just re-enter credentials
+# and re-authorize accounts.
 
-PROJECT="vdirsyncer-cal-859530"
 VDIRSYNCER_DIR="$HOME/.config/vdirsyncer"
 KHAL_DIR="$HOME/.config/khal"
 DATA_DIR="$HOME/.local/share/vdirsyncer"
 CALENDARS_DIR="$HOME/.local/share/calendars"
+PROJECT_FILE="$VDIRSYNCER_DIR/gcp_project_id"
 
 mkdir -p "$VDIRSYNCER_DIR" "$KHAL_DIR" "$DATA_DIR/status" "$CALENDARS_DIR"
+
+# Read persisted project ID if available
+PROJECT=""
+if [[ -f "$PROJECT_FILE" ]]; then
+    PROJECT="$(cat "$PROJECT_FILE")"
+fi
 
 # --- GCP project setup (one-time, idempotent) ---
 
 setup_gcp_project() {
     if ! command -v gcloud &> /dev/null; then
         echo "gcloud CLI not found. Install it first:"
-        echo "  https://cloud.google.com/sdk/docs/install"
+        echo "  yay -S google-cloud-cli"
+        echo "  (or: https://cloud.google.com/sdk/docs/install)"
         exit 1
     fi
 
     echo "=== GCP Project Setup ==="
-    echo "Creating isolated project '$PROJECT' (won't affect your other projects)..."
+    echo ""
+    echo "Sign into your PERSONAL Google account (the one that will own this project)."
+    echo "This keeps the project portable across machines and tied to your own account."
+    echo ""
 
-    # Create project (--project= flag keeps it isolated)
+    gcloud auth login
+
+    local active_account
+    active_account="$(gcloud config get account 2>/dev/null)"
+    echo ""
+    echo "Signed in as: $active_account"
+    read -rp "Continue with this account? [Y/n] " response
+    if [[ "$response" =~ ^[Nn]$ ]]; then
+        echo "Run 'gcloud auth login' manually to switch accounts, then re-run this script."
+        exit 0
+    fi
+
+    # Generate or reuse project ID
+    if [[ -n "$PROJECT" ]]; then
+        echo ""
+        echo "Using saved project ID: $PROJECT"
+    else
+        local date_suffix
+        date_suffix="$(date +%y%m%d)"
+        local default_id="vdirsyncer-cal-${date_suffix}"
+        echo ""
+        read -rp "Project ID [$default_id]: " custom_id
+        PROJECT="${custom_id:-$default_id}"
+    fi
+
+    # Create or reuse project
     if gcloud projects describe "$PROJECT" &> /dev/null; then
         echo "Project '$PROJECT' already exists — skipping creation."
     else
+        echo "Creating project '$PROJECT'..."
         gcloud projects create "$PROJECT" --name="vdirsyncer Calendar Sync" --quiet
         echo "Project '$PROJECT' created."
     fi
+
+    # Persist project ID for future re-runs / new machines
+    echo -n "$PROJECT" > "$PROJECT_FILE"
 
     # Enable CalDAV API
     echo "Enabling CalDAV API..."
     gcloud services enable caldav.googleapis.com --project="$PROJECT" 2>/dev/null || true
 
     echo ""
-    echo "Now create an OAuth client ID in the Cloud Console:"
+    echo "Now set up OAuth credentials in the Cloud Console:"
+    echo ""
     echo "  1. Open the link below"
-    echo "  2. Click '+ CREATE CREDENTIALS' → 'OAuth client ID'"
-    echo "  3. If prompted to configure consent screen: select 'External', fill in app name"
-    echo "     (e.g. 'vdirsyncer'), add your email as test user, save"
+    echo "  2. If prompted to configure the consent screen:"
+    echo "     - Select 'External', fill in app name (e.g. 'vdirsyncer')"
+    echo "     - IMPORTANT: Add ALL Google accounts you want to sync as test users"
+    echo "       (e.g. personal@gmail.com, work@company.com, etc.)"
+    echo "     - The app stays in 'Testing' mode — only test users can authorize"
+    echo "  3. Go to Credentials → '+ CREATE CREDENTIALS' → 'OAuth client ID'"
     echo "  4. Application type: 'Desktop app'"
     echo "  5. Copy the Client ID and Client Secret"
     echo ""
@@ -65,8 +110,12 @@ setup_credentials() {
         fi
     fi
 
-    read -rp "Paste Client ID: " client_id
-    read -rp "Paste Client Secret: " client_secret
+    echo ""
+    echo "Paste the Client ID and Client Secret from the GCP Console."
+    echo "  (Credentials page: https://console.cloud.google.com/apis/credentials?project=$PROJECT)"
+    echo ""
+    read -rp "Client ID: " client_id
+    read -rp "Client Secret: " client_secret
 
     echo -n "$client_id" > "$VDIRSYNCER_DIR/client_id"
     echo -n "$client_secret" > "$VDIRSYNCER_DIR/client_secret"
