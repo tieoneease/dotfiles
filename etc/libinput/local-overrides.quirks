@@ -8,3 +8,13 @@
 MatchUdevType=keyboard
 MatchName=keyd virtual keyboard
 AttrKeyboardIntegration=internal
+
+[ELAN9008 Stylus Smoothing]
+MatchUdevType=tablet
+MatchName=ELAN9008:00 04F3:425B Stylus
+AttrTabletSmoothing=1
+
+[ELAN9009 Stylus Smoothing]
+MatchUdevType=tablet
+MatchName=ELAN9009:00 04F3:425A Stylus
+AttrTabletSmoothing=1
