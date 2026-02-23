@@ -297,6 +297,10 @@ if [ ! -f "/etc/sudoers.d/$USER" ]; then
     fi
 fi
 
+# --- Codex CLI ---
+
+yay -S --needed --noconfirm openai-codex
+
 # --- Workspace directory ---
 
 mkdir -p "$HOME/Workspace"
