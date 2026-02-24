@@ -41,9 +41,15 @@ install_packages() {
     fi
 }
 
+# Remove CachyOS default zsh config (replaced by dotfiles zsh config)
+if pacman -Qi cachyos-zsh-config &>/dev/null; then
+    echo "Removing cachyos-zsh-config (replaced by dotfiles zsh config)..."
+    sudo pacman -Rns --noconfirm cachyos-zsh-config || sudo pacman -Rd --noconfirm cachyos-zsh-config
+fi
+
 # Core CLI tools
 echo "Installing core CLI tools..."
-install_packages stow git zsh neovim tmux wget curl direnv fzf ripgrep fd unzip fontconfig starship jq
+install_packages stow git zsh neovim tmux wget curl direnv fzf ripgrep fd unzip fontconfig starship jq pkgfile expac
 
 # File manager
 echo "Installing file manager..."
@@ -131,13 +137,19 @@ install_packages whisper.cpp dotool gtk4-layer-shell python-sounddevice python-n
 
 # Zsh plugins (system-wide, sourced from /usr/share/zsh/plugins/)
 echo "Installing zsh plugins..."
-install_packages zsh-autosuggestions zsh-syntax-highlighting
+install_packages zsh-autosuggestions zsh-syntax-highlighting zsh-history-substring-search
 
 # Fonts
 echo "Installing fonts..."
 install_packages ttf-hack-nerd ttf-jetbrains-mono-nerd ttf-firacode-nerd \
     ttf-iosevka-nerd ttf-cascadia-code-nerd ttf-sourcecodepro-nerd inter-font \
     ttf-inconsolata-go-nerd
+
+# Update pkgfile database (for command-not-found suggestions)
+if command -v pkgfile &>/dev/null; then
+    echo "Updating pkgfile database..."
+    sudo pkgfile -u
+fi
 
 echo "Refreshing font cache..."
 fc-cache -f -v
@@ -325,17 +337,19 @@ if [[ "$SHELL" != *"zsh"* ]]; then
     sudo chsh -s /usr/bin/zsh "$USER"
 fi
 
-# Generate ~/.zshrc loader if it doesn't exist
-if [ ! -f "$HOME/.zshrc" ]; then
-    echo "Creating ~/.zshrc loader..."
-    cat > "$HOME/.zshrc" << 'ZSHRC'
+# Write ~/.zshrc loader (backup existing if present)
+if [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ]; then
+    echo "Backing up existing ~/.zshrc..."
+    cp "$HOME/.zshrc" "$HOME/.zshrc.backup"
+fi
+echo "Writing ~/.zshrc loader..."
+cat > "$HOME/.zshrc" << 'ZSHRC'
 # Source base configuration (managed by dotfiles)
 [[ -f ~/.config/zsh/base.zsh ]] && source ~/.config/zsh/base.zsh
 
 # Machine-specific configuration and installer additions below
 # (mise, conda, rustup, etc. can safely append here)
 ZSHRC
-fi
 
 # --- Git config ---
 

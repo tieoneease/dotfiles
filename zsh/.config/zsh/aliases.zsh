@@ -53,5 +53,26 @@ alias dotfiles-sync='cd ~/dotfiles && git pull --ff-only && ./stow/stow_dotfiles
 # File manager
 alias y="ya"
 
+# Arch Linux / Package management
+if command -v paru &>/dev/null; then
+    alias update="paru -Syu"
+    alias rmpkg="paru -Rsn"
+elif command -v yay &>/dev/null; then
+    alias update="yay -Syu"
+    alias rmpkg="yay -Rsn"
+fi
+if command -v pacman &>/dev/null; then
+    alias cleanup='sudo pacman -Rsn $(pacman -Qtdq 2>/dev/null)'
+    alias fixpacman="sudo rm /var/lib/pacman/db.lck"
+    alias rip="expac --timefmt='%Y-%m-%d %T' '%l\t%n %v' | sort | tail -200 | nl"
+    alias jctl="journalctl -p 3 -xb"
+fi
+
+# Parallel build
+if command -v nproc &>/dev/null; then
+    alias make="make -j\$(nproc)"
+    alias ninja="ninja -j\$(nproc)"
+fi
+
 # Other
 alias todos="nvim ~/todos.todo"
