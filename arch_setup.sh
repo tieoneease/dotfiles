@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-# EndeavourOS / Arch Linux setup script
+# Arch Linux setup script (EndeavourOS, CachyOS, etc.)
 # Sets up Niri + Noctalia Shell desktop environment
 
 if [ "$EUID" -eq 0 ]; then
@@ -12,6 +12,19 @@ fi
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "Dotfiles directory: $DOTFILES_DIR"
+
+# --- AUR helper detection ---
+
+# Detect AUR helper (paru preferred, yay as fallback)
+if command -v paru &> /dev/null; then
+    AUR_HELPER=paru
+elif command -v yay &> /dev/null; then
+    AUR_HELPER=yay
+else
+    echo "Error: No AUR helper found. Install paru or yay first."
+    exit 1
+fi
+echo "Using AUR helper: $AUR_HELPER"
 
 # --- Package installation ---
 
@@ -24,15 +37,9 @@ install_packages() {
     done
     if [ ${#to_install[@]} -gt 0 ]; then
         echo "Installing: ${to_install[*]}"
-        yay -S --needed --noconfirm "${to_install[@]}"
+        $AUR_HELPER -S --needed --noconfirm "${to_install[@]}"
     fi
 }
-
-# Ensure yay is available (EndeavourOS ships it)
-if ! command -v yay &> /dev/null; then
-    echo "Error: yay not found. Install it first or use EndeavourOS."
-    exit 1
-fi
 
 # Core CLI tools
 echo "Installing core CLI tools..."
@@ -52,7 +59,7 @@ if [[ "$(hostname)" == "sam-duomoon" ]]; then
         makepkg -si --noconfirm
         popd
     fi
-    # Prevent yay from overwriting the custom build
+    # Prevent AUR helper from overwriting the custom build
     if ! grep -q "IgnorePkg.*niri-git" /etc/pacman.conf; then
         sudo sed -i '/^\[options\]/a IgnorePkg = niri-git' /etc/pacman.conf
     fi
@@ -263,6 +270,10 @@ fi
 # GPD Win Max 2 hardware setup (amdgpu stability, BMI260 IMU, HHD)
 if [[ "$(hostname)" == "sam-ganymede" ]]; then
     echo "Installing GPD Win Max 2 packages..."
+    # Ensure kernel headers are installed for DKMS modules
+    KERNEL_PKG=$(pacman -Qqs '^linux-cachyos$' 2>/dev/null || pacman -Qqs '^linux$' 2>/dev/null || echo "linux")
+    HEADERS_PKG="${KERNEL_PKG}-headers"
+    install_packages "$HEADERS_PKG"
     install_packages bmi260-dkms hhd game-devices-udev
 
     echo "Configuring amdgpu for GPD Win Max 2..."
@@ -281,13 +292,19 @@ if [[ "$(hostname)" == "sam-ganymede" ]]; then
     sudo systemctl enable hhd@"$USER"
 fi
 
-# Set environment variables
+# Set environment variables (merge into existing /etc/environment, don't overwrite)
 echo "Setting system environment variables..."
-sudo tee /etc/environment > /dev/null << 'EOF'
-EDITOR=nvim
-BROWSER=google-chrome-stable
-XMODIFIERS=@im=fcitx
-EOF
+set_env_var() {
+    local key="$1" value="$2"
+    if grep -q "^${key}=" /etc/environment 2>/dev/null; then
+        sudo sed -i "s|^${key}=.*|${key}=${value}|" /etc/environment
+    else
+        echo "${key}=${value}" | sudo tee -a /etc/environment > /dev/null
+    fi
+}
+set_env_var EDITOR nvim
+set_env_var BROWSER google-chrome-stable
+set_env_var XMODIFIERS '@im=fcitx'
 
 # Enable services
 echo "Enabling system services..."
@@ -393,7 +410,7 @@ fi
 
 # --- Codex CLI ---
 
-yay -S --needed --noconfirm openai-codex
+$AUR_HELPER -S --needed --noconfirm openai-codex
 
 # --- Workspace directory ---
 
