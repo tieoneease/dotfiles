@@ -45,6 +45,7 @@ alias cmd='llm cmd -m claude-3.7-sonnet'
 alias claude='claude --chrome --dangerously-skip-permissions'
 alias code='claude --chrome --dangerously-skip-permissions'
 alias sonnet='code --model sonnet'
+alias codex='codex --dangerously-bypass-approvals-and-sandbox'
 
 # Dotfiles
 alias dotfiles-sync='cd ~/dotfiles && git pull --ff-only && ./stow/stow_dotfiles.sh $([ "$(uname)" = "Linux" ] && [ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] && echo "--vps")'
