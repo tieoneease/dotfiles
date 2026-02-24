@@ -260,16 +260,25 @@ if [[ "$(hostname)" == "sam-duomoon" ]]; then
     sudo systemd-hwdb update
 fi
 
-# Copy GPD Win Max 2 amdgpu configs (DPM stability + GPU recovery)
+# GPD Win Max 2 hardware setup (amdgpu stability, BMI260 IMU, HHD)
 if [[ "$(hostname)" == "sam-ganymede" ]]; then
+    echo "Installing GPD Win Max 2 packages..."
+    install_packages bmi260-dkms hhd game-devices-udev
+
     echo "Configuring amdgpu for GPD Win Max 2..."
     sudo mkdir -p /etc/modprobe.d
     sudo cp -f "$DOTFILES_DIR/etc/modprobe.d/amdgpu.conf" /etc/modprobe.d/amdgpu.conf
+
+    echo "Blacklisting bmi160 modules (BIOS misidentifies BMI260 as BMI160)..."
+    sudo cp -f "$DOTFILES_DIR/etc/modprobe.d/blacklist-bmi160.conf" /etc/modprobe.d/blacklist-bmi160.conf
 
     echo "Installing amdgpu power-stable udev rule..."
     sudo mkdir -p /etc/udev/rules.d
     sudo cp -f "$DOTFILES_DIR/etc/udev/rules.d/99-amdgpu-power-stable.rules" /etc/udev/rules.d/
     sudo udevadm control --reload-rules
+
+    echo "Enabling Handheld Daemon (HHD)..."
+    sudo systemctl enable hhd@"$USER"
 fi
 
 # Set environment variables

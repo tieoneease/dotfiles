@@ -420,6 +420,42 @@ udevadm monitor --property
 
 ---
 
+## IMU + Gyro — BMI260 / Handheld Daemon (GPD Win Max 2)
+
+**Configs:** `/etc/modprobe.d/blacklist-bmi160.conf`
+**Packages:** `bmi260-dkms`, `hhd`, `game-devices-udev`
+**Service:** `hhd@sam` (system-level, enabled)
+**Machine:** `sam-ganymede` only (deployed by `arch_setup.sh` hostname guard)
+
+The GPD Win Max 2 has a Bosch BMI260 accelerometer/gyroscope, but the BIOS misidentifies it as a BMI160. The upstream `bmi160` modules auto-load and fail to communicate with the chip.
+
+### bmi160 blacklist
+
+Blacklists `bmi160_spi`, `bmi160_i2c`, and `bmi160_core` so the correct `bmi260-dkms` driver can bind via IIO.
+
+### Handheld Daemon (HHD)
+
+HHD emulates a DualSense Edge controller, which is the only reliable gyro-capable emulation target on Linux handhelds. Steam Input detects the emulated controller and exposes gyro configuration (gyro aiming, flick stick, etc.).
+
+`game-devices-udev` provides the udev rules needed for Steam to see the emulated DualSense Edge.
+
+### Known issues
+
+Community sources flag WM2 gyro as buggy — expect possible drift or axis mapping issues. This setup gets the infrastructure in place.
+
+### Verification
+
+```bash
+lsmod | grep bmi160                    # should show nothing (blacklisted)
+lsmod | grep bmi260                    # should show bmi260_i2c, bmi260_core
+ls /sys/bus/iio/devices/               # should show an IIO device
+systemctl status hhd@sam               # should show HHD running
+```
+
+Steam should detect a DualSense Edge controller with gyro capabilities in Settings > Controller.
+
+---
+
 ## Wallpapers
 
 **Directory:** `~/Pictures/Wallpapers/`
@@ -493,6 +529,7 @@ Displays Quectel EG25G cellular modem status in the bar and control center using
 /etc/greetd/config.toml                              # greetd greeter config (sudo)
 /etc/keyd/default.conf                              # keyd layers (sudo)
 /etc/modprobe.d/amdgpu.conf                          # amdgpu gpu_recovery (sam-ganymede only)
+/etc/modprobe.d/blacklist-bmi160.conf                 # blacklist bmi160 for BMI260 IMU (sam-ganymede only)
 /etc/udev/rules.d/99-amdgpu-power-stable.rules       # DPM stabilization on AC change (sam-ganymede only)
 ~/.config/
 ├── niri/
