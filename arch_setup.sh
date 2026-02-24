@@ -327,7 +327,16 @@ sudo systemctl enable --now tailscaled.service
 
 echo "Enabling user services..."
 systemctl --user enable noctalia.service
-systemctl --user enable elephant.service
+if command -v elephant &> /dev/null; then
+    # elephant installs the binary/providers, then generates its user unit on demand.
+    elephant service enable
+    systemctl --user daemon-reload
+    systemctl --user enable --now elephant.service
+else
+    echo "Error: elephant binary not found after package installation."
+    echo "Expected package: elephant-all"
+    exit 1
+fi
 
 # --- Shell setup ---
 
