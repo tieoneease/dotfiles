@@ -9,7 +9,7 @@ DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 echo "Dotfiles directory: $DOTFILES_DIR"
 
 # Packages to stow (platform-independent)
-PACKAGES=(nvim kitty tmux tms zsh starship fontconfig direnv nix niri noctalia claude gtk fcitx5 yazi webapps voice walker zathura pencil mise vdirsyncer)
+PACKAGES=(nvim kitty tmux tms zsh starship fontconfig direnv nix niri noctalia claude gtk fcitx5 yazi webapps voice walker zathura pencil mise vdirsyncer wireplumber)
 
 # macOS-only packages
 MACOS_PACKAGES=(aerospace sketchybar karabiner)
