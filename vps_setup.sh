@@ -73,6 +73,19 @@ if ! command -v claude &> /dev/null; then
     curl -fsSL https://claude.ai/install.sh | bash
 fi
 
+# --- Environment variables ---
+
+echo "Setting system environment variables..."
+set_env_var() {
+    local key="$1" value="$2"
+    if grep -q "^${key}=" /etc/environment 2>/dev/null; then
+        sudo sed -i "s|^${key}=.*|${key}=${value}|" /etc/environment
+    else
+        echo "${key}=${value}" | sudo tee -a /etc/environment > /dev/null
+    fi
+}
+set_env_var EDITOR nvim
+
 # --- Shell setup ---
 
 if [[ "$SHELL" != *"zsh"* ]]; then
@@ -176,6 +189,50 @@ if [ ! -f "$LOCAL_ZSH" ]; then
 # VPS overrides
 alias ws="cd ~/sambot"
 LOCAL
+fi
+
+# --- Pi Coding Agent ---
+
+# Install skills (web search, browser tools, etc.)
+# Uses auto-discovery path (~/.pi/agent/skills/) — pi-skills repo lacks
+# the package manifest structure that `pi install` expects.
+PI_SKILLS_DIR="$HOME/.pi/agent/skills/pi-skills"
+if command -v pi &> /dev/null; then
+    if [[ ! -d "$PI_SKILLS_DIR" ]]; then
+        echo "Installing Pi coding agent skills..."
+        git clone https://github.com/badlogic/pi-skills "$PI_SKILLS_DIR"
+    else
+        echo "Updating Pi coding agent skills..."
+        git -C "$PI_SKILLS_DIR" pull --ff-only
+    fi
+    # Install npm dependencies for skills that need them
+    for dir in "$PI_SKILLS_DIR"/*/; do
+        if [[ -f "$dir/package.json" && ! -d "$dir/node_modules" ]]; then
+            echo "  npm install in $(basename "$dir")..."
+            (cd "$dir" && npm install --silent)
+        fi
+    done
+    # Disable unused skills (keep only brave-search + browser-tools)
+    PI_SETTINGS="$HOME/.pi/agent/settings.json"
+    if [[ -f "$PI_SETTINGS" ]] && ! grep -q '"skills"' "$PI_SETTINGS"; then
+        echo "Disabling unused Pi skills (keeping brave-search, browser-tools)..."
+        TMP_SETTINGS=$(mktemp)
+        node -e "
+            const s = JSON.parse(require('fs').readFileSync('$PI_SETTINGS', 'utf8'));
+            s.skills = [
+                '-skills/pi-skills/gccli/SKILL.md',
+                '-skills/pi-skills/gdcli/SKILL.md',
+                '-skills/pi-skills/gmcli/SKILL.md',
+                '-skills/pi-skills/transcribe/SKILL.md',
+                '-skills/pi-skills/vscode/SKILL.md',
+                '-skills/pi-skills/youtube-transcript/SKILL.md'
+            ];
+            require('fs').writeFileSync('$TMP_SETTINGS', JSON.stringify(s, null, 2) + '\n');
+        "
+        mv "$TMP_SETTINGS" "$PI_SETTINGS"
+    fi
+else
+    echo "Pi coding agent not found, skipping skills install"
 fi
 
 # --- Done ---
