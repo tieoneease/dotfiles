@@ -375,9 +375,22 @@ Without it, X11 apps fail with "Unable to open a connection to X".
 
 ## Gaming
 
-**Setup:** Optional section in `arch_setup.sh` (prompted during install)
+**Setup:** Gaming section in `arch_setup.sh` auto-detects the distro and branches accordingly.
 
-### Packages
+### CachyOS (GPD Win Max 2)
+
+Detected via `pacman -Si cachyos-gaming-meta` (checks repo availability). Installs automatically — no prompt:
+
+| Package | Role |
+|---------|------|
+| `cachyos-gaming-meta` | Curated gaming stack (Steam, gamescope, MangoHud, Proton, wine, umu-launcher, protontricks, etc.) |
+| `cachyos-gaming-applications` | Gaming utilities (Heroic launcher, ProtonPlus, etc.) |
+
+GPU drivers, process scheduling (ananicy-cpp), and Proton (proton-cachyos-slr) are handled by CachyOS — no gamemode group or explicit Vulkan driver packages needed.
+
+### EndeavourOS / other Arch (manual)
+
+Prompted interactively (`Install gaming tools? [y/N]`):
 
 | Package | Role |
 |---------|------|

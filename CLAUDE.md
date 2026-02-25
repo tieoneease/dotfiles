@@ -1,7 +1,7 @@
 # Claude Guidelines for Dotfiles Repository
 
 ## Primary Platform
-- **OS:** EndeavourOS (Arch Linux)
+- **OS:** EndeavourOS (Arch Linux), CachyOS (GPD Win Max 2)
 - **Compositor:** Niri (scrollable tiling Wayland compositor)
 - **Desktop Shell:** Noctalia Shell (status bar, app launcher, notifications, wallpaper/theming)
 - **Secondary platform:** macOS (Aerospace, Sketchybar, Karabiner-Elements)
