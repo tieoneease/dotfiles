@@ -773,6 +773,24 @@ if command -v mise &> /dev/null; then
     mise install
 fi
 
+# Pi Coding Agent - install skills (web search, browser tools, etc.)
+if command -v pi &> /dev/null; then
+    echo "Installing Pi coding agent skills..."
+    pi install git:github.com/badlogic/pi-skills
+else
+    echo "⚠ Pi coding agent not found, skipping skills install"
+fi
+
+# Copy secrets template if no secrets file exists yet
+SECRETS_FILE="$HOME/.config/secrets/env"
+if [[ ! -f "$SECRETS_FILE" ]]; then
+    echo "Creating secrets file from template..."
+    mkdir -p "$(dirname "$SECRETS_FILE")"
+    cp "$DOTFILES_DIR/secrets/env.example" "$SECRETS_FILE"
+    chmod 600 "$SECRETS_FILE"
+    echo "⚠ Fill in API keys at: $SECRETS_FILE"
+fi
+
 # Set GTK dark mode preference
 echo "Setting system-wide dark mode preference..."
 if command -v gsettings >/dev/null 2>&1; then

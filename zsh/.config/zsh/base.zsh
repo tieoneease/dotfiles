@@ -65,6 +65,9 @@ function ya() {
     rm -f -- "$tmp"
 }
 
+# Source secrets (API keys, tokens — never committed)
+[[ -f ~/.config/secrets/env ]] && source ~/.config/secrets/env
+
 # Source aliases
 [[ -f ~/.config/zsh/aliases.zsh ]] && source ~/.config/zsh/aliases.zsh
 
