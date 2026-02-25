@@ -319,7 +319,7 @@ window-rule {
 
 // Google Tasks → workspace 4 on eDP-1
 window-rule {
-    match app-id="chrome-tasks.google.com__embed-Default"
+    match app-id="chrome-tasks.google.com__embed_-Default"
     open-on-workspace "󰈚"
 }
 
@@ -378,7 +378,7 @@ binds {
     Mod+N { spawn-sh "~/.local/bin/focus-or-launch chrome-notebooklm.google.com__-Default ~/.local/bin/webapp-launch notebooklm https://notebooklm.google.com/"; }
     Mod+Y { spawn-sh "~/.local/bin/focus-or-launch chrome-www.youtube.com__-Default ~/.local/bin/webapp-launch youtube https://www.youtube.com"; }
     Mod+M { spawn-sh "~/.local/bin/focus-or-launch chrome-www.messenger.com__-Default ~/.local/bin/webapp-launch messenger https://www.messenger.com"; }
-    Mod+T { spawn-sh "~/.local/bin/focus-or-launch chrome-tasks.google.com__embed-Default ~/.local/bin/webapp-launch tasks https://tasks.google.com/embed/"; }
+    Mod+T { spawn-sh "~/.local/bin/focus-or-launch chrome-tasks.google.com__embed_-Default ~/.local/bin/webapp-launch tasks https://tasks.google.com/embed/"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
