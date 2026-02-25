@@ -208,6 +208,48 @@ sudo sed -i 's/getEventsForDate(modelData\.year, modelData\.month, modelData\.da
 # Push dots to bottom of cell for more gap from date numbers (marginXS → fixed 2px)
 sudo sed -i '/Event indicator dots/,/Repeater/ s/anchors\.bottomMargin: Style\.marginXS/anchors.bottomMargin: 2/' \
     "$CALENDAR_QML"
+# Shift date number upward to increase visual gap between number and dots below
+if ! grep -q 'verticalCenterOffset' "$CALENDAR_QML"; then
+    sudo sed -i '/anchors.centerIn: parent/{n; s/text: modelData.day/anchors.verticalCenterOffset: -2\n                text: modelData.day/}' "$CALENDAR_QML"
+fi
+# Fix today's event dot color: mOnSecondary (invisible on mSecondary bg) → mPrimary
+echo "Patching today's event dot color..."
+if ! grep -q 'today-dot-fix' "$CALENDAR_QML"; then
+sudo python3 << 'DOT_PATCH_EOF'
+path = "/etc/xdg/quickshell/noctalia-shell/Modules/Cards/CalendarMonthCard.qml"
+with open(path) as f:
+    src = f.read()
+
+old = """      function getEventColor(event, isToday) {
+        if (isMultiDayEvent(event)) {
+          return isToday ? Color.mOnSecondary : Color.mTertiary;
+        } else if (root.isAllDayEvent(event)) {
+          return isToday ? Color.mOnSecondary : Color.mSecondary;
+        } else {
+          return isToday ? Color.mOnSecondary : Color.mPrimary;
+        }
+      }"""
+
+new = """      function getEventColor(event, isToday) {
+        // today-dot-fix
+        if (isToday) return Color.mPrimary;
+        if (isMultiDayEvent(event)) return Color.mTertiary;
+        if (root.isAllDayEvent(event)) return Color.mSecondary;
+        return Color.mPrimary;
+      }"""
+
+if old not in src:
+    import sys
+    print("WARNING: getEventColor pattern not found — skipping", file=sys.stderr)
+    sys.exit(0)
+
+with open(path, "w") as f:
+    f.write(src.replace(old, new, 1))
+print("Patched today's event dot color to mPrimary")
+DOT_PATCH_EOF
+else
+    echo "Today's dot color already patched — skipping"
+fi
 # Redesign calendar tooltip: sort events (all-day first, then chronological), use grid mode,
 # AM/PM format with en-dash separator, two-column layout via TooltipService rows API
 sudo python3 << 'PATCH_EOF'
@@ -289,6 +331,97 @@ sudo sed -i 's/Style\.marginL/Style.marginM/g' "$CLOCK_QML"
 sudo sed -i 's/440 : 420/410 : 390/' "$CLOCK_QML"
 # Show city name in weather card (showLocation: false → true)
 sudo sed -i 's/showLocation: false/showLocation: true/' "$CLOCK_QML"
+
+# --- WeatherCard: center header layout ---
+# Replaces header with centered: [fill] icon city temp (tz) [fill]
+echo "Patching WeatherCard header to centered layout..."
+if ! grep -q 'centered-weather-header' "$WEATHER_QML"; then
+sudo python3 << 'WEATHER_PATCH_EOF'
+import re, sys
+
+path = "/etc/xdg/quickshell/noctalia-shell/Modules/Cards/WeatherCard.qml"
+with open(path) as f:
+    src = f.read()
+
+# Match the header RowLayout block between "clip: true" and "NDivider"
+pattern = re.compile(
+    r'(    clip: true\n)\n'
+    r'    RowLayout \{.*?'
+    r'\n    \}\n'
+    r'(\n    NDivider)',
+    re.DOTALL
+)
+
+REPLACEMENT = (
+    r"\1" + "\n"
+    "    RowLayout {\n"
+    "      // centered-weather-header\n"
+    "      Layout.fillWidth: true\n"
+    "      spacing: Style.marginS\n"
+    "\n"
+    "      Item { Layout.fillWidth: true }\n"
+    "\n"
+    "      NIcon {\n"
+    "        Layout.alignment: Qt.AlignVCenter\n"
+    '        icon: weatherReady ? LocationService.weatherSymbolFromCode(LocationService.data.weather.current_weather.weathercode, LocationService.data.weather.current_weather.is_day) : "weather-cloud-off"\n'
+    "        pointSize: Style.fontSizeL\n"
+    "        color: Color.mPrimary\n"
+    "      }\n"
+    "\n"
+    "      NText {\n"
+    "        text: {\n"
+    '          const chunks = Settings.data.location.name.split(",");\n'
+    "          return chunks[0];\n"
+    "        }\n"
+    "        pointSize: Style.fontSizeL\n"
+    "        font.weight: Style.fontWeightBold\n"
+    "        color: Color.mOnSurface\n"
+    "        visible: showLocation && !Settings.data.location.hideWeatherCityName\n"
+    "      }\n"
+    "\n"
+    "      NText {\n"
+    "        visible: weatherReady\n"
+    "        text: {\n"
+    "          if (!weatherReady) {\n"
+    '            return "";\n'
+    "          }\n"
+    "          var temp = LocationService.data.weather.current_weather.temperature;\n"
+    '          var suffix = "C";\n'
+    "          if (Settings.data.location.useFahrenheit) {\n"
+    "            temp = LocationService.celsiusToFahrenheit(temp);\n"
+    '            var suffix = "F";\n'
+    "          }\n"
+    "          temp = Math.round(temp);\n"
+    "          return `${temp}\u00b0${suffix}`;\n"
+    "        }\n"
+    "        pointSize: Style.fontSizeM\n"
+    "        font.weight: Style.fontWeightBold\n"
+    "      }\n"
+    "\n"
+    "      NText {\n"
+    '        text: weatherReady ? `(${LocationService.data.weather.timezone_abbreviation})` : ""\n'
+    "        pointSize: Style.fontSizeXS\n"
+    "        color: Color.mOnSurfaceVariant\n"
+    "        visible: LocationService.data.weather && showLocation && !Settings.data.location.hideWeatherTimezone\n"
+    "      }\n"
+    "\n"
+    "      Item { Layout.fillWidth: true }\n"
+    "    }\n"
+    + r"\2"
+)
+
+result, count = pattern.subn(REPLACEMENT, src)
+if count == 0:
+    print("WARNING: Weather header pattern not found — skipping", file=sys.stderr)
+    sys.exit(0)
+
+with open(path, "w") as f:
+    f.write(result)
+print("Centered weather header layout applied")
+WEATHER_PATCH_EOF
+else
+    echo "WeatherCard header already centered — skipping"
+fi
 
 # Patch NIcon.qml: support raw Nerd Font glyphs as icon values
 # When icon string isn't in the Tabler icon map, render it directly with fontFixed
