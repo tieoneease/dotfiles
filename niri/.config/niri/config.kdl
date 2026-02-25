@@ -349,6 +349,7 @@ binds {
     Alt+Space hotkey-overlay-title="Run an Application: walker" { spawn "gdbus" "call" "--session" "--dest" "dev.benz.walker" "--object-path" "/dev/benz/walker" "--method" "org.freedesktop.Application.Activate" "[]"; }
     Mod+Alt+L hotkey-overlay-title="Turn Off Screen" { spawn "niri" "msg" "action" "power-off-monitors"; }
     Mod+B { spawn "google-chrome-stable"; }
+    Mod+Shift+B { spawn "google-chrome-stable" "--incognito"; }
     Mod+S { spawn-sh "~/.local/bin/focus-or-launch Slack slack --ozone-platform=wayland --disable-features=WaylandWindowDecorations"; }
     Mod+D { spawn-sh "~/.local/bin/focus-or-launch vesktop vesktop"; }
     Mod+W { spawn-sh "~/.local/bin/focus-or-launch chrome-web.whatsapp.com__-Default ~/.local/bin/webapp-launch whatsapp https://web.whatsapp.com"; }
@@ -357,6 +358,7 @@ binds {
     Mod+P { spawn-sh "~/.local/bin/focus-or-launch chrome-www.perplexity.ai__-Default ~/.local/bin/webapp-launch perplexity https://www.perplexity.ai/"; }
     Mod+N { spawn-sh "~/.local/bin/focus-or-launch chrome-notebooklm.google.com__-Default ~/.local/bin/webapp-launch notebooklm https://notebooklm.google.com/"; }
     Mod+Y { spawn-sh "~/.local/bin/focus-or-launch chrome-www.youtube.com__-Default ~/.local/bin/webapp-launch youtube https://www.youtube.com"; }
+    Mod+Shift+Y { spawn "google-chrome-stable" "--app=https://www.youtube.com" "--incognito" "--disable-features=WaylandWindowDecorations"; }
     Mod+M { spawn-sh "~/.local/bin/focus-or-launch chrome-www.messenger.com__-Default ~/.local/bin/webapp-launch messenger https://www.messenger.com"; }
     Mod+T { spawn-sh "~/.local/bin/focus-or-launch chrome-tasks.google.com__embed_-Default ~/.local/bin/webapp-launch tasks https://tasks.google.com/embed/"; }
 
