@@ -37,7 +37,20 @@ fi
 
 # CLI tools
 echo "Installing CLI tools..."
-install_packages stow zsh neovim fzf ripgrep fd less direnv starship jq zsh-autosuggestions zsh-syntax-highlighting openai-codex
+install_packages stow zsh neovim fzf ripgrep fd less direnv starship jq zsh-autosuggestions zsh-syntax-highlighting openai-codex tailscale
+
+# --- Tailscale ---
+
+echo "Configuring Tailscale..."
+sudo systemctl enable --now tailscaled.service
+
+if ! tailscale status &> /dev/null; then
+    echo "Authenticating Tailscale (sets operator=$USER for sudo-free management)..."
+    sudo tailscale up --operator="$USER"
+else
+    # Already connected — ensure operator is set
+    sudo tailscale set --operator="$USER"
+fi
 
 # --- Rust + cargo tools ---
 
@@ -174,9 +187,12 @@ echo "============================================"
 echo ""
 echo "Log out and back in (or run 'exec zsh') to pick up the new shell."
 echo ""
+echo "Tailscale: disable key expiry in the admin console for this machine"
+echo "  to keep it reachable as a headless server."
+echo ""
 echo "To authenticate Claude Code from a different account:"
 echo "  1. From your local machine:"
-echo "     ssh -L 8000:localhost:8000 sam@sambot-vm"
+echo "     ssh -L 8000:localhost:8000 sambot"
 echo ""
 echo "  2. On the VPS (through the forwarded session):"
 echo "     claude /login"

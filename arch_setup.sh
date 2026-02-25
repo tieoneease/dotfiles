@@ -324,6 +324,9 @@ sudo systemctl enable --now keyd.service
 sudo systemctl enable greetd.service
 sudo systemctl enable --now bluetooth.service
 sudo systemctl enable --now tailscaled.service
+if tailscale status &> /dev/null; then
+    sudo tailscale set --operator="$USER"
+fi
 
 echo "Enabling user services..."
 systemctl --user enable noctalia.service
@@ -568,7 +571,8 @@ fi
 
 echo ""
 echo "Setup complete!"
-echo "  - Run 'sudo tailscale up' to authenticate with Tailscale."
+echo "  - Run 'sudo tailscale up' to authenticate with Tailscale (if not already connected)."
+echo "  - Disable key expiry in the Tailscale admin console for machines that should stay connected."
 echo "  - Run 'setup-google-calendar' to connect Google Calendar (one-time)."
 echo "Reboot to start niri via greetd."
 echo "If greetd fails, switch to TTY2 (Ctrl+Alt+F2) and run:"
