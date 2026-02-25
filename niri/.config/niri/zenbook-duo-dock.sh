@@ -111,13 +111,13 @@ write_window_rules() {
     local f="$NIRI_CONFIG_DIR/window-rules-ws.kdl"
     {
         printf '// Communication apps → chat workspace\n'
-        printf 'window-rule {\n    match app-id="vesktop"\n    open-on-workspace "%s"\n}\n' "$chat_ws"
-        printf 'window-rule {\n    match app-id="Slack"\n    open-on-workspace "%s"\n}\n' "$chat_ws"
-        printf 'window-rule {\n    match app-id="chrome-web.whatsapp.com__-Default"\n    open-on-workspace "%s"\n}\n' "$chat_ws"
-        printf 'window-rule {\n    match app-id="chrome-www.messenger.com__-Default"\n    open-on-workspace "%s"\n}\n' "$chat_ws"
+        printf 'window-rule {\n    match app-id="vesktop"\n    open-on-workspace "%s"\n    open-focused true\n}\n' "$chat_ws"
+        printf 'window-rule {\n    match app-id="Slack"\n    open-on-workspace "%s"\n    open-focused true\n}\n' "$chat_ws"
+        printf 'window-rule {\n    match app-id="chrome-web.whatsapp.com__-Default"\n    open-on-workspace "%s"\n    open-focused true\n}\n' "$chat_ws"
+        printf 'window-rule {\n    match app-id="chrome-www.messenger.com__-Default"\n    open-on-workspace "%s"\n    open-focused true\n}\n' "$chat_ws"
         printf '\n// Calendar/Tasks apps → calendar workspace\n'
-        printf 'window-rule {\n    match app-id="chrome-calendar.google.com__-Default"\n    open-on-workspace "%s"\n    open-maximized true\n}\n' "$cal_ws"
-        printf 'window-rule {\n    match app-id="chrome-tasks.google.com__embed_-Default"\n    open-on-workspace "%s"\n}\n' "$cal_ws"
+        printf 'window-rule {\n    match app-id="chrome-calendar.google.com__-Default"\n    open-on-workspace "%s"\n    open-maximized true\n    open-focused true\n}\n' "$cal_ws"
+        printf 'window-rule {\n    match app-id="chrome-tasks.google.com__embed_-Default"\n    open-on-workspace "%s"\n    open-focused true\n}\n' "$cal_ws"
     } | write_atomic "$f"
 }
 
