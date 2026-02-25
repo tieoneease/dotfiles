@@ -6,12 +6,10 @@ set -euo pipefail
 # Sets up a dev environment on an Arch Linux VPS with dotfiles, Claude Code, and CLI tools
 # Assumes: pacman + yay available, running as non-root user with sudo access
 
-if [ "$EUID" -eq 0 ]; then
-    echo "Please don't run this script as root"
-    exit 1
-fi
-
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$DOTFILES_DIR/setup/common.sh"
+
+ensure_not_root
 echo "Dotfiles directory: $DOTFILES_DIR"
 
 # --- Package installation ---
@@ -54,57 +52,21 @@ fi
 
 # --- Rust + cargo tools ---
 
-if ! command -v rustup &> /dev/null; then
-    echo "Installing Rust..."
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    source "$HOME/.cargo/env"
-fi
-
-if ! command -v tms &> /dev/null; then
-    echo "Installing tmux-sessionizer..."
-    export PATH="$HOME/.cargo/bin:$PATH"
-    cargo install tmux-sessionizer
-fi
+install_rust_and_cargo
 
 # --- Claude Code ---
 
-if ! command -v claude &> /dev/null; then
-    echo "Installing Claude Code..."
-    curl -fsSL https://claude.ai/install.sh | bash
-fi
+install_claude_code
 
 # --- Environment variables ---
 
 echo "Setting system environment variables..."
-set_env_var() {
-    local key="$1" value="$2"
-    if grep -q "^${key}=" /etc/environment 2>/dev/null; then
-        sudo sed -i "s|^${key}=.*|${key}=${value}|" /etc/environment
-    else
-        echo "${key}=${value}" | sudo tee -a /etc/environment > /dev/null
-    fi
-}
 set_env_var EDITOR nvim
 
 # --- Shell setup ---
 
-if [[ "$SHELL" != *"zsh"* ]]; then
-    echo "Changing default shell to zsh..."
-    command -v zsh | sudo tee -a /etc/shells
-    sudo chsh -s /usr/bin/zsh "$USER"
-fi
-
-# Generate ~/.zshrc loader if it doesn't exist
-if [ ! -f "$HOME/.zshrc" ]; then
-    echo "Creating ~/.zshrc loader..."
-    cat > "$HOME/.zshrc" << 'ZSHRC'
-# Source base configuration (managed by dotfiles)
-[[ -f ~/.config/zsh/base.zsh ]] && source ~/.config/zsh/base.zsh
-
-# Machine-specific configuration and installer additions below
-# (mise, conda, rustup, etc. can safely append here)
-ZSHRC
-fi
+setup_zsh_default_shell
+create_zshrc_loader
 
 # Remove legacy ~/.tmux.conf (from sambot's gcp-vm-setup.sh)
 if [ -f "$HOME/.tmux.conf" ] && [ ! -L "$HOME/.tmux.conf" ]; then
@@ -114,9 +76,7 @@ fi
 
 # --- Stow dotfiles (VPS mode) ---
 
-echo "Stowing dotfiles (VPS mode)..."
-chmod +x "$DOTFILES_DIR/stow/stow_dotfiles.sh"
-"$DOTFILES_DIR/stow/stow_dotfiles.sh" --vps
+run_stow_dotfiles --vps
 
 # --- tmux colors fallback ---
 # On desktop, Noctalia generates colors.conf dynamically.
@@ -162,22 +122,11 @@ fi
 
 # --- Git config ---
 
-if ! git config --global user.name &> /dev/null || ! git config --global user.email &> /dev/null; then
-    echo ""
-    echo "Git identity not configured."
-    read -rp "Git user name: " git_name
-    read -rp "Git email: " git_email
-    git config --global user.name "$git_name"
-    git config --global user.email "$git_email"
-    echo "Git identity set to $git_name <$git_email>"
-fi
+configure_git_identity
 
 # --- mise ---
 
-if command -v mise &> /dev/null; then
-    echo "Installing mise-managed tools (node LTS, etc.)..."
-    mise install
-fi
+run_mise_install
 
 # --- VPS-specific aliases ---
 
@@ -193,47 +142,11 @@ fi
 
 # --- Pi Coding Agent ---
 
-# Install skills (web search, browser tools, etc.)
-# Uses auto-discovery path (~/.pi/agent/skills/) — pi-skills repo lacks
-# the package manifest structure that `pi install` expects.
-PI_SKILLS_DIR="$HOME/.pi/agent/skills/pi-skills"
-if command -v pi &> /dev/null; then
-    if [[ ! -d "$PI_SKILLS_DIR" ]]; then
-        echo "Installing Pi coding agent skills..."
-        git clone https://github.com/badlogic/pi-skills "$PI_SKILLS_DIR"
-    else
-        echo "Updating Pi coding agent skills..."
-        git -C "$PI_SKILLS_DIR" pull --ff-only
-    fi
-    # Install npm dependencies for skills that need them
-    for dir in "$PI_SKILLS_DIR"/*/; do
-        if [[ -f "$dir/package.json" && ! -d "$dir/node_modules" ]]; then
-            echo "  npm install in $(basename "$dir")..."
-            (cd "$dir" && npm install --silent)
-        fi
-    done
-    # Disable unused skills (keep only brave-search + browser-tools)
-    PI_SETTINGS="$HOME/.pi/agent/settings.json"
-    if [[ -f "$PI_SETTINGS" ]] && ! grep -q '"skills"' "$PI_SETTINGS"; then
-        echo "Disabling unused Pi skills (keeping brave-search, browser-tools)..."
-        TMP_SETTINGS=$(mktemp)
-        node -e "
-            const s = JSON.parse(require('fs').readFileSync('$PI_SETTINGS', 'utf8'));
-            s.skills = [
-                '-skills/pi-skills/gccli/SKILL.md',
-                '-skills/pi-skills/gdcli/SKILL.md',
-                '-skills/pi-skills/gmcli/SKILL.md',
-                '-skills/pi-skills/transcribe/SKILL.md',
-                '-skills/pi-skills/vscode/SKILL.md',
-                '-skills/pi-skills/youtube-transcript/SKILL.md'
-            ];
-            require('fs').writeFileSync('$TMP_SETTINGS', JSON.stringify(s, null, 2) + '\n');
-        "
-        mv "$TMP_SETTINGS" "$PI_SETTINGS"
-    fi
-else
-    echo "Pi coding agent not found, skipping skills install"
-fi
+install_pi_agent_skills
+
+# --- Secrets ---
+
+copy_secrets_template
 
 # --- Done ---
 

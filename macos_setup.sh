@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$DOTFILES_DIR/setup/common.sh"
+
 echo "Setting up macOS-specific configurations..."
 
 # Install Homebrew if not already installed
@@ -36,10 +39,7 @@ echo "Installing mise..."
 brew install mise
 
 # Install Claude Code
-if ! command -v claude &> /dev/null; then
-    echo "Installing Claude Code..."
-    curl -fsSL https://claude.ai/install.sh | bash
-fi
+install_claude_code
 
 # Install Nerd Fonts
 echo "Installing Nerd Fonts..."
@@ -124,10 +124,7 @@ defaults write com.apple.dock expose-animation-duration -float 0
 
 # --- Stow dotfiles ---
 
-DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-echo "Stowing dotfiles..."
-chmod +x "$DOTFILES_DIR/stow/stow_dotfiles.sh"
-"$DOTFILES_DIR/stow/stow_dotfiles.sh"
+run_stow_dotfiles
 
 echo ""
 echo "macOS setup completed! Please log out and back in for all changes to take effect."
