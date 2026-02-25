@@ -391,22 +391,30 @@ fi
 echo "Installing mise..."
 install_packages mise
 
-# --- Nix package manager ---
+# --- Nix package manager (optional) ---
 
 if ! command -v nix &> /dev/null; then
-    echo "Installing Nix via Determinate Systems installer..."
-    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix \
-        | sh -s -- install --no-confirm
-    # Source Nix for the rest of this setup session
-    if [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
-        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    fi
-fi
+    read -rp "Install Nix package manager (for direnv flake support)? [y/N] " response
+    if [[ "$response" =~ ^[Yy]$ ]]; then
+        echo "Installing Nix via Determinate Systems installer..."
+        curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix \
+            | sh -s -- install --no-confirm
+        if [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
+            . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+        fi
 
-# Install nix-direnv (enables `use flake` / `use nix` in .envrc files)
-if [ ! -f "$HOME/.nix-profile/share/nix-direnv/direnvrc" ]; then
-    echo "Installing nix-direnv..."
-    nix profile install nixpkgs#nix-direnv
+        # Install nix-direnv (enables `use flake` / `use nix` in .envrc files)
+        if [ ! -f "$HOME/.nix-profile/share/nix-direnv/direnvrc" ]; then
+            echo "Installing nix-direnv..."
+            nix profile install nixpkgs#nix-direnv
+        fi
+    fi
+else
+    # Nix already installed — ensure nix-direnv is present
+    if [ ! -f "$HOME/.nix-profile/share/nix-direnv/direnvrc" ]; then
+        echo "Installing nix-direnv..."
+        nix profile install nixpkgs#nix-direnv
+    fi
 fi
 
 # --- Claude Code ---
