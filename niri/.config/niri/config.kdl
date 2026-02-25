@@ -275,6 +275,16 @@ window-rule {
     match app-id="chrome-web.whatsapp.com__-Default"
     open-on-workspace "󰭹"
 }
+window-rule {
+    match app-id="chrome-www.messenger.com__-Default"
+    open-on-workspace "󰭹"
+}
+
+// YouTube → workspace 1 (main)
+window-rule {
+    match app-id="chrome-www.youtube.com__-Default"
+    open-on-workspace "󰇧"
+}
 
 // Obsidian → workspace 8 (brain), full width
 window-rule {
@@ -360,6 +370,8 @@ binds {
     Mod+G { spawn-sh "~/.local/bin/focus-or-launch chrome-gemini.google.com__app-Default ~/.local/bin/webapp-launch gemini https://gemini.google.com/app"; }
     Mod+P { spawn-sh "~/.local/bin/focus-or-launch chrome-www.perplexity.ai__-Default ~/.local/bin/webapp-launch perplexity https://www.perplexity.ai/"; }
     Mod+N { spawn-sh "~/.local/bin/focus-or-launch chrome-notebooklm.google.com__-Default ~/.local/bin/webapp-launch notebooklm https://notebooklm.google.com/"; }
+    Mod+Y { spawn-sh "~/.local/bin/focus-or-launch chrome-www.youtube.com__-Default ~/.local/bin/webapp-launch youtube https://www.youtube.com"; }
+    Mod+M { spawn-sh "~/.local/bin/focus-or-launch chrome-www.messenger.com__-Default ~/.local/bin/webapp-launch messenger https://www.messenger.com"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
