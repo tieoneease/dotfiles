@@ -1,2 +1,5 @@
 [tools]
 node = "lts"
+python = "3.12"
+uv = "latest"
+"npm:@mariozechner/pi-coding-agent" = "latest"
