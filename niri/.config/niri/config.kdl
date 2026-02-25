@@ -311,10 +311,16 @@ window-rule {
     open-on-workspace "󰧑"
 }
 
-// Claude → workspace 8 (brain) on eDP-1
+// Google Calendar → workspace 4 on eDP-1
 window-rule {
-    match app-id="chrome-claude.ai__-Default"
-    open-on-workspace "󰧑"
+    match app-id="chrome-calendar.google.com__-Default"
+    open-on-workspace "󰈚"
+}
+
+// Google Tasks → workspace 4 on eDP-1
+window-rule {
+    match app-id="chrome-tasks.google.com__embed-Default"
+    open-on-workspace "󰈚"
 }
 
 // Steam notification popups — position at bottom-right instead of center
@@ -359,7 +365,7 @@ binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
-    Mod+T hotkey-overlay-title="Open a Terminal: kitty" { spawn "kitty"; }
+    Alt+Return hotkey-overlay-title="Open a Terminal: kitty" { spawn "kitty"; }
     Alt+Space hotkey-overlay-title="Run an Application: walker" { spawn "gdbus" "call" "--session" "--dest" "dev.benz.walker" "--object-path" "/dev/benz/walker" "--method" "org.freedesktop.Application.Activate" "[]"; }
     Mod+Alt+L hotkey-overlay-title="Turn Off Screen" { spawn "niri" "msg" "action" "power-off-monitors"; }
     Mod+B { spawn "google-chrome-stable"; }
@@ -372,6 +378,7 @@ binds {
     Mod+N { spawn-sh "~/.local/bin/focus-or-launch chrome-notebooklm.google.com__-Default ~/.local/bin/webapp-launch notebooklm https://notebooklm.google.com/"; }
     Mod+Y { spawn-sh "~/.local/bin/focus-or-launch chrome-www.youtube.com__-Default ~/.local/bin/webapp-launch youtube https://www.youtube.com"; }
     Mod+M { spawn-sh "~/.local/bin/focus-or-launch chrome-www.messenger.com__-Default ~/.local/bin/webapp-launch messenger https://www.messenger.com"; }
+    Mod+T { spawn-sh "~/.local/bin/focus-or-launch chrome-tasks.google.com__embed-Default ~/.local/bin/webapp-launch tasks https://tasks.google.com/embed/"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
@@ -563,7 +570,7 @@ binds {
     // Makes the column "fill the rest of the space".
     Mod+Ctrl+F { expand-column-to-available-width; }
 
-    Mod+C { spawn-sh "~/.local/bin/focus-or-launch chrome-claude.ai__-Default ~/.local/bin/webapp-launch claude https://claude.ai"; }
+    Mod+C { spawn-sh "~/.local/bin/focus-or-launch chrome-calendar.google.com__-Default ~/.local/bin/webapp-launch calendar https://calendar.google.com"; }
     Mod+Shift+C { center-column; }
 
     // Center all fully visible columns on screen.
