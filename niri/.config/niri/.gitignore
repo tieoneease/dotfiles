@@ -2,4 +2,5 @@ device-outputs.kdl
 device-inputs.kdl
 monitor-workspaces.kdl
 monitor-nav.kdl
+window-rules-ws.kdl
 noctalia.kdl

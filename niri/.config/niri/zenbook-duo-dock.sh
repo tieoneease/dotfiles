@@ -50,6 +50,9 @@ generate_defaults() {
             done
         } | write_atomic "$f"
     fi
+    if [[ ! -f "$NIRI_CONFIG_DIR/window-rules-ws.kdl" ]]; then
+        write_window_rules "󰭹" "󰈚"
+    fi
     if [[ ! -f "$NIRI_CONFIG_DIR/monitor-nav.kdl" ]]; then
         printf 'binds {\n    Alt+J { focus-window-or-workspace-down; }\n    Alt+K { focus-window-or-workspace-up; }\n}\n' | write_atomic "$NIRI_CONFIG_DIR/monitor-nav.kdl"
     fi
@@ -99,6 +102,25 @@ EOF
     reorder_workspaces "${EDP1_WORKSPACES[@]}" "${EDP2_WORKSPACES[@]}"
 }
 
+# Write window rules that target chat/calendar apps to the appropriate workspace.
+# Docked/non-Zenbook: eDP-1 icons (󰭹 chat, 󰈚 calendar)
+# Undocked: eDP-2 icons (󰍡 chat, 󰧭 calendar)
+write_window_rules() {
+    local chat_ws="$1"
+    local cal_ws="$2"
+    local f="$NIRI_CONFIG_DIR/window-rules-ws.kdl"
+    {
+        printf '// Communication apps → chat workspace\n'
+        printf 'window-rule {\n    match app-id="vesktop"\n    open-on-workspace "%s"\n}\n' "$chat_ws"
+        printf 'window-rule {\n    match app-id="Slack"\n    open-on-workspace "%s"\n}\n' "$chat_ws"
+        printf 'window-rule {\n    match app-id="chrome-web.whatsapp.com__-Default"\n    open-on-workspace "%s"\n}\n' "$chat_ws"
+        printf 'window-rule {\n    match app-id="chrome-www.messenger.com__-Default"\n    open-on-workspace "%s"\n}\n' "$chat_ws"
+        printf '\n// Calendar/Tasks apps → calendar workspace\n'
+        printf 'window-rule {\n    match app-id="chrome-calendar.google.com__-Default"\n    open-on-workspace "%s"\n}\n' "$cal_ws"
+        printf 'window-rule {\n    match app-id="chrome-tasks.google.com__embed_-Default"\n    open-on-workspace "%s"\n}\n' "$cal_ws"
+    } | write_atomic "$f"
+}
+
 generate_defaults
 
 # Only run dock/undock logic on the Zenbook Duo
@@ -140,12 +162,14 @@ write_nav_binds() {
 apply_docked() {
     niri msg output eDP-2 off
     write_nav_binds
+    write_window_rules "󰭹" "󰈚"
 }
 
 # Undocked: enable eDP-2, workspaces with original_output="eDP-2" auto-migrate
 # back with order preserved. Niri's add_output extracts matching workspaces.
 apply_undocked() {
     write_nav_binds
+    write_window_rules "󰍡" "󰧭"
     position_edp2_below
 }
 
