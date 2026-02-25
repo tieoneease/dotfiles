@@ -1,0 +1,6 @@
+# SHA-256 hashes of unpatched upstream Noctalia QML files.
+# Used to detect when upstream changes after a noctalia-shell-git update.
+# Regenerate on fresh upstream: sudo bash patch_noctalia.sh --save-upstream-hashes
+#
+# To populate: reinstall noctalia-shell-git, then run --save-upstream-hashes
+# BEFORE running patch_noctalia.sh (so hashes reflect unpatched files).
