@@ -489,12 +489,12 @@ if command -v pi &> /dev/null; then
         node -e "
             const s = JSON.parse(require('fs').readFileSync('$PI_SETTINGS', 'utf8'));
             s.skills = [
-                '-pi-skills/gccli/SKILL.md',
-                '-pi-skills/gdcli/SKILL.md',
-                '-pi-skills/gmcli/SKILL.md',
-                '-pi-skills/transcribe/SKILL.md',
-                '-pi-skills/vscode/SKILL.md',
-                '-pi-skills/youtube-transcript/SKILL.md'
+                '-skills/pi-skills/gccli/SKILL.md',
+                '-skills/pi-skills/gdcli/SKILL.md',
+                '-skills/pi-skills/gmcli/SKILL.md',
+                '-skills/pi-skills/transcribe/SKILL.md',
+                '-skills/pi-skills/vscode/SKILL.md',
+                '-skills/pi-skills/youtube-transcript/SKILL.md'
             ];
             require('fs').writeFileSync('$TMP_SETTINGS', JSON.stringify(s, null, 2) + '\n');
         "
