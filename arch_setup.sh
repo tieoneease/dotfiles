@@ -442,6 +442,15 @@ if [ ! -f "/etc/sudoers.d/$USER" ]; then
     fi
 fi
 
+# Symlink Claude Code project memory to version-controlled files
+ENCODED_PATH=$(echo "$DOTFILES_DIR" | sed 's|/|-|g')
+MEMORY_LINK="$HOME/.claude/projects/${ENCODED_PATH}/memory"
+mkdir -p "$HOME/.claude/projects/${ENCODED_PATH}"
+if [ -d "$MEMORY_LINK" ] && [ ! -L "$MEMORY_LINK" ]; then
+    rm -rf "$MEMORY_LINK"
+fi
+ln -sfn "$DOTFILES_DIR/claude-memory" "$MEMORY_LINK"
+
 # --- Codex CLI ---
 
 $AUR_HELPER -S --needed --noconfirm openai-codex
