@@ -81,6 +81,10 @@ Stow package `pipewire/` with `pipewire-pulse.conf.d/10-block-source-volume.conf
 
 `etc/bluetooth/main.conf`: `[Policy] AutoEnable = true` only. `Experimental = true` breaks Noctalia device discovery (Adv Monitor API churn). Standard discovery works fine without it.
 
+## CachyOS Gaming Meta-Packages
+
+Gaming block in `arch_setup.sh` branches on distro: detects CachyOS via `pacman -Si cachyos-gaming-meta` (repo availability check). CachyOS path auto-installs `cachyos-gaming-meta` + `cachyos-gaming-applications` (no prompt, no gamemode, no explicit GPU drivers — CachyOS handles those). Non-CachyOS (EndeavourOS) falls back to the original interactive prompt with manual package list.
+
 ## Zenbook Duo
 
 See `zenbook-duo.md` for: detachable keyboard (DWT/palm rejection, DKMS), phantom WMI media key fix (hwdb scancode remapping), stylus/touch mapping fix (custom niri build).
