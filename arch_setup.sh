@@ -481,6 +481,25 @@ if command -v pi &> /dev/null; then
             (cd "$dir" && npm install --silent)
         fi
     done
+    # Disable unused skills (keep only brave-search + browser-tools)
+    PI_SETTINGS="$HOME/.pi/agent/settings.json"
+    if [[ -f "$PI_SETTINGS" ]] && ! grep -q '"skills"' "$PI_SETTINGS"; then
+        echo "Disabling unused Pi skills (keeping brave-search, browser-tools)..."
+        TMP_SETTINGS=$(mktemp)
+        node -e "
+            const s = JSON.parse(require('fs').readFileSync('$PI_SETTINGS', 'utf8'));
+            s.skills = [
+                '-pi-skills/gccli/SKILL.md',
+                '-pi-skills/gdcli/SKILL.md',
+                '-pi-skills/gmcli/SKILL.md',
+                '-pi-skills/transcribe/SKILL.md',
+                '-pi-skills/vscode/SKILL.md',
+                '-pi-skills/youtube-transcript/SKILL.md'
+            ];
+            require('fs').writeFileSync('$TMP_SETTINGS', JSON.stringify(s, null, 2) + '\n');
+        "
+        mv "$TMP_SETTINGS" "$PI_SETTINGS"
+    fi
 else
     echo "⚠ Pi coding agent not found, skipping skills install"
 fi
