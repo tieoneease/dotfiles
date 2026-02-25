@@ -456,9 +456,24 @@ if command -v mise &> /dev/null; then
 fi
 
 # Pi Coding Agent - install skills (web search, browser tools, etc.)
+# Uses auto-discovery path (~/.pi/agent/skills/) not `pi install` — pi-skills
+# repo lacks the package manifest structure that `pi install` expects.
+PI_SKILLS_DIR="$HOME/.pi/agent/skills/pi-skills"
 if command -v pi &> /dev/null; then
-    echo "Installing Pi coding agent skills..."
-    pi install git:github.com/badlogic/pi-skills
+    if [[ ! -d "$PI_SKILLS_DIR" ]]; then
+        echo "Installing Pi coding agent skills..."
+        git clone https://github.com/badlogic/pi-skills "$PI_SKILLS_DIR"
+    else
+        echo "Updating Pi coding agent skills..."
+        git -C "$PI_SKILLS_DIR" pull --ff-only
+    fi
+    # Install npm dependencies for skills that need them
+    for dir in "$PI_SKILLS_DIR"/*/; do
+        if [[ -f "$dir/package.json" && ! -d "$dir/node_modules" ]]; then
+            echo "  npm install in $(basename "$dir")..."
+            (cd "$dir" && npm install --silent)
+        fi
+    done
 else
     echo "⚠ Pi coding agent not found, skipping skills install"
 fi
