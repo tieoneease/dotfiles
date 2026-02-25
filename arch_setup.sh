@@ -192,9 +192,11 @@ sudo sed -i 's/readonly property real textRatio: 0\.50/readonly property real te
 # Patch Noctalia tooltip for grid mode: wider max, constrained grid width, last-column elide
 TOOLTIP_QML=/etc/xdg/quickshell/noctalia-shell/Modules/Tooltip/Tooltip.qml
 sudo sed -i 's/property int maxWidth: 340/property int maxWidth: isGridMode ? 560 : 340/' "$TOOLTIP_QML"
+grep -q 'width: parent.width - (root.padding \* 2)' "$TOOLTIP_QML" || \
 sudo sed -i '/id: gridContent/,/columnSpacing/ {
     /columns: root.columnCount/a\        width: parent.width - (root.padding * 2)
 }' "$TOOLTIP_QML"
+grep -q 'Layout.fillWidth: (index % root.columnCount)' "$TOOLTIP_QML" || \
 sudo sed -i '/Layout.preferredHeight: rowHeightMeasure.implicitHeight/a\            Layout.fillWidth: (index % root.columnCount) === (root.columnCount - 1)' "$TOOLTIP_QML"
 
 # Patch Noctalia calendar: cap event dots at 3 per day + increase dot-to-number spacing
@@ -257,6 +259,118 @@ with open(path, "w") as f:
     f.write(result)
 print("Patched calendar tooltip to grid mode")
 PATCH_EOF
+
+# Patch Noctalia calendar popup: compact redesign
+# (smaller icons, tighter spacing, show city name in weather)
+echo "Patching Noctalia calendar popup for compact design..."
+WEATHER_QML=/etc/xdg/quickshell/noctalia-shell/Modules/Cards/WeatherCard.qml
+CLOCK_QML=/etc/xdg/quickshell/noctalia-shell/Modules/Panels/Clock/ClockPanel.qml
+
+# --- CalendarMonthCard: compact cells ---
+# Compact cell size (0.9 → 0.8)
+sudo sed -i 's/baseWidgetSize \* 0\.9/baseWidgetSize * 0.8/g' "$CALENDAR_QML"
+
+# --- WeatherCard: shrink icons, compact ---
+# Shrink main weather icon (XXXL*1.75 → XXL)
+sudo sed -i 's/fontSizeXXXL \* 1\.75/fontSizeXXL/' "$WEATHER_QML"
+# Shrink forecast icons (XXL*1.6 → XL)
+sudo sed -i 's/fontSizeXXL \* 1\.6/fontSizeXL/' "$WEATHER_QML"
+# Reduce min height (100 → 70)
+sudo sed -i 's/Math\.max(100 \* Style\.uiScaleRatio/Math.max(70 * Style.uiScaleRatio/' "$WEATHER_QML"
+# Reduce internal margins (marginXL → marginM)
+sudo sed -i 's/Style\.marginXL/Style.marginM/g' "$WEATHER_QML"
+
+# --- ClockPanel: tighten spacing, narrow width, show location in weather ---
+# Tighten card spacing (marginL → marginS)
+sudo sed -i 's/spacing: Style\.marginL/spacing: Style.marginS/' "$CLOCK_QML"
+# Reduce outer margin (remaining marginL → marginM)
+sudo sed -i 's/Style\.marginL/Style.marginM/g' "$CLOCK_QML"
+# Narrow panel width (440→410, 420→390)
+sudo sed -i 's/440 : 420/410 : 390/' "$CLOCK_QML"
+# Show city name in weather card (showLocation: false → true)
+sudo sed -i 's/showLocation: false/showLocation: true/' "$CLOCK_QML"
+
+# Patch NIcon.qml: support raw Nerd Font glyphs as icon values
+# When icon string isn't in the Tabler icon map, render it directly with fontFixed
+echo "Patching NIcon.qml for raw glyph support..."
+NICON_QML=/etc/xdg/quickshell/noctalia-shell/Widgets/NIcon.qml
+if ! grep -q 'isRawGlyph' "$NICON_QML"; then
+sudo python3 << 'NICON_PATCH_EOF'
+import sys
+
+path = "/etc/xdg/quickshell/noctalia-shell/Widgets/NIcon.qml"
+with open(path) as f:
+    src = f.read()
+
+# Add isRawGlyph property after the applyUiScale property
+old_props = '  property bool applyUiScale: true'
+new_props = '''  property bool applyUiScale: true
+
+  readonly property bool isRawGlyph: icon !== undefined && icon !== "" && Icons.get(icon) === undefined'''
+
+if old_props not in src:
+    print("WARNING: NIcon.qml property block not found — skipping", file=sys.stderr)
+    sys.exit(0)
+
+src = src.replace(old_props, new_props, 1)
+
+# Replace the text binding to use raw glyph when icon is not in Tabler map
+old_text = '''  text: {
+    if ((icon === undefined) || (icon === "")) {
+      return "";
+    }
+    if (Icons.get(icon) === undefined) {
+      Logger.w("Icon", `"${icon}"`, "doesn't exist in the icons font");
+      Logger.callStack();
+      return Icons.get(Icons.defaultIcon);
+    }
+    return Icons.get(icon);
+  }'''
+
+new_text = '''  text: {
+    if ((icon === undefined) || (icon === "")) {
+      return "";
+    }
+    if (Icons.get(icon) === undefined) {
+      if (root.isRawGlyph) return icon;
+      Logger.w("Icon", `"${icon}"`, "doesn't exist in the icons font");
+      Logger.callStack();
+      return Icons.get(Icons.defaultIcon);
+    }
+    return Icons.get(icon);
+  }'''
+
+if old_text not in src:
+    print("WARNING: NIcon.qml text binding not found — skipping", file=sys.stderr)
+    sys.exit(0)
+
+src = src.replace(old_text, new_text, 1)
+
+# Replace font.family to use fontFixed for raw glyphs
+old_font = '  font.family: Icons.fontFamily'
+new_font = '  font.family: root.isRawGlyph ? Settings.data.ui.fontFixed : Icons.fontFamily'
+
+if old_font not in src:
+    print("WARNING: NIcon.qml font.family not found — skipping", file=sys.stderr)
+    sys.exit(0)
+
+src = src.replace(old_font, new_font, 1)
+
+with open(path, "w") as f:
+    f.write(src)
+print("Patched NIcon.qml for raw glyph support")
+NICON_PATCH_EOF
+else
+    echo "NIcon.qml already patched for raw glyphs — skipping"
+fi
+
+# Patch CalendarMonthCard: swap Tabler icons for Nerd Font glyphs
+# chevron-left/right → nf-fa-angle_left/right (U+F104/F105) — thin, matches calendar icon scale
+# calendar → nf-md-calendar (U+F00ED)
+echo "Patching calendar nav icons to Nerd Font glyphs..."
+sudo sed -i "s/icon: \"chevron-left\"/icon: \"$(printf '\uf104')\"/" "$CALENDAR_QML"
+sudo sed -i 's/icon: "calendar"/icon: "󰃭"/' "$CALENDAR_QML"
+sudo sed -i "s/icon: \"chevron-right\"/icon: \"$(printf '\uf105')\"/" "$CALENDAR_QML"
 
 # Copy portal config
 echo "Configuring xdg-desktop-portal..."
