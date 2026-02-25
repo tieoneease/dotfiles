@@ -8,6 +8,7 @@
 
 ## Commands
 - **Arch/EndeavourOS Setup:** `./arch_setup.sh` (installs packages, configures system, stows dotfiles)
+- **Noctalia QML patches:** `sudo bash ./patch_noctalia.sh` (idempotent patches to system QML files; called by arch_setup.sh)
 - **macOS Setup:** `./macos_setup.sh` (installs required software for macOS)
 - **Stow dotfiles:** `./stow/stow_dotfiles.sh` (symlinks all config files per-package)
 - **Font cache refresh:** `fc-cache -f -v`
@@ -62,6 +63,7 @@ Dynamic Material Design 3 colors generated from the current wallpaper:
 
 ## Arch Linux / EndeavourOS Setup
 - **Setup script:** `./arch_setup.sh` (yay packages, keyd, greetd, sudoers, stow)
+- **Noctalia patches:** `patch_noctalia.sh` (standalone, idempotent — workspace icons, calendar, weather, tooltips, NIcon raw glyphs). Called by arch_setup.sh via `sudo bash`. Each patch has a guard (grep for marker or patched pattern) and warns if upstream QML changed. Re-applied after `noctalia-shell-git` package updates.
 - Niri compositor with dynamic Material Design 3 colors via Noctalia/matugen
 - Passwordless sudo setup for Claude Code (opt-in with confirmation prompt)
 - keyd keyboard layers (numpad, nav, media)

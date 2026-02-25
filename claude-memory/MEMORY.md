@@ -105,7 +105,7 @@ See `zenbook-duo.md` for: detachable keyboard (DWT/palm rejection, DKMS), phanto
 
 **Math**: `pillSize(0.8) × textRatio(0.75) × fontFixedScale(1.0) = 0.60` — matches the old `0.8 × 0.50 × 1.5 = 0.60`.
 
-**Persistence**: `arch_setup.sh` applies the sed patch after Noctalia package install. Will be overwritten by `noctalia-shell-git` updates — the setup script re-applies it.
+**Persistence**: `patch_noctalia.sh` applies the sed patch (called by `arch_setup.sh`). Will be overwritten by `noctalia-shell-git` updates — re-run `sudo bash patch_noctalia.sh` to re-apply.
 
 ## ZMK + keyd + XKB + niri Keybinding Stack
 
