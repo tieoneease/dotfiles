@@ -85,7 +85,7 @@ const QuestionSchema = Type.Object({
 		StringEnum(["single", "multiple", "review"] as const),
 	),
 	allowOther: Type.Optional(
-		Type.Boolean({ description: "Show 'Type something' option for custom text input (default: false, single-select and multi-select only)" }),
+		Type.Boolean({ description: "Show 'Type something' option for custom text input (default: true, single-select only)" }),
 	),
 	minSelect: Type.Optional(
 		Type.Number({ description: "Minimum selections for multi-select (default: 1)" }),
@@ -119,7 +119,7 @@ function normalizeQuestion(q: any, index: number): Question {
 		prompt: q.prompt,
 		options: q.options,
 		select,
-		allowOther: (select === "single" || select === "multiple") ? q.allowOther === true : false,
+		allowOther: select === "single" ? q.allowOther !== false : select === "multiple" ? q.allowOther === true : false,
 		minSelect: select === "multiple" ? (q.minSelect ?? 1) : 1,
 		maxSelect: select === "multiple" ? (q.maxSelect ?? q.options.length) : 1,
 	};
