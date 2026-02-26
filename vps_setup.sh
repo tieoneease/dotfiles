@@ -148,7 +148,7 @@ fi
 
 # --- Pi Coding Agent ---
 
-install_pi_agent_skills
+"$DOTFILES_DIR/pi_setup.sh"
 
 # --- Secrets ---
 
