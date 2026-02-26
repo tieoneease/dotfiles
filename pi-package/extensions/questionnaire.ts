@@ -365,7 +365,11 @@ export default function questionnaire(pi: ExtensionAPI) {
 				};
 
 				// ─── Render helpers ───
-				function renderSingleOptions(opts: RenderOption[], add: (s: string) => void) {
+				// Each returns the cursor offset (line index of active item relative to first line added)
+
+				function renderSingleOptions(opts: RenderOption[], add: (s: string) => void): number {
+					let cursorOffset = 0;
+					let lineCount = 0;
 					for (let i = 0; i < opts.length; i++) {
 						const opt = opts[i];
 						const selected = i === optionIndex;
@@ -373,22 +377,28 @@ export default function questionnaire(pi: ExtensionAPI) {
 						const prefix = selected ? theme.fg("accent", "> ") : "  ";
 						const color = selected ? "accent" : "text";
 
+						if (selected) cursorOffset = lineCount;
+
 						if (isOther && inputMode) {
 							add(prefix + theme.fg("accent", `${i + 1}. ${opt.label} ✎`));
 						} else {
 							add(prefix + theme.fg(color as any, `${i + 1}. ${opt.label}`));
 						}
+						lineCount++;
 						if (opt.description) {
 							add(`     ${theme.fg("muted", opt.description)}`);
+							lineCount++;
 						}
 					}
+					return cursorOffset;
 				}
 
-				function renderMultiOptions(q: Question, add: (s: string) => void) {
+				function renderMultiOptions(q: Question, add: (s: string) => void): number {
 					const checked = getChecked(q.id);
 					const dynamic = getDynamic(q.id);
 					const allOpts = [...q.options, ...dynamic];
-					const totalItems = allOpts.length + (q.allowOther ? 1 : 0);
+					let cursorOffset = 0;
+					let lineCount = 0;
 
 					// Predefined + dynamic options (checkboxes)
 					for (let i = 0; i < allOpts.length; i++) {
@@ -400,6 +410,8 @@ export default function questionnaire(pi: ExtensionAPI) {
 						const prefix = isCursor ? theme.fg("accent", "> ") : "  ";
 						const customInd = isCustom ? theme.fg("warning", " ✎") : "";
 
+						if (isCursor) cursorOffset = lineCount;
+
 						if (isCursor) {
 							add(prefix + theme.fg("accent", `${box} ${opt.label}`) + customInd);
 						} else if (isChecked) {
@@ -407,9 +419,11 @@ export default function questionnaire(pi: ExtensionAPI) {
 						} else {
 							add(`  ${theme.fg("muted", box)} ${theme.fg("text", opt.label)}` + customInd);
 						}
+						lineCount++;
 
 						if (opt.description) {
 							add(`     ${theme.fg("muted", opt.description)}`);
+							lineCount++;
 						}
 					}
 
@@ -417,6 +431,7 @@ export default function questionnaire(pi: ExtensionAPI) {
 					if (q.allowOther) {
 						const idx = allOpts.length;
 						const isCursor = idx === optionIndex;
+						if (isCursor) cursorOffset = lineCount;
 						const prefix = isCursor ? theme.fg("accent", "> ") : "  ";
 						if (isCursor && inputMode) {
 							add(prefix + theme.fg("accent", `+ Type something. ✎`));
@@ -425,10 +440,12 @@ export default function questionnaire(pi: ExtensionAPI) {
 						} else {
 							add(`  ${theme.fg("dim", "+ Type something.")}`);
 						}
+						lineCount++;
 					}
+					return cursorOffset;
 				}
 
-				function renderReviewOptions(q: Question, width: number, add: (s: string) => void) {
+				function renderReviewOptions(q: Question, width: number, add: (s: string) => void): number {
 					const notes = getNoteMap(q.id);
 
 					// Calculate column widths
@@ -438,15 +455,16 @@ export default function questionnaire(pi: ExtensionAPI) {
 
 					// Narrow fallback: stacked layout
 					if (rightWidth < 20) {
-						renderReviewStacked(q, width, add);
-						return;
+						return renderReviewStacked(q, width, add);
 					}
 
-					// Build left panel
+					// Build left panel and track cursor row
 					const leftLines: string[] = [];
+					let cursorRow = 0;
 					for (let i = 0; i < q.options.length; i++) {
 						const opt = q.options[i];
 						const isCursor = i === optionIndex;
+						if (isCursor) cursorRow = leftLines.length;
 						const hasNote = notes.has(opt.value);
 						const prefix = isCursor ? theme.fg("accent", "> ") : "  ";
 						const color = isCursor ? "accent" : "text";
@@ -478,20 +496,26 @@ export default function questionnaire(pi: ExtensionAPI) {
 						const right = truncateToWidth(rightLines[row] || "", rightWidth);
 						add(`${left}${divider}${right}`);
 					}
+
+					return cursorRow;
 				}
 
-				function renderReviewStacked(q: Question, width: number, add: (s: string) => void) {
+				function renderReviewStacked(q: Question, width: number, add: (s: string) => void): number {
 					const notes = getNoteMap(q.id);
+					let cursorOffset = 0;
+					let lineCount = 0;
 
 					// Options list
 					for (let i = 0; i < q.options.length; i++) {
 						const opt = q.options[i];
 						const isCursor = i === optionIndex;
+						if (isCursor) cursorOffset = lineCount;
 						const hasNote = notes.has(opt.value);
 						const prefix = isCursor ? theme.fg("accent", "> ") : "  ";
 						const color = isCursor ? "accent" : "text";
 						const noteInd = hasNote ? theme.fg("warning", " ✎") : "";
 						add(prefix + theme.fg(color as any, `${i + 1}. ${opt.label}`) + noteInd);
+						lineCount++;
 					}
 
 					// Preview below
@@ -504,6 +528,7 @@ export default function questionnaire(pi: ExtensionAPI) {
 							add(` ${line}`);
 						}
 					}
+					return cursorOffset;
 				}
 
 				// ─── Input ───
@@ -665,6 +690,9 @@ export default function questionnaire(pi: ExtensionAPI) {
 				}
 
 				// ─── Render ───
+				// Renders into three sections: pinned header, scrollable body, pinned footer.
+				// If the total exceeds terminal height, a viewport is applied to the body
+				// that auto-scrolls to keep the active cursor/item visible.
 				function render(width: number): string[] {
 					if (cachedLines) return cachedLines;
 
@@ -673,6 +701,11 @@ export default function questionnaire(pi: ExtensionAPI) {
 					const opts = currentDisplayOptions();
 					const add = (s: string) => lines.push(truncateToWidth(s, width));
 
+					let bodyStart = 0;
+					let bodyEnd = 0;
+					let cursorLine = 0;
+
+					// === HEADER (always visible) ===
 					add(theme.fg("accent", "─".repeat(width)));
 
 					// Tab bar (multi-question only)
@@ -701,21 +734,28 @@ export default function questionnaire(pi: ExtensionAPI) {
 						lines.push("");
 					}
 
+					// === BODY (scrollable when content overflows) ===
+
 					// ── Note editor overlay ──
 					if (noteEditMode && noteEditOptionValue) {
+						bodyStart = lines.length;
 						const q2 = currentQuestion();
 						const optLabel = q2?.options.find((o) => o.value === noteEditOptionValue)?.label || noteEditOptionValue;
 						add(theme.fg("text", ` Notes for: `) + theme.fg("accent", theme.bold(optLabel)));
 						lines.push("");
 						add(theme.fg("muted", " Your notes (empty to remove):"));
+						cursorLine = lines.length; // cursor at editor
 						for (const line of editor.render(width - 2)) {
 							add(` ${line}`);
 						}
 						lines.push("");
 						add(theme.fg("dim", " Enter to save • Esc to discard"));
+						bodyEnd = lines.length;
 					}
 					// ── Submit tab ──
 					else if (currentTab === questions.length) {
+						bodyStart = lines.length;
+						cursorLine = lines.length;
 						add(theme.fg("accent", theme.bold(" Ready to submit")));
 						lines.push("");
 						for (const question of questions) {
@@ -749,10 +789,14 @@ export default function questionnaire(pi: ExtensionAPI) {
 								.join(", ");
 							add(theme.fg("warning", ` Unanswered: ${missing}`));
 						}
+						bodyEnd = lines.length;
 					}
 					// ── Question content ──
 					else if (q) {
-						add(theme.fg("text", ` ${q.prompt}`));
+						// Prompt (part of header — word-wrapped so long prompts aren't truncated)
+						for (const pLine of wordWrap(q.prompt, width - 2)) {
+							add(theme.fg("text", ` ${pLine}`));
+						}
 
 						// Multi-select constraint hint
 						if (q.select === "multiple" && (q.minSelect > 1 || q.maxSelect < q.options.length)) {
@@ -764,19 +808,24 @@ export default function questionnaire(pi: ExtensionAPI) {
 
 						lines.push("");
 
-						// Options (mode-specific)
+						bodyStart = lines.length;
+
+						// Options (mode-specific) — returns cursor offset within body
+						let cursorOffset = 0;
 						if (q.select === "review") {
-							renderReviewOptions(q, width, add);
+							cursorOffset = renderReviewOptions(q, width, add);
 						} else if (q.select === "multiple") {
-							renderMultiOptions(q, add);
+							cursorOffset = renderMultiOptions(q, add);
 						} else {
-							renderSingleOptions(opts, add);
+							cursorOffset = renderSingleOptions(opts, add);
 						}
+						cursorLine = bodyStart + cursorOffset;
 
 						// "Type something" editor (single-select and multi-select)
 						if (inputMode && (q.select === "single" || q.select === "multiple")) {
 							lines.push("");
 							add(theme.fg("muted", q.select === "multiple" ? " Add custom option:" : " Your answer:"));
+							cursorLine = lines.length; // cursor follows editor
 							for (const line of editor.render(width - 2)) {
 								add(` ${line}`);
 							}
@@ -794,8 +843,11 @@ export default function questionnaire(pi: ExtensionAPI) {
 							}
 							add(`  ${status}`);
 						}
+
+						bodyEnd = lines.length;
 					}
 
+					// === FOOTER (always visible) ===
 					lines.push("");
 
 					// Help text
@@ -814,8 +866,52 @@ export default function questionnaire(pi: ExtensionAPI) {
 
 					add(theme.fg("accent", "─".repeat(width)));
 
-					cachedLines = lines;
-					return lines;
+					// === VIEWPORT: ensure output fits terminal height ===
+					const termHeight = process.stdout.rows || 24;
+					const maxLines = termHeight - 4; // reserve for TUI chrome
+
+					if (lines.length <= maxLines) {
+						cachedLines = lines;
+						return lines;
+					}
+
+					const headerLines = lines.slice(0, bodyStart);
+					const bodyLines = lines.slice(bodyStart, bodyEnd);
+					const footerLines = lines.slice(bodyEnd);
+					const availableForBody = maxLines - headerLines.length - footerLines.length;
+
+					if (availableForBody <= 3) {
+						// Terminal too small for proper scrolling, just truncate
+						cachedLines = lines.slice(0, maxLines);
+						return cachedLines;
+					}
+
+					// Scroll to keep cursor centered in viewport
+					const cursorInBody = Math.max(0, Math.min(cursorLine - bodyStart, bodyLines.length - 1));
+					let viewStart = Math.max(0, cursorInBody - Math.floor(availableForBody / 2));
+					if (viewStart + availableForBody > bodyLines.length) {
+						viewStart = Math.max(0, bodyLines.length - availableForBody);
+					}
+					const viewEnd = Math.min(viewStart + availableForBody, bodyLines.length);
+
+					const visibleBody = bodyLines.slice(viewStart, viewEnd);
+
+					// Scroll indicators
+					if (viewStart > 0) {
+						const above = viewStart;
+						visibleBody[0] = truncateToWidth(
+							theme.fg("dim", `  ▲ ${above} more line${above !== 1 ? "s" : ""}`), width,
+						);
+					}
+					if (viewEnd < bodyLines.length) {
+						const below = bodyLines.length - viewEnd;
+						visibleBody[visibleBody.length - 1] = truncateToWidth(
+							theme.fg("dim", `  ▼ ${below} more line${below !== 1 ? "s" : ""}`), width,
+						);
+					}
+
+					cachedLines = [...headerLines, ...visibleBody, ...footerLines];
+					return cachedLines;
 				}
 
 				return {
