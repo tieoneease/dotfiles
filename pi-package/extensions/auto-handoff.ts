@@ -81,18 +81,17 @@ export default function autoHandoff(pi: ExtensionAPI) {
         }
 
         const theme = ctx.ui.theme;
-        const pctStr = `${Math.round(usage.percent)}%`;
-        const thresholdPct = Math.round(CONTEXT_THRESHOLD);
+        const pctStr = `ctx ${Math.round(usage.percent)}%`;
 
         let label: string;
         if (handoffPending) {
-            label = theme.fg("warning", `⚡ ctx ${pctStr} — handoff queued`);
+            label = theme.fg("warning", `⚡ ${pctStr} handoff`);
         } else if (usage.percent >= CONTEXT_THRESHOLD) {
-            label = theme.fg("error", `ctx ${pctStr}/${thresholdPct}%`);
+            label = theme.fg("error", pctStr);
         } else if (usage.percent >= CONTEXT_THRESHOLD * WARN_FRACTION) {
-            label = theme.fg("warning", `ctx ${pctStr}/${thresholdPct}%`);
+            label = theme.fg("warning", pctStr);
         } else {
-            label = theme.fg("dim", `ctx ${pctStr}/${thresholdPct}%`);
+            label = theme.fg("dim", pctStr);
         }
 
         ctx.ui.setStatus("auto-handoff", label);
