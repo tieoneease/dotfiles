@@ -1,0 +1,9 @@
+{
+    "name": "sam-pi-extensions",
+    "version": "1.0.0",
+    "description": "Custom pi extensions: question, questionnaire, and multiselect UI tools",
+    "keywords": ["pi-package"],
+    "pi": {
+        "extensions": ["./extensions"]
+    }
+}

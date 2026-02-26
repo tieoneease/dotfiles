@@ -409,8 +409,8 @@ systemctl --user enable --now vdirsyncer.timer
 # Install mise-managed tools (needs stow-deployed config)
 run_mise_install
 
-# Pi Coding Agent - install skills (web search, browser tools, etc.)
-install_pi_agent_skills
+# Pi Coding Agent - install extensions package and skills
+"$DOTFILES_DIR/pi_setup.sh"
 
 # Copy secrets template if no secrets file exists yet
 copy_secrets_template

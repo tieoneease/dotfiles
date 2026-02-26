@@ -11,6 +11,7 @@
 - **Noctalia QML patches:** `sudo bash ./patch_noctalia.sh` (idempotent patches to system QML files; called by arch_setup.sh)
 - **macOS Setup:** `./macos_setup.sh` (installs required software for macOS)
 - **Stow dotfiles:** `./stow/stow_dotfiles.sh` (symlinks all config files per-package)
+- **Pi setup:** `./pi_setup.sh` (installs extensions package, clones pi-skills)
 - **Font cache refresh:** `fc-cache -f -v`
 
 ## Code Style
@@ -49,6 +50,7 @@ Each package mirrors the home directory:
 - **Keyboard:** keyd (tap-hold layers, system-level)
 - **Login:** greetd + tuigreet → niri-session
 - **Claude Code:** Settings + statusline script (stow package targeting `~/.claude/`)
+- **Pi Coding Agent:** Custom extensions package + skills (see `pi-package/`, `pi_setup.sh`)
 - **macOS Tools:** Aerospace, Sketchybar, Karabiner-Elements
 
 ## Theming (Noctalia + matugen)
@@ -68,3 +70,10 @@ Dynamic Material Design 3 colors generated from the current wallpaper:
 - Passwordless sudo setup for Claude Code (opt-in with confirmation prompt)
 - keyd keyboard layers (numpad, nav, media)
 - See `NIRI-SETUP.md` for detailed architecture docs
+
+## Pi Coding Agent
+- **Extensions package:** `pi-package/` — a local pi package containing custom extensions (question, questionnaire, multiselect UI tools). Installed via `pi install ~/dotfiles/pi-package`, which adds it to `~/.pi/agent/settings.json` `packages` array. Extensions are NOT in the auto-discover path (`~/.pi/agent/extensions/`) — they load via the package system.
+- **Setup script:** `./pi_setup.sh` (standalone, called by arch_setup.sh) — installs the extensions package and clones pi-skills repo
+- **Skills:** pi-skills git repo cloned to `~/.pi/agent/skills/pi-skills/` (brave-search, browser-tools, etc.)
+- **Per-machine config:** Use `pi config` to enable/disable individual extensions or skills on each machine — no dotfiles changes needed
+- **Adding extensions:** Create new `.ts` files in `pi-package/extensions/`, they auto-load via the package manifest
