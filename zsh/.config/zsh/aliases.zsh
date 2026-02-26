@@ -75,5 +75,10 @@ if command -v nproc &>/dev/null; then
     alias ninja="ninja -j\$(nproc)"
 fi
 
+# SSH (use kitten ssh in kitty to auto-copy terminfo and avoid TERM issues)
+if [[ "$TERM" == "xterm-kitty" ]]; then
+    alias ssh="kitten ssh"
+fi
+
 # Other
 alias todos="nvim ~/todos.todo"
