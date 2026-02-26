@@ -23,10 +23,10 @@ import { BorderedLoader, convertToLlm, serializeConversation } from "@mariozechn
 
 // ─── Configuration ──────────────────────────────────────
 
-/** Context usage threshold (0.0–1.0) that triggers auto-handoff */
-const CONTEXT_THRESHOLD = 0.30;
+/** Context usage threshold (0–100) that triggers auto-handoff */
+const CONTEXT_THRESHOLD = 30;
 
-/** Warn color starts at this fraction of the threshold (0.7 = 70% of threshold) */
+/** Warn color starts at this fraction of the threshold (0.7 = 70% of 30% = 21%) */
 const WARN_FRACTION = 0.7;
 
 const HANDOFF_SYSTEM_PROMPT = `You are a context transfer assistant. Given a conversation history, generate a handoff document for a new session to continue the work seamlessly.
@@ -81,8 +81,8 @@ export default function autoHandoff(pi: ExtensionAPI) {
         }
 
         const theme = ctx.ui.theme;
-        const pctStr = `${Math.round(usage.percent * 100)}%`;
-        const thresholdPct = Math.round(CONTEXT_THRESHOLD * 100);
+        const pctStr = `${Math.round(usage.percent)}%`;
+        const thresholdPct = Math.round(CONTEXT_THRESHOLD);
 
         let label: string;
         if (handoffPending) {
@@ -124,8 +124,8 @@ export default function autoHandoff(pi: ExtensionAPI) {
             handoffPending = true;
             updateStatus(ctx);
 
-            const pctStr = Math.round(usage.percent * 100);
-            const thresholdStr = Math.round(CONTEXT_THRESHOLD * 100);
+            const pctStr = Math.round(usage.percent);
+            const thresholdStr = Math.round(CONTEXT_THRESHOLD);
             ctx.ui.notify(
                 `Context at ${pctStr}% (threshold: ${thresholdStr}%) — auto-handoff triggered`,
                 "warning",
