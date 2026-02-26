@@ -1,7 +1,7 @@
 {
     "name": "sam-pi-extensions",
     "version": "1.0.0",
-    "description": "Custom pi extensions: questionnaire tool, auto-handoff (context monitoring + seamless session handoff)",
+    "description": "Custom pi extensions: unified questionnaire tool (single-select, multi-select, review, multi-question tabs)",
     "keywords": ["pi-package"],
     "pi": {
         "extensions": ["./extensions"]
