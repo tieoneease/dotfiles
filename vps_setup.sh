@@ -74,6 +74,12 @@ if [ -f "$HOME/.tmux.conf" ] && [ ! -L "$HOME/.tmux.conf" ]; then
     rm -f "$HOME/.tmux.conf"
 fi
 
+# --- Ensure tms search directories exist ---
+mkdir -p "$HOME/Workspace"
+if [ "$DOTFILES_DIR" != "$HOME/dotfiles" ] && [ ! -e "$HOME/dotfiles" ]; then
+    ln -s "$DOTFILES_DIR" "$HOME/dotfiles"
+fi
+
 # --- Stow dotfiles (VPS mode) ---
 
 run_stow_dotfiles --vps
