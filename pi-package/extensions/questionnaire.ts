@@ -4,7 +4,8 @@
  * Modes (per question):
  * - single:   Pick one option (default). "Type something" if allowOther.
  * - multiple: Checkbox selection with min/max constraints.
- * - review:   Side-by-side preview of proposals. Press 'n' to annotate options.
+ * - review:   Side-by-side preview of proposals with optional notes.
+ *             j/k to scroll the preview panel. Press 'n' to annotate options.
  *
  * Single question: auto-submit, no tabs.
  * Multiple questions: tab-based navigation with submit tab.
@@ -21,7 +22,7 @@ interface QuestionOption {
 	value: string;
 	label: string;
 	description?: string;
-	content?: string; // Full proposal text shown in review preview
+	content?: string;
 }
 
 type RenderOption = QuestionOption & { isOther?: boolean };
@@ -40,7 +41,7 @@ interface Question {
 interface Selection {
 	value: string;
 	label: string;
-	index: number; // 1-based
+	index: number;
 }
 
 interface OptionNote {
@@ -54,9 +55,9 @@ interface Answer {
 	value: string;
 	label: string;
 	wasCustom: boolean;
-	index?: number; // 1-based, single/review non-custom only
-	selections?: Selection[]; // multi-select only
-	optionNotes?: OptionNote[]; // review mode: notes on any options
+	index?: number;
+	selections?: Selection[];
+	optionNotes?: OptionNote[];
 }
 
 interface QuestionnaireResult {
@@ -78,21 +79,11 @@ const QuestionSchema = Type.Object({
 	id: Type.String({ description: "Unique identifier for this question" }),
 	prompt: Type.String({ description: "The full question text to display" }),
 	options: Type.Array(OptionSchema, { description: "Available options to choose from" }),
-	label: Type.Optional(
-		Type.String({ description: "Short contextual label for tab bar, e.g. 'Scope', 'Priority' (defaults to Q1, Q2)" }),
-	),
-	select: Type.Optional(
-		StringEnum(["single", "multiple", "review"] as const),
-	),
-	allowOther: Type.Optional(
-		Type.Boolean({ description: "Show 'Type something' option for custom text input (default: true, single-select only)" }),
-	),
-	minSelect: Type.Optional(
-		Type.Number({ description: "Minimum selections for multi-select (default: 1)" }),
-	),
-	maxSelect: Type.Optional(
-		Type.Number({ description: "Maximum selections for multi-select (default: all)" }),
-	),
+	label: Type.Optional(Type.String({ description: "Short contextual label for tab bar, e.g. 'Scope', 'Priority' (defaults to Q1, Q2)" })),
+	select: Type.Optional(StringEnum(["single", "multiple", "review"] as const)),
+	allowOther: Type.Optional(Type.Boolean({ description: "Show 'Type something' option for custom text input (default: true, single-select only)" })),
+	minSelect: Type.Optional(Type.Number({ description: "Minimum selections for multi-select (default: 1)" })),
+	maxSelect: Type.Optional(Type.Number({ description: "Maximum selections for multi-select (default: all)" })),
 });
 
 const Params = Type.Object({
@@ -125,31 +116,22 @@ function normalizeQuestion(q: any, index: number): Question {
 	};
 }
 
-/** Strip ANSI escape codes to get visual character count */
 function stripAnsi(str: string): string {
 	return str.replace(/\x1b\[[0-9;]*m/g, "");
 }
 
-/** Pad a string (possibly containing ANSI codes) to a target visual width */
 function padRight(str: string, targetWidth: number): string {
 	const visual = stripAnsi(str).length;
 	if (visual >= targetWidth) return truncateToWidth(str, targetWidth);
 	return str + " ".repeat(targetWidth - visual);
 }
 
-/** Word-wrap plain text to a given width, preserving newlines */
 function wordWrap(text: string, width: number): string[] {
 	if (width <= 0 || !text) return text ? [text] : [];
 	const result: string[] = [];
 	for (const line of text.split("\n")) {
-		if (line.length === 0) {
-			result.push("");
-			continue;
-		}
-		if (line.length <= width) {
-			result.push(line);
-			continue;
-		}
+		if (line.length === 0) { result.push(""); continue; }
+		if (line.length <= width) { result.push(line); continue; }
 		let remaining = line;
 		while (remaining.length > width) {
 			let breakAt = remaining.lastIndexOf(" ", width);
@@ -176,32 +158,29 @@ export default function questionnaire(pi: ExtensionAPI) {
 		parameters: Params,
 
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-			if (!ctx.hasUI) {
-				return errorResult("Error: UI not available (running in non-interactive mode)");
-			}
-			if (params.questions.length === 0) {
-				return errorResult("Error: No questions provided");
-			}
+			if (!ctx.hasUI) return errorResult("Error: UI not available (running in non-interactive mode)");
+			if (params.questions.length === 0) return errorResult("Error: No questions provided");
 
 			const questions = params.questions.map(normalizeQuestion);
 			const isMulti = questions.length > 1;
-			const totalTabs = questions.length + 1; // questions + Submit
+			const totalTabs = questions.length + 1;
 
 			const result = await ctx.ui.custom<QuestionnaireResult>((tui, theme, _kb, done) => {
 				// ─── State ───
 				let currentTab = 0;
 				let optionIndex = 0;
-				let inputMode = false; // "Type something" editor
+				let inputMode = false;
 				let inputQuestionId: string | null = null;
-				let noteEditMode = false; // Review note editor
+				let noteEditMode = false;
 				let noteEditOptionValue: string | null = null;
 				let cachedLines: string[] | undefined;
 				const answers = new Map<string, Answer>();
-				const checkedSets = new Map<string, Set<number>>(); // multi-select state
-				const dynamicOptions = new Map<string, QuestionOption[]>(); // user-added custom options per question
-				const noteMaps = new Map<string, Map<string, string>>(); // review notes per question
+				const checkedSets = new Map<string, Set<number>>();
+				const dynamicOptions = new Map<string, QuestionOption[]>();
+				const noteMaps = new Map<string, Map<string, string>>();
+				let previewScroll = 0;
+				let previewMaxScroll = 0;
 
-				// Shared editor
 				const editorTheme: EditorTheme = {
 					borderColor: (s) => theme.fg("accent", s),
 					selectList: {
@@ -215,38 +194,22 @@ export default function questionnaire(pi: ExtensionAPI) {
 				const editor = new Editor(tui, editorTheme);
 
 				// ─── Helpers ───
-				function refresh() {
-					cachedLines = undefined;
-					tui.requestRender();
-				}
-
-				function submit(cancelled: boolean) {
-					done({ questions, answers: Array.from(answers.values()), cancelled });
-				}
-
-				function currentQuestion(): Question | undefined {
-					return questions[currentTab];
-				}
+				function refresh() { cachedLines = undefined; tui.requestRender(); }
+				function submit(cancelled: boolean) { done({ questions, answers: Array.from(answers.values()), cancelled }); }
+				function currentQuestion(): Question | undefined { return questions[currentTab]; }
 
 				function currentDisplayOptions(): RenderOption[] {
 					const q = currentQuestion();
 					if (!q) return [];
 					const opts: RenderOption[] = [...q.options];
-					// For multi-select, include user-added custom options before "Type something"
 					if (q.select === "multiple") {
-						for (const dyn of getDynamic(q.id)) {
-							opts.push({ ...dyn, isOther: false });
-						}
+						for (const dyn of getDynamic(q.id)) opts.push({ ...dyn, isOther: false });
 					}
-					if (q.allowOther) {
-						opts.push({ value: "__other__", label: "Type something.", isOther: true });
-					}
+					if (q.allowOther) opts.push({ value: "__other__", label: "Type something.", isOther: true });
 					return opts;
 				}
 
-				function allAnswered(): boolean {
-					return questions.every((q) => answers.has(q.id));
-				}
+				function allAnswered(): boolean { return questions.every((q) => answers.has(q.id)); }
 
 				function getChecked(qId: string): Set<number> {
 					if (!checkedSets.has(qId)) checkedSets.set(qId, new Set());
@@ -269,22 +232,16 @@ export default function questionnaire(pi: ExtensionAPI) {
 				}
 
 				function advanceAfterAnswer() {
-					if (!isMulti) {
-						submit(false);
-						return;
-					}
-					if (currentTab < questions.length - 1) {
-						currentTab++;
-					} else {
-						currentTab = questions.length; // Submit tab
-					}
+					if (!isMulti) { submit(false); return; }
+					if (currentTab < questions.length - 1) currentTab++;
+					else currentTab = questions.length;
 					optionIndex = 0;
+					previewScroll = 0;
 					refresh();
 				}
 
 				function saveSingleAnswer(q: Question, value: string, label: string, wasCustom: boolean, index?: number) {
 					const answer: Answer = { id: q.id, value, label, wasCustom, index };
-					// Attach notes if this is a review question
 					if (q.select === "review") {
 						const notes = getNoteMap(q.id);
 						if (notes.size > 0) {
@@ -304,7 +261,7 @@ export default function questionnaire(pi: ExtensionAPI) {
 					const allOpts = [...q.options, ...dynamic];
 					const selections: Selection[] = [...checked]
 						.sort((a, b) => a - b)
-						.filter((i) => i < allOpts.length) // skip "Type something" index
+						.filter((i) => i < allOpts.length)
 						.map((i) => ({ value: allOpts[i].value, label: allOpts[i].label, index: i + 1 }));
 					answers.set(q.id, {
 						id: q.id,
@@ -315,18 +272,14 @@ export default function questionnaire(pi: ExtensionAPI) {
 					});
 				}
 
-				// Editor submit: dispatches based on active mode
 				editor.onSubmit = (value) => {
 					if (noteEditMode && noteEditOptionValue) {
 						const q = currentQuestion();
 						if (!q) return;
 						const notes = getNoteMap(q.id);
 						const trimmed = value.trim();
-						if (trimmed) {
-							notes.set(noteEditOptionValue, trimmed);
-						} else {
-							notes.delete(noteEditOptionValue);
-						}
+						if (trimmed) notes.set(noteEditOptionValue, trimmed);
+						else notes.delete(noteEditOptionValue);
 						noteEditMode = false;
 						noteEditOptionValue = null;
 						editor.setText("");
@@ -335,18 +288,14 @@ export default function questionnaire(pi: ExtensionAPI) {
 						const q = questions.find((q) => q.id === inputQuestionId);
 						if (!q) return;
 						const trimmed = value.trim();
-
 						if (q.select === "multiple") {
-							// Multi-select: add as new custom option, auto-check it
 							if (trimmed) {
 								const dynamic = getDynamic(q.id);
 								const newOpt: QuestionOption = { value: trimmed, label: trimmed };
 								dynamic.push(newOpt);
 								const newIdx = q.options.length + dynamic.length - 1;
 								const checked = getChecked(q.id);
-								if (checked.size < q.maxSelect) {
-									checked.add(newIdx);
-								}
+								if (checked.size < q.maxSelect) checked.add(newIdx);
 								optionIndex = newIdx;
 							}
 							inputMode = false;
@@ -354,7 +303,6 @@ export default function questionnaire(pi: ExtensionAPI) {
 							editor.setText("");
 							refresh();
 						} else {
-							// Single-select: save as answer and advance
 							saveSingleAnswer(q, trimmed || "(no response)", trimmed || "(no response)", true);
 							inputMode = false;
 							inputQuestionId = null;
@@ -365,9 +313,8 @@ export default function questionnaire(pi: ExtensionAPI) {
 				};
 
 				// ─── Render helpers ───
-				// Each returns the cursor offset (line index of active item relative to first line added)
 
-				function renderSingleOptions(opts: RenderOption[], add: (s: string) => void): number {
+				function renderSingleOptions(opts: RenderOption[], add: (s: string) => void, width: number): number {
 					let cursorOffset = 0;
 					let lineCount = 0;
 					for (let i = 0; i < opts.length; i++) {
@@ -376,9 +323,7 @@ export default function questionnaire(pi: ExtensionAPI) {
 						const isOther = opt.isOther === true;
 						const prefix = selected ? theme.fg("accent", "> ") : "  ";
 						const color = selected ? "accent" : "text";
-
 						if (selected) cursorOffset = lineCount;
-
 						if (isOther && inputMode) {
 							add(prefix + theme.fg("accent", `${i + 1}. ${opt.label} ✎`));
 						} else {
@@ -386,21 +331,22 @@ export default function questionnaire(pi: ExtensionAPI) {
 						}
 						lineCount++;
 						if (opt.description) {
-							add(`     ${theme.fg("muted", opt.description)}`);
-							lineCount++;
+							for (const dLine of wordWrap(opt.description, width - 6)) {
+								add(`     ${theme.fg("muted", dLine)}`);
+								lineCount++;
+							}
 						}
 					}
 					return cursorOffset;
 				}
 
-				function renderMultiOptions(q: Question, add: (s: string) => void): number {
+				function renderMultiOptions(q: Question, add: (s: string) => void, width: number): number {
 					const checked = getChecked(q.id);
 					const dynamic = getDynamic(q.id);
 					const allOpts = [...q.options, ...dynamic];
 					let cursorOffset = 0;
 					let lineCount = 0;
 
-					// Predefined + dynamic options (checkboxes)
 					for (let i = 0; i < allOpts.length; i++) {
 						const opt = allOpts[i];
 						const isCursor = i === optionIndex;
@@ -409,9 +355,7 @@ export default function questionnaire(pi: ExtensionAPI) {
 						const box = isChecked ? "☑" : "☐";
 						const prefix = isCursor ? theme.fg("accent", "> ") : "  ";
 						const customInd = isCustom ? theme.fg("warning", " ✎") : "";
-
 						if (isCursor) cursorOffset = lineCount;
-
 						if (isCursor) {
 							add(prefix + theme.fg("accent", `${box} ${opt.label}`) + customInd);
 						} else if (isChecked) {
@@ -420,14 +364,14 @@ export default function questionnaire(pi: ExtensionAPI) {
 							add(`  ${theme.fg("muted", box)} ${theme.fg("text", opt.label)}` + customInd);
 						}
 						lineCount++;
-
 						if (opt.description) {
-							add(`     ${theme.fg("muted", opt.description)}`);
-							lineCount++;
+							for (const dLine of wordWrap(opt.description, width - 6)) {
+								add(`     ${theme.fg("muted", dLine)}`);
+								lineCount++;
+							}
 						}
 					}
 
-					// "Type something" entry (not a checkbox — it's an action)
 					if (q.allowOther) {
 						const idx = allOpts.length;
 						const isCursor = idx === optionIndex;
@@ -445,20 +389,23 @@ export default function questionnaire(pi: ExtensionAPI) {
 					return cursorOffset;
 				}
 
-				function renderReviewOptions(q: Question, width: number, add: (s: string) => void): number {
+				function renderReviewOptions(q: Question, width: number, add: (s: string) => void, maxBodyRows: number): number {
 					const notes = getNoteMap(q.id);
 
-					// Calculate column widths
-					const leftWidth = Math.min(Math.max(25, Math.floor(width * 0.35)), 50);
-					const dividerLen = 3; // " │ "
+					// Dynamic left width: fit actual labels instead of fixed percentage
+					const labelWidths = q.options.map((o, i) => {
+						return 2 + `${i + 1}. `.length + o.label.length + 2; // "> " + "N. " + label + " ✎"
+					});
+					const maxLabelWidth = Math.max(...labelWidths, 15);
+					const leftWidth = Math.min(maxLabelWidth + 2, Math.floor(width * 0.5));
+					const dividerLen = 3;
 					const rightWidth = width - leftWidth - dividerLen;
 
-					// Narrow fallback: stacked layout
-					if (rightWidth < 20) {
-						return renderReviewStacked(q, width, add);
+					if (rightWidth < 25) {
+						return renderReviewStacked(q, width, add, maxBodyRows);
 					}
 
-					// Build left panel and track cursor row
+					// Build left panel
 					const leftLines: string[] = [];
 					let cursorRow = 0;
 					for (let i = 0; i < q.options.length; i++) {
@@ -470,42 +417,77 @@ export default function questionnaire(pi: ExtensionAPI) {
 						const color = isCursor ? "accent" : "text";
 						const noteInd = hasNote ? theme.fg("warning", " ✎") : "";
 						leftLines.push(prefix + theme.fg(color as any, `${i + 1}. ${opt.label}`) + noteInd);
-
-						// Show note preview under the option if it has one
 						if (hasNote) {
 							const noteText = notes.get(opt.value)!;
-							const preview = noteText.length > leftWidth - 8
-								? noteText.substring(0, leftWidth - 11) + "..."
+							const maxPreviewLen = Math.max(8, leftWidth - 8);
+							const preview = noteText.length > maxPreviewLen
+								? noteText.substring(0, maxPreviewLen - 3) + "..."
 								: noteText;
 							leftLines.push(`     ${theme.fg("dim", `"${preview}"`)}`);
 						}
 					}
 
-					// Build right panel: title + content of highlighted option
+					// Build full right panel content
 					const highlighted = q.options[optionIndex];
 					const content = highlighted?.content || highlighted?.description || "(no preview available)";
 					const rightTitle = theme.fg("accent", theme.bold(highlighted?.label || ""));
 					const wrappedContent = wordWrap(content, rightWidth - 1);
-					const rightLines: string[] = [rightTitle, theme.fg("dim", "─".repeat(rightWidth - 1)), ...wrappedContent];
+					const rightAllLines: string[] = [rightTitle, theme.fg("dim", "─".repeat(rightWidth - 1)), ...wrappedContent];
 
-					// Combine columns line by line
-					const totalLines = Math.max(leftLines.length, rightLines.length);
+					// Right panel viewport
+					const visibleRows = Math.max(leftLines.length, maxBodyRows);
+
+					if (rightAllLines.length <= visibleRows) {
+						previewScroll = 0;
+						previewMaxScroll = 0;
+						const totalLines = Math.max(leftLines.length, rightAllLines.length);
+						const divider = theme.fg("dim", " │ ");
+						for (let row = 0; row < totalLines; row++) {
+							const left = padRight(leftLines[row] || "", leftWidth);
+							const right = truncateToWidth(rightAllLines[row] || "", rightWidth);
+							add(`${left}${divider}${right}`);
+						}
+						return cursorRow;
+					}
+
+					// Scrolling needed
+					const maxScroll = Math.max(0, rightAllLines.length - (visibleRows - 1));
+					if (previewScroll > maxScroll) previewScroll = maxScroll;
+					previewMaxScroll = maxScroll;
+
+					const hasUpIndicator = previewScroll > 0;
+					let contentHeight = visibleRows - (hasUpIndicator ? 1 : 0);
+					const hasDownIndicator = (previewScroll + contentHeight) < rightAllLines.length;
+					if (hasDownIndicator) contentHeight--;
+					contentHeight = Math.max(1, contentHeight);
+
+					const rightSlice = rightAllLines.slice(previewScroll, previewScroll + contentHeight);
+					const rightVisible: string[] = [];
+					if (hasUpIndicator) {
+						const above = previewScroll;
+						rightVisible.push(theme.fg("dim", `▲ ${above} more line${above !== 1 ? "s" : ""} (k)`));
+					}
+					rightVisible.push(...rightSlice);
+					if (hasDownIndicator) {
+						const below = rightAllLines.length - previewScroll - contentHeight;
+						rightVisible.push(theme.fg("dim", `▼ ${below} more line${below !== 1 ? "s" : ""} (j)`));
+					}
+
+					const totalLines = Math.max(leftLines.length, rightVisible.length);
 					const divider = theme.fg("dim", " │ ");
 					for (let row = 0; row < totalLines; row++) {
 						const left = padRight(leftLines[row] || "", leftWidth);
-						const right = truncateToWidth(rightLines[row] || "", rightWidth);
+						const right = truncateToWidth(rightVisible[row] || "", rightWidth);
 						add(`${left}${divider}${right}`);
 					}
-
 					return cursorRow;
 				}
 
-				function renderReviewStacked(q: Question, width: number, add: (s: string) => void): number {
+				function renderReviewStacked(q: Question, width: number, add: (s: string) => void, maxBodyRows: number): number {
 					const notes = getNoteMap(q.id);
 					let cursorOffset = 0;
 					let lineCount = 0;
 
-					// Options list
 					for (let i = 0; i < q.options.length; i++) {
 						const opt = q.options[i];
 						const isCursor = i === optionIndex;
@@ -518,14 +500,43 @@ export default function questionnaire(pi: ExtensionAPI) {
 						lineCount++;
 					}
 
-					// Preview below
 					const highlighted = q.options[optionIndex];
 					const content = highlighted?.content || highlighted?.description || "";
 					if (content) {
 						add("");
+						lineCount++;
 						add(theme.fg("dim", "─── ") + theme.fg("accent", theme.bold(highlighted.label)) + theme.fg("dim", " ───"));
-						for (const line of wordWrap(content, width - 2)) {
-							add(` ${line}`);
+						lineCount++;
+
+						const allPreviewLines = wordWrap(content, width - 2);
+						const availableForPreview = Math.max(3, maxBodyRows - lineCount);
+
+						if (allPreviewLines.length <= availableForPreview) {
+							previewScroll = 0;
+							previewMaxScroll = 0;
+							for (const line of allPreviewLines) add(` ${line}`);
+						} else {
+							const maxScroll = Math.max(0, allPreviewLines.length - (availableForPreview - 1));
+							if (previewScroll > maxScroll) previewScroll = maxScroll;
+							previewMaxScroll = maxScroll;
+
+							const hasUpIndicator = previewScroll > 0;
+							let contentHeight = availableForPreview - (hasUpIndicator ? 1 : 0);
+							const hasDownIndicator = (previewScroll + contentHeight) < allPreviewLines.length;
+							if (hasDownIndicator) contentHeight--;
+							contentHeight = Math.max(1, contentHeight);
+
+							if (hasUpIndicator) {
+								const above = previewScroll;
+								add(theme.fg("dim", ` ▲ ${above} more line${above !== 1 ? "s" : ""} (k)`));
+							}
+							for (const line of allPreviewLines.slice(previewScroll, previewScroll + contentHeight)) {
+								add(` ${line}`);
+							}
+							if (hasDownIndicator) {
+								const below = allPreviewLines.length - previewScroll - contentHeight;
+								add(theme.fg("dim", ` ▼ ${below} more line${below !== 1 ? "s" : ""} (j)`));
+							}
 						}
 					}
 					return cursorOffset;
@@ -533,7 +544,6 @@ export default function questionnaire(pi: ExtensionAPI) {
 
 				// ─── Input ───
 				function handleInput(data: string) {
-					// Editor modes: route to editor
 					if (inputMode || noteEditMode) {
 						if (matchesKey(data, Key.escape)) {
 							inputMode = false;
@@ -552,37 +562,34 @@ export default function questionnaire(pi: ExtensionAPI) {
 					const q = currentQuestion();
 					const opts = currentDisplayOptions();
 
-					// Tab navigation (multi-question only)
 					if (isMulti) {
 						if (matchesKey(data, Key.tab) || matchesKey(data, Key.right)) {
 							currentTab = (currentTab + 1) % totalTabs;
 							optionIndex = 0;
+							previewScroll = 0;
 							refresh();
 							return;
 						}
 						if (matchesKey(data, Key.shift("tab")) || matchesKey(data, Key.left)) {
 							currentTab = (currentTab - 1 + totalTabs) % totalTabs;
 							optionIndex = 0;
+							previewScroll = 0;
 							refresh();
 							return;
 						}
 					}
 
-					// Submit tab
 					if (currentTab === questions.length) {
-						if (matchesKey(data, Key.enter) && allAnswered()) {
-							submit(false);
-						} else if (matchesKey(data, Key.escape)) {
-							submit(true);
-						}
+						if (matchesKey(data, Key.enter) && allAnswered()) submit(false);
+						else if (matchesKey(data, Key.escape)) submit(true);
 						return;
 					}
 
 					if (!q) return;
 
-					// Option navigation
 					if (matchesKey(data, Key.up)) {
 						optionIndex = Math.max(0, optionIndex - 1);
+						previewScroll = 0;
 						refresh();
 						return;
 					}
@@ -591,16 +598,16 @@ export default function questionnaire(pi: ExtensionAPI) {
 						if (q.select === "multiple") {
 							const dynamic = getDynamic(q.id);
 							const allCount = q.options.length + dynamic.length;
-							maxIdx = q.allowOther ? allCount : allCount - 1; // +1 for "Type something"
+							maxIdx = q.allowOther ? allCount : allCount - 1;
 						} else {
 							maxIdx = opts.length - 1;
 						}
 						optionIndex = Math.min(maxIdx, optionIndex + 1);
+						previewScroll = 0;
 						refresh();
 						return;
 					}
 
-					// ── Single-select ──
 					if (q.select === "single") {
 						if (matchesKey(data, Key.enter)) {
 							const opt = opts[optionIndex];
@@ -617,7 +624,6 @@ export default function questionnaire(pi: ExtensionAPI) {
 						}
 					}
 
-					// ── Multi-select ──
 					if (q.select === "multiple") {
 						const checked = getChecked(q.id);
 						const dynamic = getDynamic(q.id);
@@ -626,7 +632,6 @@ export default function questionnaire(pi: ExtensionAPI) {
 
 						if (matchesKey(data, Key.space)) {
 							if (isOnTypeOption) {
-								// Open editor for custom entry
 								inputMode = true;
 								inputQuestionId = q.id;
 								editor.setText("");
@@ -641,29 +646,29 @@ export default function questionnaire(pi: ExtensionAPI) {
 						}
 
 						if (data === "a") {
-							if (checked.size === allCount) {
-								checked.clear();
-							} else {
-								for (let i = 0; i < Math.min(allCount, q.maxSelect); i++) {
-									checked.add(i);
-								}
-							}
+							if (checked.size === allCount) checked.clear();
+							else for (let i = 0; i < Math.min(allCount, q.maxSelect); i++) checked.add(i);
 							refresh();
 							return;
 						}
 
 						if (matchesKey(data, Key.enter)) {
-							if (canSubmitMulti(q)) {
-								saveMultiAnswer(q);
-								advanceAfterAnswer();
-							}
+							if (canSubmitMulti(q)) { saveMultiAnswer(q); advanceAfterAnswer(); }
 							return;
 						}
 					}
 
-					// ── Review ──
 					if (q.select === "review") {
-						// 'n' to add/edit notes on highlighted option
+						if (data === "j") {
+							previewScroll = Math.min(previewScroll + 3, previewMaxScroll);
+							refresh();
+							return;
+						}
+						if (data === "k") {
+							previewScroll = Math.max(0, previewScroll - 3);
+							refresh();
+							return;
+						}
 						if (data === "n") {
 							const opt = q.options[optionIndex];
 							const notes = getNoteMap(q.id);
@@ -673,8 +678,6 @@ export default function questionnaire(pi: ExtensionAPI) {
 							refresh();
 							return;
 						}
-
-						// Enter selects the highlighted option
 						if (matchesKey(data, Key.enter)) {
 							const opt = q.options[optionIndex];
 							saveSingleAnswer(q, opt.value, opt.label, false, optionIndex + 1);
@@ -683,16 +686,10 @@ export default function questionnaire(pi: ExtensionAPI) {
 						}
 					}
 
-					// Cancel
-					if (matchesKey(data, Key.escape)) {
-						submit(true);
-					}
+					if (matchesKey(data, Key.escape)) submit(true);
 				}
 
 				// ─── Render ───
-				// Renders into three sections: pinned header, scrollable body, pinned footer.
-				// If the total exceeds terminal height, a viewport is applied to the body
-				// that auto-scrolls to keep the active cursor/item visible.
 				function render(width: number): string[] {
 					if (cachedLines) return cachedLines;
 
@@ -705,10 +702,9 @@ export default function questionnaire(pi: ExtensionAPI) {
 					let bodyEnd = 0;
 					let cursorLine = 0;
 
-					// === HEADER (always visible) ===
+					// === HEADER ===
 					add(theme.fg("accent", "─".repeat(width)));
 
-					// Tab bar (multi-question only)
 					if (isMulti) {
 						const tabs: string[] = ["← "];
 						for (let i = 0; i < questions.length; i++) {
@@ -734,9 +730,7 @@ export default function questionnaire(pi: ExtensionAPI) {
 						lines.push("");
 					}
 
-					// === BODY (scrollable when content overflows) ===
-
-					// ── Note editor overlay ──
+					// === BODY ===
 					if (noteEditMode && noteEditOptionValue) {
 						bodyStart = lines.length;
 						const q2 = currentQuestion();
@@ -744,16 +738,12 @@ export default function questionnaire(pi: ExtensionAPI) {
 						add(theme.fg("text", ` Notes for: `) + theme.fg("accent", theme.bold(optLabel)));
 						lines.push("");
 						add(theme.fg("muted", " Your notes (empty to remove):"));
-						cursorLine = lines.length; // cursor at editor
-						for (const line of editor.render(width - 2)) {
-							add(` ${line}`);
-						}
+						cursorLine = lines.length;
+						for (const line of editor.render(width - 2)) add(` ${line}`);
 						lines.push("");
 						add(theme.fg("dim", " Enter to save • Esc to discard"));
 						bodyEnd = lines.length;
-					}
-					// ── Submit tab ──
-					else if (currentTab === questions.length) {
+					} else if (currentTab === questions.length) {
 						bodyStart = lines.length;
 						cursorLine = lines.length;
 						add(theme.fg("accent", theme.bold(" Ready to submit")));
@@ -763,14 +753,9 @@ export default function questionnaire(pi: ExtensionAPI) {
 							if (answer) {
 								const prefix = answer.wasCustom ? "(wrote) " : "";
 								let display: string;
-								if (answer.selections) {
-									display = `${answer.selections.length} selected: ${answer.label}`;
-								} else {
-									display = `${prefix}${answer.label}`;
-								}
+								if (answer.selections) display = `${answer.selections.length} selected: ${answer.label}`;
+								else display = `${prefix}${answer.label}`;
 								add(`${theme.fg("muted", ` ${question.label}: `)}${theme.fg("text", display)}`);
-
-								// Show notes summary for review questions
 								if (answer.optionNotes && answer.optionNotes.length > 0) {
 									for (const note of answer.optionNotes) {
 										const preview = note.text.length > 50 ? note.text.substring(0, 47) + "..." : note.text;
@@ -783,55 +768,46 @@ export default function questionnaire(pi: ExtensionAPI) {
 						if (allAnswered()) {
 							add(theme.fg("success", " Press Enter to submit"));
 						} else {
-							const missing = questions
-								.filter((q) => !answers.has(q.id))
-								.map((q) => q.label)
-								.join(", ");
+							const missing = questions.filter((q) => !answers.has(q.id)).map((q) => q.label).join(", ");
 							add(theme.fg("warning", ` Unanswered: ${missing}`));
 						}
 						bodyEnd = lines.length;
-					}
-					// ── Question content ──
-					else if (q) {
-						// Prompt (part of header — word-wrapped so long prompts aren't truncated)
+					} else if (q) {
 						for (const pLine of wordWrap(q.prompt, width - 2)) {
 							add(theme.fg("text", ` ${pLine}`));
 						}
-
-						// Multi-select constraint hint
 						if (q.select === "multiple" && (q.minSelect > 1 || q.maxSelect < q.options.length)) {
 							const parts: string[] = [];
 							if (q.minSelect > 1) parts.push(`min ${q.minSelect}`);
 							if (q.maxSelect < q.options.length) parts.push(`max ${q.maxSelect}`);
 							add(theme.fg("dim", `  (${parts.join(", ")})`));
 						}
-
 						lines.push("");
 
 						bodyStart = lines.length;
 
-						// Options (mode-specific) — returns cursor offset within body
+						// Compute available body rows for review viewport
+						const termHeight = process.stdout.rows || 24;
+						const footerEstimate = 3;
+						const availableBodyRows = Math.max(5, termHeight - 4 - lines.length - footerEstimate);
+
 						let cursorOffset = 0;
 						if (q.select === "review") {
-							cursorOffset = renderReviewOptions(q, width, add);
+							cursorOffset = renderReviewOptions(q, width, add, availableBodyRows);
 						} else if (q.select === "multiple") {
-							cursorOffset = renderMultiOptions(q, add);
+							cursorOffset = renderMultiOptions(q, add, width);
 						} else {
-							cursorOffset = renderSingleOptions(opts, add);
+							cursorOffset = renderSingleOptions(opts, add, width);
 						}
 						cursorLine = bodyStart + cursorOffset;
 
-						// "Type something" editor (single-select and multi-select)
 						if (inputMode && (q.select === "single" || q.select === "multiple")) {
 							lines.push("");
 							add(theme.fg("muted", q.select === "multiple" ? " Add custom option:" : " Your answer:"));
-							cursorLine = lines.length; // cursor follows editor
-							for (const line of editor.render(width - 2)) {
-								add(` ${line}`);
-							}
+							cursorLine = lines.length;
+							for (const line of editor.render(width - 2)) add(` ${line}`);
 						}
 
-						// Multi-select status
 						if (q.select === "multiple") {
 							lines.push("");
 							const checked = getChecked(q.id);
@@ -843,32 +819,28 @@ export default function questionnaire(pi: ExtensionAPI) {
 							}
 							add(`  ${status}`);
 						}
-
 						bodyEnd = lines.length;
 					}
 
-					// === FOOTER (always visible) ===
+					// === FOOTER ===
 					lines.push("");
-
-					// Help text
 					if (inputMode) {
 						add(theme.fg("dim", " Enter to submit • Esc to go back"));
 					} else if (!noteEditMode && currentTab !== questions.length && q) {
 						const nav = isMulti ? "Tab/←→ navigate • " : "";
 						if (q.select === "review") {
-							add(theme.fg("dim", ` ${nav}↑↓ browse • n add notes • Enter select • Esc cancel`));
+							add(theme.fg("dim", ` ${nav}↑↓ browse • j/k scroll • n notes • Enter select • Esc cancel`));
 						} else if (q.select === "multiple") {
 							add(theme.fg("dim", ` ${nav}↑↓ move • Space toggle • a select all • Enter confirm • Esc cancel`));
 						} else {
 							add(theme.fg("dim", ` ${nav}↑↓ navigate • Enter select • Esc cancel`));
 						}
 					}
-
 					add(theme.fg("accent", "─".repeat(width)));
 
-					// === VIEWPORT: ensure output fits terminal height ===
+					// === VIEWPORT ===
 					const termHeight = process.stdout.rows || 24;
-					const maxLines = termHeight - 4; // reserve for TUI chrome
+					const maxLines = termHeight - 4;
 
 					if (lines.length <= maxLines) {
 						cachedLines = lines;
@@ -881,33 +853,25 @@ export default function questionnaire(pi: ExtensionAPI) {
 					const availableForBody = maxLines - headerLines.length - footerLines.length;
 
 					if (availableForBody <= 3) {
-						// Terminal too small for proper scrolling, just truncate
 						cachedLines = lines.slice(0, maxLines);
 						return cachedLines;
 					}
 
-					// Scroll to keep cursor centered in viewport
 					const cursorInBody = Math.max(0, Math.min(cursorLine - bodyStart, bodyLines.length - 1));
 					let viewStart = Math.max(0, cursorInBody - Math.floor(availableForBody / 2));
 					if (viewStart + availableForBody > bodyLines.length) {
 						viewStart = Math.max(0, bodyLines.length - availableForBody);
 					}
 					const viewEnd = Math.min(viewStart + availableForBody, bodyLines.length);
-
 					const visibleBody = bodyLines.slice(viewStart, viewEnd);
 
-					// Scroll indicators
 					if (viewStart > 0) {
 						const above = viewStart;
-						visibleBody[0] = truncateToWidth(
-							theme.fg("dim", `  ▲ ${above} more line${above !== 1 ? "s" : ""}`), width,
-						);
+						visibleBody[0] = truncateToWidth(theme.fg("dim", `  ▲ ${above} more line${above !== 1 ? "s" : ""}`), width);
 					}
 					if (viewEnd < bodyLines.length) {
 						const below = bodyLines.length - viewEnd;
-						visibleBody[visibleBody.length - 1] = truncateToWidth(
-							theme.fg("dim", `  ▼ ${below} more line${below !== 1 ? "s" : ""}`), width,
-						);
+						visibleBody[visibleBody.length - 1] = truncateToWidth(theme.fg("dim", `  ▼ ${below} more line${below !== 1 ? "s" : ""}`), width);
 					}
 
 					cachedLines = [...headerLines, ...visibleBody, ...footerLines];
@@ -916,9 +880,7 @@ export default function questionnaire(pi: ExtensionAPI) {
 
 				return {
 					render,
-					invalidate: () => {
-						cachedLines = undefined;
-					},
+					invalidate: () => { cachedLines = undefined; },
 					handleInput,
 				};
 			});
@@ -934,7 +896,6 @@ export default function questionnaire(pi: ExtensionAPI) {
 			const answerLines = result.answers.map((a) => {
 				const qLabel = questions.find((q) => q.id === a.id)?.label || a.id;
 				const lines: string[] = [];
-
 				if (a.wasCustom) {
 					lines.push(`${qLabel}: user wrote: ${a.label}`);
 				} else if (a.selections) {
@@ -943,14 +904,11 @@ export default function questionnaire(pi: ExtensionAPI) {
 				} else {
 					lines.push(`${qLabel}: user selected: ${a.index}. ${a.label}`);
 				}
-
-				// Include notes
 				if (a.optionNotes && a.optionNotes.length > 0) {
 					for (const note of a.optionNotes) {
 						lines.push(`  Notes on "${note.label}": ${note.text}`);
 					}
 				}
-
 				return lines.join("\n");
 			});
 
@@ -966,9 +924,7 @@ export default function questionnaire(pi: ExtensionAPI) {
 			const labels = qs.map((q) => q.label || q.id).join(", ");
 			let text = theme.fg("toolTitle", theme.bold("questionnaire "));
 			text += theme.fg("muted", `${count} question${count !== 1 ? "s" : ""}`);
-			if (labels) {
-				text += theme.fg("dim", ` (${truncateToWidth(labels, 40)})`);
-			}
+			if (labels) text += theme.fg("dim", ` (${truncateToWidth(labels, 40)})`);
 			return new Text(text, 0, 0);
 		},
 
@@ -978,9 +934,7 @@ export default function questionnaire(pi: ExtensionAPI) {
 				const text = result.content[0];
 				return new Text(text?.type === "text" ? text.text : "", 0, 0);
 			}
-			if (details.cancelled) {
-				return new Text(theme.fg("warning", "Cancelled"), 0, 0);
-			}
+			if (details.cancelled) return new Text(theme.fg("warning", "Cancelled"), 0, 0);
 			const lines = details.answers.map((a) => {
 				const answerLines: string[] = [];
 				if (a.wasCustom) {
@@ -992,14 +946,11 @@ export default function questionnaire(pi: ExtensionAPI) {
 					const display = a.index ? `${a.index}. ${a.label}` : a.label;
 					answerLines.push(`${theme.fg("success", "✓ ")}${theme.fg("accent", a.id)}: ${display}`);
 				}
-
-				// Notes
 				if (a.optionNotes && a.optionNotes.length > 0) {
 					for (const note of a.optionNotes) {
 						answerLines.push(`  ${theme.fg("warning", "✎ ")}${theme.fg("dim", note.label + ": ")}${note.text}`);
 					}
 				}
-
 				return answerLines.join("\n");
 			});
 			return new Text(lines.join("\n"), 0, 0);
