@@ -5,7 +5,10 @@
  * - single:   Pick one option (default). "Type something" if allowOther.
  * - multiple: Checkbox selection with min/max constraints.
  * - review:   Side-by-side preview of proposals with optional notes.
- *             j/k to scroll the preview panel. Press 'n' to annotate options.
+ *             j/k to scroll the preview panel.
+ *
+ * All modes: Press 'n' to annotate the highlighted option.
+ *            Press 'c' to add a comment to the question.
  *
  * Single question: auto-submit, no tabs.
  * Multiple questions: tab-based navigation with submit tab.
@@ -58,6 +61,7 @@ interface Answer {
 	index?: number;
 	selections?: Selection[];
 	optionNotes?: OptionNote[];
+	comment?: string;
 }
 
 interface QuestionnaireResult {
@@ -69,25 +73,25 @@ interface QuestionnaireResult {
 // ─── Schema ─────────────────────────────────────────────
 
 const OptionSchema = Type.Object({
-	value: Type.String({ description: "The value returned when selected" }),
-	label: Type.String({ description: "Display label for the option" }),
-	description: Type.Optional(Type.String({ description: "Optional description shown below label" })),
-	content: Type.Optional(Type.String({ description: "Full proposal/design text shown in preview panel (review mode)" })),
+	value: Type.String(),
+	label: Type.String(),
+	description: Type.Optional(Type.String()),
+	content: Type.Optional(Type.String({ description: "Preview text (review mode)" })),
 });
 
 const QuestionSchema = Type.Object({
-	id: Type.String({ description: "Unique identifier for this question" }),
-	prompt: Type.String({ description: "The full question text to display" }),
-	options: Type.Array(OptionSchema, { description: "Available options to choose from" }),
-	label: Type.Optional(Type.String({ description: "Short contextual label for tab bar, e.g. 'Scope', 'Priority' (defaults to Q1, Q2)" })),
+	id: Type.String(),
+	prompt: Type.String(),
+	options: Type.Array(OptionSchema),
+	label: Type.Optional(Type.String({ description: "Tab label (defaults to Q1, Q2)" })),
 	select: Type.Optional(StringEnum(["single", "multiple", "review"] as const)),
-	allowOther: Type.Optional(Type.Boolean({ description: "Show 'Type something' option for custom text input (default: true, single-select only)" })),
-	minSelect: Type.Optional(Type.Number({ description: "Minimum selections for multi-select (default: 1)" })),
-	maxSelect: Type.Optional(Type.Number({ description: "Maximum selections for multi-select (default: all)" })),
+	allowOther: Type.Optional(Type.Boolean({ description: "Allow custom input (default: true, single-select only)" })),
+	minSelect: Type.Optional(Type.Number({ description: "Min selections for multi-select (default: 1)" })),
+	maxSelect: Type.Optional(Type.Number({ description: "Max selections for multi-select (default: all)" })),
 });
 
 const Params = Type.Object({
-	questions: Type.Array(QuestionSchema, { description: "Questions to ask the user" }),
+	questions: Type.Array(QuestionSchema),
 });
 
 // ─── Helpers ────────────────────────────────────────────
@@ -151,10 +155,9 @@ export default function questionnaire(pi: ExtensionAPI) {
 		name: "questionnaire",
 		label: "Questionnaire",
 		description:
-			"Ask the user one or more questions. Use for clarifying requirements, getting preferences, or confirming decisions. " +
-			"Each question can be single-select (pick one, default), multi-select (pick several with checkboxes, set select to 'multiple'), " +
-			"or review (side-by-side preview of proposals with optional notes, set select to 'review' and provide content on each option). " +
-			"For a single question, shows a simple option list. For multiple questions, shows a tab-based interface.",
+			"Ask the user one or more questions. Modes per question: single-select (default), " +
+			"multi-select (select='multiple'), review (select='review', provide content). " +
+			"Single question auto-submits; multiple shows tabs.",
 		parameters: Params,
 
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
@@ -180,6 +183,8 @@ export default function questionnaire(pi: ExtensionAPI) {
 				const noteMaps = new Map<string, Map<string, string>>();
 				let previewScroll = 0;
 				let previewMaxScroll = 0;
+				let commentMode = false;
+				const questionComments = new Map<string, string>();
 
 				const editorTheme: EditorTheme = {
 					borderColor: (s) => theme.fg("accent", s),
@@ -242,15 +247,15 @@ export default function questionnaire(pi: ExtensionAPI) {
 
 				function saveSingleAnswer(q: Question, value: string, label: string, wasCustom: boolean, index?: number) {
 					const answer: Answer = { id: q.id, value, label, wasCustom, index };
-					if (q.select === "review") {
-						const notes = getNoteMap(q.id);
-						if (notes.size > 0) {
-							answer.optionNotes = [...notes.entries()].map(([v, text]) => ({
-								value: v,
-								label: q.options.find((o) => o.value === v)?.label || v,
-								text,
-							}));
-						}
+					const comment = questionComments.get(q.id);
+					if (comment) answer.comment = comment;
+					const notes = getNoteMap(q.id);
+					if (notes.size > 0) {
+						answer.optionNotes = [...notes.entries()].map(([v, text]) => ({
+							value: v,
+							label: q.options.find((o) => o.value === v)?.label || v,
+							text,
+						}));
 					}
 					answers.set(q.id, answer);
 				}
@@ -263,17 +268,37 @@ export default function questionnaire(pi: ExtensionAPI) {
 						.sort((a, b) => a - b)
 						.filter((i) => i < allOpts.length)
 						.map((i) => ({ value: allOpts[i].value, label: allOpts[i].label, index: i + 1 }));
-					answers.set(q.id, {
+					const answer: Answer = {
 						id: q.id,
 						value: selections.map((s) => s.value).join(", "),
 						label: selections.map((s) => s.label).join(", "),
 						wasCustom: dynamic.length > 0 && selections.some((s) => dynamic.some((d) => d.value === s.value)),
 						selections,
-					});
+					};
+					const notes = getNoteMap(q.id);
+					if (notes.size > 0) {
+						answer.optionNotes = [...notes.entries()].map(([v, text]) => ({
+							value: v,
+							label: allOpts.find((o) => o.value === v)?.label || v,
+							text,
+						}));
+					}
+					const comment = questionComments.get(q.id);
+					if (comment) answer.comment = comment;
+					answers.set(q.id, answer);
 				}
 
 				editor.onSubmit = (value) => {
-					if (noteEditMode && noteEditOptionValue) {
+					if (commentMode) {
+						const q = currentQuestion();
+						if (!q) return;
+						const trimmed = value.trim();
+						if (trimmed) questionComments.set(q.id, trimmed);
+						else questionComments.delete(q.id);
+						commentMode = false;
+						editor.setText("");
+						refresh();
+					} else if (noteEditMode && noteEditOptionValue) {
 						const q = currentQuestion();
 						if (!q) return;
 						const notes = getNoteMap(q.id);
@@ -314,20 +339,22 @@ export default function questionnaire(pi: ExtensionAPI) {
 
 				// ─── Render helpers ───
 
-				function renderSingleOptions(opts: RenderOption[], add: (s: string) => void, width: number): number {
+				function renderSingleOptions(opts: RenderOption[], notes: Map<string, string>, add: (s: string) => void, width: number): number {
 					let cursorOffset = 0;
 					let lineCount = 0;
 					for (let i = 0; i < opts.length; i++) {
 						const opt = opts[i];
 						const selected = i === optionIndex;
 						const isOther = opt.isOther === true;
+						const hasNote = !isOther && notes.has(opt.value);
+						const noteInd = hasNote ? theme.fg("warning", " ✎") : "";
 						const prefix = selected ? theme.fg("accent", "> ") : "  ";
 						const color = selected ? "accent" : "text";
 						if (selected) cursorOffset = lineCount;
 						if (isOther && inputMode) {
 							add(prefix + theme.fg("accent", `${i + 1}. ${opt.label} ✎`));
 						} else {
-							add(prefix + theme.fg(color as any, `${i + 1}. ${opt.label}`));
+							add(prefix + theme.fg(color as any, `${i + 1}. ${opt.label}`) + noteInd);
 						}
 						lineCount++;
 						if (opt.description) {
@@ -336,11 +363,18 @@ export default function questionnaire(pi: ExtensionAPI) {
 								lineCount++;
 							}
 						}
+						if (hasNote) {
+							const noteText = notes.get(opt.value)!;
+							const maxLen = Math.max(8, width - 10);
+							const preview = noteText.length > maxLen ? noteText.substring(0, maxLen - 3) + "..." : noteText;
+							add(`     ${theme.fg("dim", `"${preview}"`)}`);
+							lineCount++;
+						}
 					}
 					return cursorOffset;
 				}
 
-				function renderMultiOptions(q: Question, add: (s: string) => void, width: number): number {
+				function renderMultiOptions(q: Question, notes: Map<string, string>, add: (s: string) => void, width: number): number {
 					const checked = getChecked(q.id);
 					const dynamic = getDynamic(q.id);
 					const allOpts = [...q.options, ...dynamic];
@@ -352,16 +386,18 @@ export default function questionnaire(pi: ExtensionAPI) {
 						const isCursor = i === optionIndex;
 						const isChecked = checked.has(i);
 						const isCustom = i >= q.options.length;
+						const hasNote = notes.has(opt.value);
 						const box = isChecked ? "☑" : "☐";
 						const prefix = isCursor ? theme.fg("accent", "> ") : "  ";
 						const customInd = isCustom ? theme.fg("warning", " ✎") : "";
+						const noteInd = hasNote ? theme.fg("warning", " ✎") : "";
 						if (isCursor) cursorOffset = lineCount;
 						if (isCursor) {
-							add(prefix + theme.fg("accent", `${box} ${opt.label}`) + customInd);
+							add(prefix + theme.fg("accent", `${box} ${opt.label}`) + customInd + noteInd);
 						} else if (isChecked) {
-							add(prefix + theme.fg("success", box) + ` ${theme.fg("text", opt.label)}` + customInd);
+							add(prefix + theme.fg("success", box) + ` ${theme.fg("text", opt.label)}` + customInd + noteInd);
 						} else {
-							add(`  ${theme.fg("muted", box)} ${theme.fg("text", opt.label)}` + customInd);
+							add(`  ${theme.fg("muted", box)} ${theme.fg("text", opt.label)}` + customInd + noteInd);
 						}
 						lineCount++;
 						if (opt.description) {
@@ -369,6 +405,13 @@ export default function questionnaire(pi: ExtensionAPI) {
 								add(`     ${theme.fg("muted", dLine)}`);
 								lineCount++;
 							}
+						}
+						if (hasNote) {
+							const noteText = notes.get(opt.value)!;
+							const maxLen = Math.max(8, width - 10);
+							const preview = noteText.length > maxLen ? noteText.substring(0, maxLen - 3) + "..." : noteText;
+							add(`     ${theme.fg("dim", `"${preview}"`)}`);
+							lineCount++;
 						}
 					}
 
@@ -544,12 +587,13 @@ export default function questionnaire(pi: ExtensionAPI) {
 
 				// ─── Input ───
 				function handleInput(data: string) {
-					if (inputMode || noteEditMode) {
+					if (inputMode || noteEditMode || commentMode) {
 						if (matchesKey(data, Key.escape)) {
 							inputMode = false;
 							inputQuestionId = null;
 							noteEditMode = false;
 							noteEditOptionValue = null;
+							commentMode = false;
 							editor.setText("");
 							refresh();
 							return;
@@ -669,21 +713,41 @@ export default function questionnaire(pi: ExtensionAPI) {
 							refresh();
 							return;
 						}
-						if (data === "n") {
-							const opt = q.options[optionIndex];
-							const notes = getNoteMap(q.id);
-							noteEditMode = true;
-							noteEditOptionValue = opt.value;
-							editor.setText(notes.get(opt.value) || "");
-							refresh();
-							return;
-						}
 						if (matchesKey(data, Key.enter)) {
 							const opt = q.options[optionIndex];
 							saveSingleAnswer(q, opt.value, opt.label, false, optionIndex + 1);
 							advanceAfterAnswer();
 							return;
 						}
+					}
+
+					if (data === "n") {
+						let optValue: string | null = null;
+						if (q.select === "review") {
+							optValue = q.options[optionIndex]?.value || null;
+						} else if (q.select === "multiple") {
+							const dynamic = getDynamic(q.id);
+							const allOpts = [...q.options, ...dynamic];
+							if (optionIndex < allOpts.length) optValue = allOpts[optionIndex].value;
+						} else {
+							const opt = opts[optionIndex];
+							if (opt && !opt.isOther) optValue = opt.value;
+						}
+						if (optValue) {
+							const notes = getNoteMap(q.id);
+							noteEditMode = true;
+							noteEditOptionValue = optValue;
+							editor.setText(notes.get(optValue) || "");
+							refresh();
+						}
+						return;
+					}
+
+					if (data === "c") {
+						commentMode = true;
+						editor.setText(questionComments.get(q!.id) || "");
+						refresh();
+						return;
 					}
 
 					if (matchesKey(data, Key.escape)) submit(true);
@@ -731,7 +795,18 @@ export default function questionnaire(pi: ExtensionAPI) {
 					}
 
 					// === BODY ===
-					if (noteEditMode && noteEditOptionValue) {
+					if (commentMode) {
+						bodyStart = lines.length;
+						const q2 = currentQuestion()!;
+						add(theme.fg("text", ` Comment on: `) + theme.fg("accent", theme.bold(truncateToWidth(q2.prompt, width - 14))));
+						lines.push("");
+						add(theme.fg("muted", " Your comment (empty to remove):"));
+						cursorLine = lines.length;
+						for (const line of editor.render(width - 2)) add(` ${line}`);
+						lines.push("");
+						add(theme.fg("dim", " Enter to save • Esc to discard"));
+						bodyEnd = lines.length;
+					} else if (noteEditMode && noteEditOptionValue) {
 						bodyStart = lines.length;
 						const q2 = currentQuestion();
 						const optLabel = q2?.options.find((o) => o.value === noteEditOptionValue)?.label || noteEditOptionValue;
@@ -762,6 +837,10 @@ export default function questionnaire(pi: ExtensionAPI) {
 										add(`   ${theme.fg("warning", "✎ ")}${theme.fg("dim", note.label + ": ")}${theme.fg("muted", preview)}`);
 									}
 								}
+								if (answer.comment) {
+									const cPreview = answer.comment.length > 60 ? answer.comment.substring(0, 57) + "..." : answer.comment;
+									add(`   ${theme.fg("warning", "✎ ")}${theme.fg("dim", "Comment: ")}${theme.fg("muted", cPreview)}`);
+								}
 							}
 						}
 						lines.push("");
@@ -782,6 +861,12 @@ export default function questionnaire(pi: ExtensionAPI) {
 							if (q.maxSelect < q.options.length) parts.push(`max ${q.maxSelect}`);
 							add(theme.fg("dim", `  (${parts.join(", ")})`));
 						}
+						if (questionComments.has(q.id)) {
+							const comment = questionComments.get(q.id)!;
+							const maxLen = Math.max(20, width - 12);
+							const preview = comment.length > maxLen ? comment.substring(0, maxLen - 3) + "..." : comment;
+							add(`  ${theme.fg("warning", "✎ ")}${theme.fg("dim", preview)}`);
+						}
 						lines.push("");
 
 						bodyStart = lines.length;
@@ -795,9 +880,9 @@ export default function questionnaire(pi: ExtensionAPI) {
 						if (q.select === "review") {
 							cursorOffset = renderReviewOptions(q, width, add, availableBodyRows);
 						} else if (q.select === "multiple") {
-							cursorOffset = renderMultiOptions(q, add, width);
+							cursorOffset = renderMultiOptions(q, getNoteMap(q.id), add, width);
 						} else {
-							cursorOffset = renderSingleOptions(opts, add, width);
+							cursorOffset = renderSingleOptions(opts, getNoteMap(q.id), add, width);
 						}
 						cursorLine = bodyStart + cursorOffset;
 
@@ -826,14 +911,14 @@ export default function questionnaire(pi: ExtensionAPI) {
 					lines.push("");
 					if (inputMode) {
 						add(theme.fg("dim", " Enter to submit • Esc to go back"));
-					} else if (!noteEditMode && currentTab !== questions.length && q) {
+					} else if (!noteEditMode && !commentMode && currentTab !== questions.length && q) {
 						const nav = isMulti ? "Tab/←→ navigate • " : "";
 						if (q.select === "review") {
-							add(theme.fg("dim", ` ${nav}↑↓ browse • j/k scroll • n notes • Enter select • Esc cancel`));
+							add(theme.fg("dim", ` ${nav}↑↓ browse • j/k scroll • n notes • c comment • Enter select • Esc cancel`));
 						} else if (q.select === "multiple") {
-							add(theme.fg("dim", ` ${nav}↑↓ move • Space toggle • a select all • Enter confirm • Esc cancel`));
+							add(theme.fg("dim", ` ${nav}↑↓ move • Space toggle • a all • n notes • c comment • Enter confirm • Esc cancel`));
 						} else {
-							add(theme.fg("dim", ` ${nav}↑↓ navigate • Enter select • Esc cancel`));
+							add(theme.fg("dim", ` ${nav}↑↓ navigate • n notes • c comment • Enter select • Esc cancel`));
 						}
 					}
 					add(theme.fg("accent", "─".repeat(width)));
@@ -897,18 +982,16 @@ export default function questionnaire(pi: ExtensionAPI) {
 				const qLabel = questions.find((q) => q.id === a.id)?.label || a.id;
 				const lines: string[] = [];
 				if (a.wasCustom) {
-					lines.push(`${qLabel}: user wrote: ${a.label}`);
+					lines.push(`${qLabel}: (custom) ${a.label}`);
 				} else if (a.selections) {
-					const items = a.selections.map((s) => `${s.index}. ${s.label}`).join(", ");
-					lines.push(`${qLabel}: user selected ${a.selections.length} item(s): ${items}`);
+					lines.push(`${qLabel}: ${a.selections.map((s) => `${s.index}. ${s.label}`).join(", ")}`);
 				} else {
-					lines.push(`${qLabel}: user selected: ${a.index}. ${a.label}`);
+					lines.push(`${qLabel}: ${a.index}. ${a.label}`);
 				}
-				if (a.optionNotes && a.optionNotes.length > 0) {
-					for (const note of a.optionNotes) {
-						lines.push(`  Notes on "${note.label}": ${note.text}`);
-					}
+				if (a.optionNotes) {
+					for (const note of a.optionNotes) lines.push(`  "${note.label}": ${note.text}`);
 				}
+				if (a.comment) lines.push(`  Comment: ${a.comment}`);
 				return lines.join("\n");
 			});
 
@@ -950,6 +1033,9 @@ export default function questionnaire(pi: ExtensionAPI) {
 					for (const note of a.optionNotes) {
 						answerLines.push(`  ${theme.fg("warning", "✎ ")}${theme.fg("dim", note.label + ": ")}${note.text}`);
 					}
+				}
+				if (a.comment) {
+					answerLines.push(`  ${theme.fg("warning", "✎ ")}${theme.fg("dim", "Comment: ")}${a.comment}`);
 				}
 				return answerLines.join("\n");
 			});
