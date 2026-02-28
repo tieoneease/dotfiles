@@ -13,6 +13,7 @@ setopt HIST_IGNORE_SPACE
 # PATH
 [[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
 [[ -d "$HOME/.cargo/bin" ]] && export PATH="$HOME/.cargo/bin:$PATH"
+[[ -d "$HOME/.fly/bin" ]] && export PATH="$HOME/.fly/bin:$PATH"
 [[ -d "$HOME/.nix-profile/bin" ]] && export PATH="$HOME/.nix-profile/bin:$PATH"
 
 # Completion
