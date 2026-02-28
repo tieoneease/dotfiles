@@ -395,6 +395,9 @@ binds {
     // Toggle eDP-2 bottom screen (physical F13 key → XKB maps to XF86Tools)
     XF86Tools { spawn-sh "~/.local/bin/toggle-edp2"; }
 
+    // Cycle power profile (RCtrl + P → keyd emits F15 → XKB maps to XF86Launch6)
+    XF86Launch6 { spawn "qs" "msg" "-p" "/etc/xdg/quickshell/noctalia-shell" "powerProfile" "cycle"; }
+
     // Voice-to-text toggle (both alts + t → keyd emits F14 → XKB maps to XF86Launch5)
     XF86Launch5 { spawn-sh "~/.local/bin/voice-toggle"; }
 

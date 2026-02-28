@@ -133,9 +133,9 @@ This is a composite layer that activates when both LeftAlt and RightAlt are held
 | `,` | ScrollUp |
 | `.` | End |
 
-#### `[control]` — RightCtrl held (volume and brightness)
+#### `[control]` — RightCtrl held (volume, brightness, power profile)
 
-Tap RightCtrl = RightCtrl. Hold RightCtrl + key = media/brightness control.
+Tap RightCtrl = RightCtrl. Hold RightCtrl + key = media/brightness/power control.
 
 | Key | Output |
 |-----|--------|
@@ -143,6 +143,7 @@ Tap RightCtrl = RightCtrl. Hold RightCtrl + key = media/brightness control.
 | `s` | Volume up |
 | `d` | Brightness down |
 | `f` | Brightness up |
+| `p` | F15 → XF86Launch6 → cycle power profile (via Noctalia IPC) |
 
 ### Why keyd over XKB
 
@@ -723,6 +724,16 @@ Physical key: BothAlts + T (LeftAlt + RightAlt + T)
       → niri keybind: XF86Launch5 → spawn-sh voice-toggle
         → voice-toggle sends SIGUSR1 to daemon PID
           → daemon toggles IDLE ↔ RECORDING
+```
+
+### Trigger chain — power profile cycle
+
+```
+Physical key: RightCtrl + P
+  → keyd [control] layer: p = F15
+    → XKB maps F15 → XF86Launch6
+      → niri keybind: XF86Launch6 → spawn qs msg powerProfile cycle
+        → Noctalia Shell cycles: Balanced → Performance → Power Saver
 ```
 
 ### Trigger chain — eDP-2 toggle (Zenbook Duo)
