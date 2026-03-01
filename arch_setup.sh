@@ -356,6 +356,11 @@ if [[ "$response" =~ ^[Yy]$ ]]; then
     sudo cp -f "$DOTFILES_DIR/etc/systemd/system/asusd.service.d/restart.conf" /etc/systemd/system/asusd.service.d/
     sudo systemctl daemon-reload
 
+    # Deep sleep (S3) instead of s2idle — much better battery life on ASUS laptops
+    echo "Configuring deep sleep (S3) for suspend..."
+    sudo mkdir -p /etc/systemd/sleep.conf.d
+    sudo cp -f "$DOTFILES_DIR/etc/systemd/sleep.conf.d/10-deep-sleep.conf" /etc/systemd/sleep.conf.d/
+
     echo "ASUS Zenbook Duo setup complete."
     echo "  - asusctl manages fn keys, keyboard backlight, and platform profiles"
     echo "  - wev can diagnose function key issues (run 'wev' and press keys)"

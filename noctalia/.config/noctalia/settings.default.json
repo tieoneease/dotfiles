@@ -280,7 +280,7 @@
                     "id": "PowerProfile"
                 },
                 {
-                    "id": "KeepAwake"
+                    "id": "plugin:sleep-inhibitor"
                 },
                 {
                     "id": "NightLight"

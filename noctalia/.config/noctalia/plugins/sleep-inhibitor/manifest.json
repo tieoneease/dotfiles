@@ -1,0 +1,19 @@
+{
+    "id": "sleep-inhibitor",
+    "name": "Sleep Inhibitor",
+    "version": "1.0.0",
+    "minNoctaliaVersion": "4.0.0",
+    "author": "chungsam",
+    "license": "MIT",
+    "description": "Prevent suspend/hibernate while allowing screen to turn off. Replaces the built-in KeepAwake which blocks both.",
+    "entryPoints": {
+        "main": "Main.qml",
+        "controlCenterWidget": "ControlCenterWidget.qml"
+    },
+    "metadata": {
+        "tags": ["Power", "Indicator"],
+        "defaultSettings": {
+            "enabled": false
+        }
+    }
+}

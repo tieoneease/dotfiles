@@ -63,9 +63,16 @@ Dynamic Material Design 3 colors generated from the current wallpaper:
 - **Generated files (all gitignored):** `noctalia.kdl` (niri), `themes/noctalia.conf` (kitty), `flavors/noctalia.yazi/` (yazi), `noctalia_colors.lua` (nvim), `colors.conf` (tmux)
 - **Wallpapers:** `wallpapers/` contains defaults, copied to `~/Pictures/Wallpapers/` by setup script (not stowed — directory holds user content)
 
+## Noctalia Plugins (custom, stowed)
+Local plugins in `noctalia/.config/noctalia/plugins/`:
+- **sleep-inhibitor:** Replaces built-in KeepAwake. Uses `systemd-inhibit --what=sleep` to block suspend/hibernate while allowing screen blanking (swayidle timeout). The built-in KeepAwake uses `--what=idle` which also prevents screen off. Has CC widget (coffee icon) and IPC (`qs -c noctalia-shell ipc call plugin:sleep-inhibitor toggle`). Plugin `settings.json` files are gitignored (runtime state).
+- **screen-toggle:** Toggles secondary screen (eDP-2) on Zenbook Duo devices. Self-hides when hardware not detected.
+- **lte-status:** LTE modem status indicator.
+
 ## Arch Linux / EndeavourOS Setup
 - **Setup script:** `./arch_setup.sh` (yay packages, keyd, greetd, sudoers, stow)
-- **Noctalia patches:** `patch_noctalia.sh` (standalone, idempotent — workspace icons, calendar, weather, tooltips, NIcon raw glyphs). Called by arch_setup.sh via `sudo bash`. Each patch has a guard (grep for marker or patched pattern) and warns if upstream QML changed. Re-applied after `noctalia-shell-git` package updates.
+- **Noctalia patches:** `patch_noctalia.sh` (standalone, idempotent — workspace icons, calendar, weather, tooltips, NIcon raw glyphs). Called by arch_setup.sh via `sudo bash`. Each patch has a guard (grep for marker or patched pattern) and warns if upstream QML changed. Re-applied after `noctalia-shell-git` package updates. Patches are for **UI-only** changes; behavioral changes should use the plugin system instead.
+- **Deep sleep (S3):** `etc/systemd/sleep.conf.d/10-deep-sleep.conf` sets `MemorySleepMode=deep` for ASUS laptops (deployed by arch_setup.sh ASUS section only). GPD Win Max 2 only supports s2idle, so this is not deployed there.
 - Niri compositor with dynamic Material Design 3 colors via Noctalia/matugen
 - Passwordless sudo setup for Claude Code (opt-in with confirmation prompt)
 - keyd keyboard layers (numpad, nav, media)
