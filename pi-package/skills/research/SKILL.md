@@ -19,7 +19,7 @@ Methodology for technical research that keeps context clean and preserves findin
 ## Workflow
 
 1. **Discover** — search broadly, identify candidate approaches, triage by source authority
-2. **Extract** — for each source sequentially: read it, write structured notes to a file, move on. Never hold two raw sources simultaneously
+2. **Extract** — for each source: read it, write structured notes to a file, move on. Never hold two raw sources simultaneously
 3. **Evaluate** — with clean context, read only your notes files, reason about tradeoffs from first principles
 4. **Synthesize** — write recommendation with evidence anchored to your notes files
 
@@ -53,11 +53,11 @@ Requires the **brave-search** skill. Load it for search and content extraction c
 
 When reading large documentation pages, scan structure first, then read only the sections relevant to your evaluation criteria.
 
-## Subagent Fan-Out (4+ Sources)
+## Subagent Fan-Out
 
 When researching 4 or more sources, consider dispatching parallel `researcher` subagents. Each gets a fresh context window at peak quality.
 
-Write your criteria and a notes template to files first so the subagents have context. After fan-out, return to evaluation with a clean context — the heavy reading happened in subagent windows.
+Write criteria (`_criteria.md`) and a notes template (`_template.md`) to `.research/` first so the subagents have context. After fan-out, return to evaluation with a clean context — the heavy reading happened in subagent windows.
 
 ## Local Codebase Research
 
