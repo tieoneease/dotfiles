@@ -84,9 +84,9 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 - **Skills:** pi-skills git repo cloned to `~/.pi/agent/skills/pi-skills/` (brave-search, browser-tools, etc.)
 - **Research skill:** `pi-package/skills/research/` — structured research methodology with file-based notes that survive compaction. Invoked via `/skill:research`, `/research <topic>`, or `/deep-research <topic>` (subagent fan-out variant)
 - **Subagent extension:** Symlinked from pi's examples to `~/.pi/agent/extensions/subagent/` (re-linked on pi version updates by pi_setup.sh)
-- **Agent definitions:** `pi-agents/` in dotfiles, copied to `~/.pi/agent/agents/` by pi_setup.sh. Contains `researcher.md` for parallel research extraction.
+- **Agent definitions:** `pi-package/agents/` — subagent agent definitions (not auto-discovered by pi packages, copied to `~/.pi/agent/agents/` by pi_setup.sh). Contains `researcher.md` for parallel research extraction.
 - **Prompt templates:** `pi-package/prompts/` — `research.md` (single-agent), `deep-research.md` (subagent fan-out)
 - **Per-machine config:** Use `pi config` to enable/disable individual extensions or skills on each machine — no dotfiles changes needed
 - **Adding extensions:** Create new `.ts` files in `pi-package/extensions/`, they auto-load via the package manifest
 - **Adding skills:** Create new directories in `pi-package/skills/`, they auto-load via the package manifest
-- **Adding agents:** Create new `.md` files in `pi-agents/`, run `pi_setup.sh` to deploy
+- **Adding agents:** Create new `.md` files in `pi-package/agents/`, run `pi_setup.sh` to deploy

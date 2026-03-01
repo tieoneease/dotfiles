@@ -101,7 +101,7 @@ install_agent_definitions() {
     mkdir -p "$PI_AGENTS_DIR"
 
     # Copy agent definitions from dotfiles (these are user-level agents for the subagent extension)
-    local agents_src="$DOTFILES_DIR/pi-agents"
+    local agents_src="$PI_PACKAGE_DIR/agents"
     if [[ -d "$agents_src" ]]; then
         for agent_file in "$agents_src"/*.md; do
             [[ -f "$agent_file" ]] || continue
