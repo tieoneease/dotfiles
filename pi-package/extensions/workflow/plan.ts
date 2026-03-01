@@ -1,148 +1,221 @@
 // Pure TypeScript plan parser module — zero pi imports.
 
-export interface Phase {
+// ─── Types ──────────────────────────────────────────────
+
+export interface Step {
+    type: "step";
     number: number;
     name: string;
-    status: string;
-    goal: string;
-    tasks: string[];
-    validationScript: string | null;
+    status: string; // pending, in-progress, validated, failed
+    do: string;
+    check: string | null;
 }
+
+export interface Checkpoint {
+    type: "checkpoint";
+    name: string;
+    status: string; // pending, in-progress, validated, failed
+    script: string;
+}
+
+export type PlanItem = Step | Checkpoint;
 
 export interface Plan {
     title: string;
-    phases: Phase[];
+    context: string;
+    items: PlanItem[];
 }
 
-const PHASE_HEADER_RE = /^### Phase (\d+):\s*(.+)$/m;
+// ─── Type guards ────────────────────────────────────────
+
+export function isStep(item: PlanItem): item is Step {
+    return item.type === "step";
+}
+
+export function isCheckpoint(item: PlanItem): item is Checkpoint {
+    return item.type === "checkpoint";
+}
+
+// ─── Convenience accessors ──────────────────────────────
+
+export function getSteps(plan: Plan): Step[] {
+    return plan.items.filter(isStep);
+}
+
+export function getCheckpoints(plan: Plan): Checkpoint[] {
+    return plan.items.filter(isCheckpoint);
+}
+
+// ─── Regexes ────────────────────────────────────────────
+
+const STEP_HEADER_RE = /^### Step (\d+):\s*(.+)$/;
+const CHECKPOINT_HEADER_RE = /^### Checkpoint:\s*(.+)$/;
 const STATUS_RE = /\*\*Status:\*\*\s*(\w[\w-]*)/;
-const GOAL_RE = /\*\*Goal:\*\*\s*(.+)/;
-const TASK_RE = /^\d+\.\s+(.+)$/gm;
-const VALIDATION_SCRIPT_RE = /Script:\s*`([^`]+)`/;
+const CHECK_RE = /\*\*Check:\*\*\s*`([^`]+)`/;
+const SCRIPT_RE = /\*\*Script:\*\*\s*`([^`]+)`/;
+
+// ─── Parser ─────────────────────────────────────────────
 
 /**
  * Parse a markdown plan into structured data.
+ *
+ * Expected format:
+ *   # Plan: Title
+ *   ## Context
+ *   ...
+ *   ## Steps
+ *   ### Step 1: Name
+ *   **Status:** pending
+ *   **Do:** ...
+ *   **Check:** `command`
+ *   ### Checkpoint: Name
+ *   **Status:** pending
+ *   **Script:** `.plan/validate-name.sh`
  */
 export function parsePlan(content: string): Plan {
-    // Extract title from first H1
+    // Title from first H1
     const titleMatch = content.match(/^#\s+(?:Plan:\s*)?(.+)$/m);
     const title = titleMatch ? titleMatch[1].trim() : "Untitled Plan";
 
-    // Split content into phase sections by "### Phase N:" headers
-    const phases: Phase[] = [];
-    const phaseHeaderGlobal = /^### Phase (\d+):\s*(.+)$/gm;
-    const headers: { index: number; number: number; name: string }[] = [];
+    // Context section
+    const contextMatch = content.match(/## Context\n([\s\S]*?)(?=\n## Steps|\n### Step|\n### Checkpoint|$)/);
+    const context = contextMatch ? contextMatch[1].trim() : "";
 
-    let match: RegExpExecArray | null;
-    while ((match = phaseHeaderGlobal.exec(content)) !== null) {
-        headers.push({
-            index: match.index,
-            number: parseInt(match[1], 10),
-            name: match[2].trim(),
-        });
-    }
+    // Parse items by scanning headers
+    const items: PlanItem[] = [];
+    const lines = content.split("\n");
 
-    for (let i = 0; i < headers.length; i++) {
-        const start = headers[i].index;
-        const end = i + 1 < headers.length ? headers[i + 1].index : content.length;
-        const section = content.slice(start, end);
+    let i = 0;
+    while (i < lines.length) {
+        const line = lines[i];
 
-        const statusMatch = section.match(STATUS_RE);
-        const status = statusMatch ? statusMatch[1] : "pending";
+        // Step header
+        const stepMatch = line.match(STEP_HEADER_RE);
+        if (stepMatch) {
+            const section = collectSection(lines, ++i);
+            i = section.endLine;
 
-        const goalMatch = section.match(GOAL_RE);
-        const goal = goalMatch ? goalMatch[1].trim() : "";
+            const statusMatch = section.text.match(STATUS_RE);
+            const checkMatch = section.text.match(CHECK_RE);
 
-        // Extract numbered tasks
-        const tasks: string[] = [];
-        const taskSection = section.match(/\*\*Tasks:\*\*([\s\S]*?)(?=\*\*Validation|\*\*Notes|$)/);
-        if (taskSection) {
-            let taskMatch: RegExpExecArray | null;
-            const taskRe = /^\d+\.\s+(.+)$/gm;
-            while ((taskMatch = taskRe.exec(taskSection[1])) !== null) {
-                tasks.push(taskMatch[1].trim());
-            }
+            // Do field: everything between **Do:** and the next **Field:** or end
+            const doMatch = section.text.match(/\*\*Do:\*\*\s*([\s\S]*?)(?=\n\*\*(?:Check|Status|Script):\*\*|$)/);
+
+            items.push({
+                type: "step",
+                number: parseInt(stepMatch[1], 10),
+                name: stepMatch[2].trim(),
+                status: statusMatch ? statusMatch[1] : "pending",
+                do: doMatch ? doMatch[1].trim() : "",
+                check: checkMatch ? checkMatch[1] : null,
+            });
+            continue;
         }
 
-        const validationMatch = section.match(VALIDATION_SCRIPT_RE);
-        const validationScript = validationMatch ? validationMatch[1] : null;
+        // Checkpoint header
+        const cpMatch = line.match(CHECKPOINT_HEADER_RE);
+        if (cpMatch) {
+            const section = collectSection(lines, ++i);
+            i = section.endLine;
 
-        phases.push({
-            number: headers[i].number,
-            name: headers[i].name,
-            status,
-            goal,
-            tasks,
-            validationScript,
-        });
+            const statusMatch = section.text.match(STATUS_RE);
+            const scriptMatch = section.text.match(SCRIPT_RE);
+
+            items.push({
+                type: "checkpoint",
+                name: cpMatch[1].trim(),
+                status: statusMatch ? statusMatch[1] : "pending",
+                script: scriptMatch ? scriptMatch[1] : "",
+            });
+            continue;
+        }
+
+        i++;
     }
 
-    return { title, phases };
+    return { title, context, items };
 }
 
-/**
- * Update the status of a specific phase in the raw markdown content.
- * Only changes the status line belonging to the targeted phase number.
- */
-export function updatePhaseStatus(
-    content: string,
-    phaseNumber: number,
-    newStatus: string,
-): string {
-    // Find the specific phase header, then update the first status line after it
-    const phaseHeaderGlobal = /^### Phase (\d+):\s*.+$/gm;
-    let match: RegExpExecArray | null;
-    let phaseStart = -1;
-    let nextPhaseStart = -1;
+/** Collect all lines from `start` until the next Step/Checkpoint header. */
+function collectSection(lines: string[], start: number): { text: string; endLine: number } {
+    let end = start;
+    while (end < lines.length) {
+        if (STEP_HEADER_RE.test(lines[end]) || CHECKPOINT_HEADER_RE.test(lines[end])) break;
+        end++;
+    }
+    return { text: lines.slice(start, end).join("\n"), endLine: end };
+}
 
-    while ((match = phaseHeaderGlobal.exec(content)) !== null) {
-        const num = parseInt(match[1], 10);
-        if (num === phaseNumber) {
-            phaseStart = match.index;
-        } else if (phaseStart >= 0 && nextPhaseStart < 0) {
-            nextPhaseStart = match.index;
-            break;
+// ─── Status updates ─────────────────────────────────────
+
+/** Update the **Status:** field within a step's section. */
+export function updateStepStatus(content: string, stepNumber: number, newStatus: string): string {
+    return updateSectionStatus(
+        content,
+        new RegExp(`^### Step ${stepNumber}:\\s*.+$`, "m"),
+        newStatus,
+    );
+}
+
+/** Update the **Status:** field within a checkpoint's section. */
+export function updateCheckpointStatus(content: string, name: string, newStatus: string): string {
+    return updateSectionStatus(
+        content,
+        new RegExp(`^### Checkpoint:\\s*${escapeRegex(name)}\\s*$`, "m"),
+        newStatus,
+    );
+}
+
+function updateSectionStatus(content: string, headerRe: RegExp, newStatus: string): string {
+    const match = headerRe.exec(content);
+    if (!match || match.index === undefined) return content;
+
+    const start = match.index;
+    const rest = content.slice(start + match[0].length);
+    const nextMatch = rest.match(/^### (?:Step \d+:|Checkpoint:)/m);
+    const end = nextMatch && nextMatch.index !== undefined
+        ? start + match[0].length + nextMatch.index
+        : content.length;
+
+    const before = content.slice(0, start);
+    const section = content.slice(start, end);
+    const after = content.slice(end);
+
+    return before + section.replace(STATUS_RE, `**Status:** ${newStatus}`) + after;
+}
+
+function escapeRegex(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// ─── Navigation ─────────────────────────────────────────
+
+/** First pending or failed item in the plan. */
+export function nextActionableItem(plan: Plan): PlanItem | null {
+    return plan.items.find((item) => item.status === "pending" || item.status === "failed") ?? null;
+}
+
+/** First pending or failed step (skips checkpoints). */
+export function nextActionableStep(plan: Plan): Step | null {
+    for (const item of plan.items) {
+        if (isStep(item) && (item.status === "pending" || item.status === "failed")) {
+            return item;
         }
     }
-
-    if (phaseStart < 0) return content;
-
-    const sectionEnd = nextPhaseStart >= 0 ? nextPhaseStart : content.length;
-    const before = content.slice(0, phaseStart);
-    const section = content.slice(phaseStart, sectionEnd);
-    const after = content.slice(sectionEnd);
-
-    const updatedSection = section.replace(STATUS_RE, `**Status:** ${newStatus}`);
-    return before + updatedSection + after;
-}
-
-/**
- * Return the first actionable phase: first pending, then first failed, else null.
- */
-export function nextActionablePhase(plan: Plan): Phase | null {
-    const pending = plan.phases.find((p) => p.status === "pending");
-    if (pending) return pending;
-
-    const failed = plan.phases.find((p) => p.status === "failed");
-    if (failed) return failed;
-
     return null;
 }
 
-/**
- * Scan output for "Verdict: PASS" or "Verdict: FAIL".
- */
+// ─── Validator output parsing ───────────────────────────
+
+/** Scan output for "Verdict: PASS" or "Verdict: FAIL". */
 export function parseVerdict(output: string): "PASS" | "FAIL" | "UNKNOWN" {
     if (/Verdict:\s*PASS/i.test(output)) return "PASS";
     if (/Verdict:\s*FAIL/i.test(output)) return "FAIL";
     return "UNKNOWN";
 }
 
-/**
- * Extract the "## Failures" section content from validator output.
- * Returns everything between "## Failures" and the next heading or end of string.
- */
+/** Extract the "## Failures" section from validator output. */
 export function extractFailures(output: string): string {
-    const failureMatch = output.match(/## Failures\n([\s\S]*?)(?=\n##\s|\n$|$)/);
-    return failureMatch ? failureMatch[1].trim() : "";
+    const match = output.match(/## Failures\n([\s\S]*?)(?=\n##\s|\n$|$)/);
+    return match ? match[1].trim() : "";
 }

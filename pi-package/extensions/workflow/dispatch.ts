@@ -25,6 +25,7 @@ export interface UsageStats {
 export interface ProgressUpdate {
     text: string;
     toolCalls: string[];
+    usage: UsageStats;
 }
 
 export interface AgentResult {
@@ -205,6 +206,7 @@ export async function dispatchAgent(options: DispatchOptions): Promise<AgentResu
                 onProgress({
                     text: getFinalOutput(result.messages) || "(running...)",
                     toolCalls: getToolCallNames(result.messages),
+                    usage: { ...result.usage },
                 });
             }
         };

@@ -1,81 +1,135 @@
 ---
 name: workflow
-description: Structured plan→execute→validate workflow for agent-driven development. Use when planning multi-phase work that will be handed off to execution agents.
+description: Structured plan→execute→validate workflow for agent-driven development. Use when planning multi-step work that will be handed off to execution agents.
 ---
 
 # Workflow
 
 Methodology for planning work that agents can execute autonomously.
 
-## Core Principle: Testability IS the Architecture
+## Core Principle: Clean Context, Atomic Work
 
-Phases aren't just logical groupings — they're testability boundaries.
-If you can't test a phase independently, it's not a phase, it's a step
-inside a larger phase.
+Every spawned agent gets a fresh context window and does ONE thing.
+The orchestrator iterates. The agent focuses.
 
-The testing pyramid for agent-driven work:
-1. **Unit**: Individual functions/components have tests
-2. **Integration**: Components work together (API calls, DB queries)
-3. **System**: The whole thing works end-to-end (browser, full stack)
+Compaction is the enemy — once context gets summarized, reasoning
+quality drops. The benchmark: **<40% context usage per task**.
 
-Each phase should target one level of the pyramid primarily, building
-confidence from the bottom up.
+If an agent needs to read the plan context, read relevant files,
+implement, and verify — all of that combined must stay under 40%.
 
 ## Planning Methodology
 
-### Phase Design
+### Step Design
 
-Ask for every proposed phase:
-1. **Can I test this independently?** If no, merge with adjacent phase or restructure.
-2. **What proves this works?** This becomes the validation script.
-3. **What infrastructure does testing need?** This becomes validation setup.
-4. **What could fail that tests won't catch?** This becomes the validator's inspection checklist.
+The step is the atomic unit of execution. Each step gets its own
+agent spawn with a clean context window.
 
-### Validation Script Design
+Ask for every proposed step:
+1. **Is this ONE thing?** If it has "and" in it, split it.
+2. **Can an agent do this under 40% context?** Estimate the token cost: reading context + reading files + reasoning + output. All under budget.
+3. **What proves this works?** A single bash command that returns 0.
+4. **What does the agent need to know?** Just enough context, not the whole codebase.
 
-Validation scripts are the most important artifact. They must be:
-- **Executable**: `bash .plan/validate-phase-N.sh` runs without arguments
-- **Self-contained**: Sets up what it needs, cleans up after
-- **Fast**: Under 60 seconds ideally (agents will run these repeatedly)
-- **Specific**: Tests the phase's changes, not the whole system
-- **Exit-code honest**: 0 = pass, non-zero = fail, output explains what failed
+### Step Sizing
 
-### Validation Types (by reliability)
+Size by estimated token cost and reasoning complexity:
 
-1. **Automated tests**: Most reliable. `npm test --testPathPattern=X`
-2. **Type checking**: Structural correctness. `tsc --noEmit`
-3. **Lint/format**: Style consistency. `eslint`, `prettier --check`
-4. **Build**: Compiles cleanly. `npm run build`
-5. **Integration**: API/DB checks. Need server/DB running.
-6. **Browser**: UI checks via agent-browser. Need running app.
-7. **Code inspection**: Agent reads and assesses. Least reliable.
+- The agent reads: plan context (~500 words) + step instruction (~100 words) + relevant source files
+- The agent reasons: how complex is the logic? Simple wiring = cheap. Algorithm design = expensive.
+- The agent writes: implementation output
+- The agent verifies: check command output
+- **Total must stay under 40% of context window**
 
-Put 1-4 in the validation script. 5-6 in the script if infrastructure
-is scriptable. 7 is what the validator agent adds on top.
+Reasoning complexity is the key variable:
+- Simple boilerplate (rename, add field, wire up import) → low reasoning cost, step can cover more ground
+- Complex logic (state machines, parsers, concurrent patterns) → high reasoning cost, step must be smaller
+- Multiple interacting concerns → split into separate steps even if each is small
 
-### Right-Sizing Phases
+If the agent would need to hold two complex things in mind at once, it's two steps.
 
-- Too small: agent startup overhead > work done
-- Too large: agent hits context limits, quality degrades
-- Sweet spot: 20-60 minutes of human-equivalent work
-- Rule of thumb: one testability boundary per phase
-- If the validation script has more than 10 checks, the phase is too big
+### Check Commands
+
+Every step has a `Check` field — a bash command that returns 0 on success:
+
+- `tsc --noEmit` — types check
+- `grep -q 'export function createUser' src/models/user.ts` — expected export exists
+- `npm test -- --testPathPattern=user.test` — specific test passes
+- `curl -s localhost:3000/health | jq -e .status` — endpoint responds
+
+Keep checks fast and focused on the step's specific change.
+
+### Checkpoints
+
+Checkpoints are integration validation boundaries between groups of related steps.
+They run a validation script that tests the combined effect:
+
+- Place after a natural integration boundary (data layer done, API layer done, etc.)
+- Script tests that the steps work together, not individually
+- The orchestrator runs checkpoint scripts directly — no agent spawn needed
+- If a checkpoint fails, execution stops for human review
+
+### Plan Format
+
+```markdown
+# Plan: [title]
+
+## Context
+[200-500 words — project state, goal, constraints.
+This is what every agent reads for orientation.
+Keep it dense with signal, not padded with filler.]
+
+## Steps
+
+### Step 1: [name]
+**Status:** pending
+**Do:** [atomic instruction — what to implement/change]
+**Check:** `[bash command returning 0 on success]`
+
+### Step 2: [name]
+**Status:** pending
+**Do:** [atomic instruction]
+**Check:** `[bash command]`
+
+### Checkpoint: [milestone name]
+**Status:** pending
+**Script:** `.plan/validate-[name].sh`
+
+### Step 3: [name]
+**Status:** pending
+**Do:** [atomic instruction]
+**Check:** `[bash command]`
+```
 
 ### Context Budget
 
-Each agent (executor, validator) gets a fresh context window.
-The plan file + relevant codebase reading should stay under 40%.
+Each agent gets a fresh context window. Budget allocation:
+
+- Plan context section: ~500 words (read once from task prompt)
+- Step instruction: ~100 words
+- File reads: 1-3 files the agent discovers it needs
+- Reasoning: depends on complexity — this is the variable cost
+- Implementation: the actual code output
+- Verification: check command output
+
+**Total target: <40% context usage.**
+
+The plan file itself is NOT read by executors — the orchestrator injects
+only the context section + the specific step into the task prompt.
+This keeps executor context lean.
 
 Keep the plan file concise:
 - Context section: 200-500 words
-- Per-phase: 100-300 words
-- Total plan: under 3000 words (ideally under 2000)
+- Per-step: 50-150 words
+- Total plan: under 3000 words
 - Let agents discover code via search, don't paste it in the plan
 
 ### Common Pitfalls
 
-- **Vague validation**: "Check that it works" → useless. Be specific.
-- **Missing setup**: Validation needs a DB but setup isn't scripted → agent can't validate.
-- **Coupled phases**: Phase 3 can't be tested without phase 2's uncommitted changes → merge them.
-- **Over-specified tasks**: Listing every file to touch → agent can discover this. Specify the WHAT, not the HOW.
-- **Under-specified validation**: Only testing happy path → agent misses edge cases.
+- **Fat steps**: "Create the model and add validation and write tests" → three steps.
+- **Vague checks**: "Verify it works" → useless. Concrete bash command.
+- **Over-specified**: Listing every line to write → agent can figure out HOW. Specify the WHAT.
+- **Under-specified check**: No check command → no automated verification.
+- **Too much context**: Pasting file contents in the plan → agent should read files itself.
+- **Coupled steps**: Step 3 can't verify without step 2's uncommitted changes → reorder or merge.
+- **Underestimating reasoning cost**: A "simple" step that requires understanding 5 interacting modules is not simple.

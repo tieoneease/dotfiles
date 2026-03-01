@@ -2,25 +2,37 @@
  * Workflow Extension — /wf command
  *
  * Orchestrates plan→execute→validate development loops.
- * Delegates execution to spawned pi subprocesses via dispatch module.
+ * Spawns one agent per atomic step with a clean context window.
+ * The orchestrator iterates — agents focus on one thing.
  *
  * Subcommands:
  *   /wf plan <goal>    — Enter planning mode (read-only tools)
  *   /wf write          — Exit planning, agent writes .plan/plan.md
- *   /wf exec [phase]   — Execute and validate phases autonomously
- *   /wf validate [phase] — Run standalone validation
- *   /wf status         — Show phase statuses
+ *   /wf exec [step]    — Execute all remaining steps (optionally start from given step)
+ *   /wf validate [step] — Run a step's check command or checkpoint script
+ *   /wf status         — Show step statuses
  *   /wf (no args)      — Status if plan exists, else start planning
  */
 
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import { exec as execCb } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 
-import { parsePlan, updatePhaseStatus, nextActionablePhase, parseVerdict, extractFailures } from "./plan.js";
+import {
+    parsePlan,
+    updateStepStatus,
+    updateCheckpointStatus,
+    isStep,
+    isCheckpoint,
+    getSteps,
+    type Step,
+    type Checkpoint,
+    type Plan,
+} from "./plan.js";
 import { dispatchAgent, loadAgentDefinition } from "./dispatch.js";
-import { renderWidget, renderStatus, type WorkflowState } from "./progress.js";
+import { renderWidget, renderStatus, type WorkflowState, type WorkerInfo } from "./progress.js";
 
 // ─── Constants ──────────────────────────────────────────
 
@@ -28,6 +40,7 @@ const PLAN_FILE = ".plan/plan.md";
 const PLAN_DIR = ".plan";
 const AGENTS_DIR = path.join(os.homedir(), ".pi", "agent", "agents");
 const MAX_RETRIES = 2;
+const CHECK_TIMEOUT_MS = 60_000;
 
 const PLANNING_TOOLS = ["read", "bash", "grep", "find", "ls", "questionnaire"];
 
@@ -57,17 +70,37 @@ function isDestructiveCommand(command: string): boolean {
     return DESTRUCTIVE_PATTERNS.some((p) => p.test(command));
 }
 
+// ─── Check runner ───────────────────────────────────────
+
+/** Run a bash command and return exit code + output. */
+function runCheck(command: string, cwd: string): Promise<{ exitCode: number; output: string }> {
+    return new Promise((resolve) => {
+        execCb(command, { cwd, timeout: CHECK_TIMEOUT_MS, maxBuffer: 1024 * 1024, shell: "/bin/bash" }, (err, stdout, stderr) => {
+            const output = `${stdout || ""}${stderr ? "\n" + stderr : ""}`.trim();
+            if (!err) {
+                resolve({ exitCode: 0, output });
+            } else if (typeof (err as any).code === "number") {
+                resolve({ exitCode: (err as any).code, output });
+            } else {
+                resolve({ exitCode: 1, output: output || err.message });
+            }
+        });
+    });
+}
+
 // ─── Extension ──────────────────────────────────────────
 
 export default function workflowExtension(pi: ExtensionAPI): void {
     // ─── State ──────────────────────────────────────────
     let state: WorkflowState = {
         planningMode: false,
-        currentPhase: null,
+        currentStep: null,
+        currentCheckpoint: null,
         retryCount: 0,
     };
 
     let planningGoal = "";
+    let workerInfo: WorkerInfo | null = null;
 
     // ─── Helpers ────────────────────────────────────────
 
@@ -76,16 +109,14 @@ export default function workflowExtension(pi: ExtensionAPI): void {
     }
 
     function updateUI(ctx: ExtensionContext): void {
-        // Footer status
         ctx.ui.setStatus("workflow", renderStatus(state, ctx.ui.theme));
 
-        // Widget — only show when we have a plan and are executing
-        if (state.currentPhase !== null) {
+        if (state.currentStep !== null || state.currentCheckpoint !== null) {
             const planPath = path.resolve(ctx.cwd, PLAN_FILE);
             try {
                 const content = fs.readFileSync(planPath, "utf-8");
                 const plan = parsePlan(content);
-                ctx.ui.setWidget("workflow", renderWidget(plan, state, ctx.ui.theme));
+                ctx.ui.setWidget("workflow", renderWidget(plan, state, ctx.ui.theme, workerInfo));
             } catch {
                 ctx.ui.setWidget("workflow", undefined);
             }
@@ -97,9 +128,8 @@ export default function workflowExtension(pi: ExtensionAPI): void {
     }
 
     function readPlanFile(cwd: string): string | null {
-        const planPath = path.resolve(cwd, PLAN_FILE);
         try {
-            return fs.readFileSync(planPath, "utf-8");
+            return fs.readFileSync(path.resolve(cwd, PLAN_FILE), "utf-8");
         } catch {
             return null;
         }
@@ -131,140 +161,281 @@ export default function workflowExtension(pi: ExtensionAPI): void {
         updateUI(ctx);
     }
 
-    // ─── Execute Phase Loop ─────────────────────────────
+    // ─── Execute Step ───────────────────────────────────
 
-    async function executePhaseLoop(
-        phaseNumber: number,
+    /**
+     * Execute a single step: spawn executor, verify check, retry on failure.
+     * Each attempt gets a clean context window.
+     */
+    async function executeStep(
+        step: Step,
+        planContext: string,
+        executorDef: ReturnType<typeof loadAgentDefinition> & {},
+        cwd: string,
+        ctx: ExtensionContext,
+    ): Promise<boolean> {
+        let lastFailure = "";
+
+        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            state.currentStep = step.number;
+            state.retryCount = attempt;
+            persistState();
+
+            // Update plan status
+            let content = readPlanFile(cwd)!;
+            content = updateStepStatus(content, step.number, "in-progress");
+            writePlanFile(cwd, content);
+            updateUI(ctx);
+
+            // Build focused task prompt — context + one step, nothing else
+            let task: string;
+            if (attempt === 0) {
+                task = [
+                    "## Context",
+                    planContext,
+                    "",
+                    `## Your Task`,
+                    `Step ${step.number}: ${step.name}`,
+                    "",
+                    `**Do:** ${step.do}`,
+                    step.check ? `\n**Check:** \`${step.check}\`\n\nImplement this step, then run the check command to verify. If the check fails, fix the issue and re-run.` : "\nImplement this step.",
+                ].join("\n");
+            } else {
+                task = [
+                    "## Context",
+                    planContext,
+                    "",
+                    `## Retry — Step ${step.number}: ${step.name}`,
+                    "",
+                    `Previous attempt failed. Check output:`,
+                    "```",
+                    lastFailure.slice(0, 2000),
+                    "```",
+                    "",
+                    `**Do:** ${step.do}`,
+                    step.check ? `\n**Check:** \`${step.check}\`\n\nFix the issue and ensure the check passes.` : "\nFix the issue.",
+                ].join("\n");
+            }
+
+            ctx.ui.notify(`⏳ Step ${step.number}: ${step.name}${attempt > 0 ? ` (retry ${attempt})` : ""}`, "info");
+
+            // Spawn executor — clean context window, atomic task
+            await dispatchAgent({
+                agent: "executor",
+                task,
+                cwd,
+                model: executorDef.model || undefined,
+                tools: executorDef.tools.length > 0 ? executorDef.tools : undefined,
+                systemPrompt: executorDef.systemPrompt || undefined,
+                onProgress: (update) => {
+                    workerInfo = {
+                        toolCalls: update.toolCalls,
+                        usage: { input: update.usage.input, output: update.usage.output, turns: update.usage.turns, cost: update.usage.cost },
+                    };
+                    updateUI(ctx);
+                },
+            });
+            workerInfo = null;
+
+            // Orchestrator independently verifies the check command
+            if (step.check) {
+                const checkResult = await runCheck(step.check, cwd);
+                if (checkResult.exitCode === 0) {
+                    content = readPlanFile(cwd)!;
+                    content = updateStepStatus(content, step.number, "validated");
+                    writePlanFile(cwd, content);
+                    state.currentStep = null;
+                    state.retryCount = 0;
+                    persistState();
+                    updateUI(ctx);
+                    ctx.ui.notify(`✅ Step ${step.number}: ${step.name}`, "info");
+                    return true;
+                }
+                lastFailure = checkResult.output;
+            } else {
+                // No check command — trust executor
+                content = readPlanFile(cwd)!;
+                content = updateStepStatus(content, step.number, "validated");
+                writePlanFile(cwd, content);
+                state.currentStep = null;
+                state.retryCount = 0;
+                persistState();
+                updateUI(ctx);
+                ctx.ui.notify(`✅ Step ${step.number}: ${step.name}`, "info");
+                return true;
+            }
+        }
+
+        // All retries exhausted
+        let content = readPlanFile(cwd)!;
+        content = updateStepStatus(content, step.number, "failed");
+        writePlanFile(cwd, content);
+        state.currentStep = null;
+        state.retryCount = 0;
+        persistState();
+        updateUI(ctx);
+
+        const reportPath = path.resolve(cwd, PLAN_DIR, `step-${step.number}-failure.md`);
+        fs.writeFileSync(reportPath, [
+            `# Step ${step.number} Failure: ${step.name}`,
+            "",
+            `**Failed after ${MAX_RETRIES + 1} attempts**`,
+            "",
+            "## Last Check Output",
+            "```",
+            lastFailure || "(none)",
+            "```",
+            "",
+        ].join("\n"));
+
+        ctx.ui.notify(`❌ Step ${step.number}: ${step.name} — failed after ${MAX_RETRIES + 1} attempts. See ${reportPath}`, "error");
+        return false;
+    }
+
+    // ─── Run Checkpoint ─────────────────────────────────
+
+    /**
+     * Run a checkpoint's integration script directly (no agent spawn).
+     * Checkpoints verify the combined effect of preceding steps.
+     */
+    async function runCheckpointValidation(
+        checkpoint: Checkpoint,
+        cwd: string,
+        ctx: ExtensionContext,
+    ): Promise<boolean> {
+        state.currentCheckpoint = checkpoint.name;
+        persistState();
+
+        let content = readPlanFile(cwd)!;
+        content = updateCheckpointStatus(content, checkpoint.name, "in-progress");
+        writePlanFile(cwd, content);
+        updateUI(ctx);
+
+        ctx.ui.notify(`🔍 Checkpoint: ${checkpoint.name}`, "info");
+
+        const result = await runCheck(`bash ${checkpoint.script}`, cwd);
+        content = readPlanFile(cwd)!;
+
+        if (result.exitCode === 0) {
+            content = updateCheckpointStatus(content, checkpoint.name, "validated");
+            writePlanFile(cwd, content);
+            state.currentCheckpoint = null;
+            persistState();
+            updateUI(ctx);
+            ctx.ui.notify(`✅ Checkpoint: ${checkpoint.name}`, "info");
+            return true;
+        }
+
+        // Checkpoint failed
+        content = updateCheckpointStatus(content, checkpoint.name, "failed");
+        writePlanFile(cwd, content);
+        state.currentCheckpoint = null;
+        persistState();
+        updateUI(ctx);
+
+        const safeName = checkpoint.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        const reportPath = path.resolve(cwd, PLAN_DIR, `checkpoint-${safeName}-failure.md`);
+        fs.writeFileSync(reportPath, [
+            `# Checkpoint Failure: ${checkpoint.name}`,
+            "",
+            `## Script: ${checkpoint.script}`,
+            "",
+            "## Output",
+            "```",
+            result.output,
+            "```",
+            "",
+        ].join("\n"));
+
+        ctx.ui.notify(`❌ Checkpoint: ${checkpoint.name}\n${result.output.slice(0, 500)}`, "error");
+        return false;
+    }
+
+    // ─── Execute Loop ───────────────────────────────────
+
+    /**
+     * Execute all items sequentially from a starting point.
+     * Steps spawn one agent each. Checkpoints run scripts directly.
+     * Stops on first failure.
+     */
+    async function executeLoop(
+        startFromStep: number | null,
         cwd: string,
         ctx: ExtensionContext,
     ): Promise<void> {
-        const content = readPlanFile(cwd);
+        let content = readPlanFile(cwd);
         if (!content) {
             ctx.ui.notify("No .plan/plan.md found", "error");
             return;
         }
 
         let plan = parsePlan(content);
-        const phase = plan.phases.find((p) => p.number === phaseNumber);
-        if (!phase) {
-            ctx.ui.notify(`Phase ${phaseNumber} not found`, "error");
+        if (plan.items.length === 0) {
+            ctx.ui.notify("No steps in plan", "error");
             return;
         }
 
-        // Load agent definitions
+        // Already done?
+        const remaining = plan.items.filter((i) => i.status !== "validated");
+        if (remaining.length === 0) {
+            ctx.ui.notify("🎉 All steps and checkpoints already validated!", "info");
+            return;
+        }
+
         const executorDef = loadAgentDefinition("executor", AGENTS_DIR);
-        const validatorDef = loadAgentDefinition("validator", AGENTS_DIR);
         if (!executorDef) {
             ctx.ui.notify("executor agent not found. Run pi_setup.sh to deploy agents.", "error");
             return;
         }
-        if (!validatorDef) {
-            ctx.ui.notify("validator agent not found. Run pi_setup.sh to deploy agents.", "error");
-            return;
+
+        // Warn if skipping unvalidated steps
+        if (startFromStep !== null) {
+            const skipped = getSteps(plan).filter((s) => s.number < startFromStep && s.status !== "validated");
+            if (skipped.length > 0) {
+                ctx.ui.notify(`⚠️ Steps ${skipped.map((s) => s.number).join(", ")} are not validated. Starting from step ${startFromStep} anyway.`, "warning");
+            }
         }
 
-        // Update status to in-progress
-        state.currentPhase = phaseNumber;
-        state.retryCount = 0;
-        let planContent = updatePhaseStatus(content, phaseNumber, "in-progress");
-        writePlanFile(cwd, planContent);
+        // null = start from the top, skip validated items
+        let started = startFromStep === null;
+
+        for (const item of plan.items) {
+            // Skip until we reach the start point
+            if (!started) {
+                if (isStep(item) && item.number === startFromStep) {
+                    started = true;
+                } else {
+                    continue;
+                }
+            }
+
+            // Skip already validated
+            if (item.status === "validated") continue;
+
+            if (isStep(item)) {
+                const success = await executeStep(item, plan.context, executorDef, cwd, ctx);
+                if (!success) {
+                    ctx.ui.notify(`Execution stopped at Step ${item.number}: ${item.name}`, "error");
+                    return;
+                }
+            } else if (isCheckpoint(item)) {
+                const success = await runCheckpointValidation(item, cwd, ctx);
+                if (!success) {
+                    ctx.ui.notify(`Execution stopped at Checkpoint: ${item.name}`, "error");
+                    return;
+                }
+            }
+
+            // Re-read plan to pick up status updates
+            content = readPlanFile(cwd) || content;
+            plan = parsePlan(content);
+        }
+
+        state.currentStep = null;
+        state.currentCheckpoint = null;
         persistState();
         updateUI(ctx);
-
-        const executorTask = `Read the plan file at ${PLAN_FILE} and implement Phase ${phaseNumber}: ${phase.name}.\n\nGoal: ${phase.goal}\n\nTasks:\n${phase.tasks.map((t, i) => `${i + 1}. ${t}`).join("\n")}${phase.validationScript ? `\n\nAfter implementing, run the validation script: bash ${phase.validationScript}` : ""}`;
-
-        // Executor dispatch
-        ctx.ui.notify(`⚡ Executing Phase ${phaseNumber}: ${phase.name}`, "info");
-        const execResult = await dispatchAgent({
-            agent: "executor",
-            task: executorTask,
-            cwd,
-            model: executorDef.model || undefined,
-            tools: executorDef.tools.length > 0 ? executorDef.tools : undefined,
-            systemPrompt: executorDef.systemPrompt || undefined,
-            onProgress: (_update) => {
-                updateUI(ctx);
-            },
-        });
-
-        // Update status to done
-        planContent = readPlanFile(cwd) || planContent;
-        planContent = updatePhaseStatus(planContent, phaseNumber, "done");
-        writePlanFile(cwd, planContent);
-        updateUI(ctx);
-
-        // Validation loop with retries
-        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-            state.retryCount = attempt;
-            persistState();
-            updateUI(ctx);
-
-            const validatorTask = `Read the plan file at ${PLAN_FILE} and validate Phase ${phaseNumber}: ${phase.name}.\n\nGoal: ${phase.goal}${phase.validationScript ? `\n\nRun the validation script: bash ${phase.validationScript}` : ""}\n\nAfter validation, output exactly one of:\n  Verdict: PASS\n  Verdict: FAIL\n\nIf FAIL, include a "## Failures" section describing what failed.`;
-
-            ctx.ui.notify(`🔍 Validating Phase ${phaseNumber} (attempt ${attempt + 1})`, "info");
-            const valResult = await dispatchAgent({
-                agent: "validator",
-                task: validatorTask,
-                cwd,
-                model: validatorDef.model || undefined,
-                tools: validatorDef.tools.length > 0 ? validatorDef.tools : undefined,
-                systemPrompt: validatorDef.systemPrompt || undefined,
-                onProgress: (_update) => {
-                    updateUI(ctx);
-                },
-            });
-
-            const verdict = parseVerdict(valResult.output);
-
-            if (verdict === "PASS") {
-                planContent = readPlanFile(cwd) || planContent;
-                planContent = updatePhaseStatus(planContent, phaseNumber, "validated");
-                writePlanFile(cwd, planContent);
-                state.currentPhase = null;
-                state.retryCount = 0;
-                persistState();
-                updateUI(ctx);
-                ctx.ui.notify(`✅ Phase ${phaseNumber}: ${phase.name} — validated!`, "info");
-                return;
-            }
-
-            // FAIL or UNKNOWN
-            if (attempt < MAX_RETRIES) {
-                const failures = extractFailures(valResult.output);
-                const retryTask = `Read the plan file at ${PLAN_FILE}. Phase ${phaseNumber}: ${phase.name} failed validation.\n\nFailure details:\n${failures || valResult.output}\n\nFix the issues and re-run the validation script.`;
-
-                ctx.ui.notify(`⚠️ Phase ${phaseNumber} validation failed. Retrying (${attempt + 1}/${MAX_RETRIES})...`, "warning");
-                await dispatchAgent({
-                    agent: "executor",
-                    task: retryTask,
-                    cwd,
-                    model: executorDef.model || undefined,
-                    tools: executorDef.tools.length > 0 ? executorDef.tools : undefined,
-                    systemPrompt: executorDef.systemPrompt || undefined,
-                    onProgress: (_update) => {
-                        updateUI(ctx);
-                    },
-                });
-            } else {
-                // Max retries exhausted
-                planContent = readPlanFile(cwd) || planContent;
-                planContent = updatePhaseStatus(planContent, phaseNumber, "failed");
-                writePlanFile(cwd, planContent);
-                state.currentPhase = null;
-                state.retryCount = 0;
-                persistState();
-                updateUI(ctx);
-
-                // Write failure report
-                const failures = extractFailures(valResult.output);
-                const reportPath = path.resolve(cwd, PLAN_DIR, `phase-${phaseNumber}-failure.md`);
-                const report = `# Phase ${phaseNumber} Failure Report: ${phase.name}\n\n**Status:** failed after ${MAX_RETRIES + 1} attempts\n\n## Validator Output\n\n${valResult.output}\n\n## Extracted Failures\n\n${failures || "(none extracted)"}\n\n## Executor Final Output\n\n${execResult.output}\n`;
-                fs.writeFileSync(reportPath, report, "utf-8");
-
-                ctx.ui.notify(`❌ Phase ${phaseNumber}: ${phase.name} — failed after ${MAX_RETRIES + 1} attempts. See ${reportPath}`, "error");
-                return;
-            }
-        }
+        ctx.ui.notify("🎉 All steps completed!", "info");
     }
 
     // ─── Show Status ────────────────────────────────────
@@ -277,13 +448,19 @@ export default function workflowExtension(pi: ExtensionAPI): void {
         }
 
         const plan = parsePlan(content);
-        const lines = plan.phases.map((p) => {
-            const icon = p.status === "validated" ? "✅"
-                : p.status === "done" ? "✓"
-                : p.status === "in-progress" ? "⏳"
-                : p.status === "failed" ? "❌"
-                : "·";
-            return `  ${icon} Phase ${p.number}: ${p.name} — ${p.status}`;
+        const lines = plan.items.map((item) => {
+            if (isStep(item)) {
+                const icon = item.status === "validated" ? "✅"
+                    : item.status === "in-progress" ? "⏳"
+                    : item.status === "failed" ? "❌"
+                    : "·";
+                return `  ${icon} Step ${item.number}: ${item.name} — ${item.status}`;
+            } else {
+                const icon = item.status === "validated" ? "◆"
+                    : item.status === "failed" ? "✗"
+                    : "◇";
+                return `  ${icon} Checkpoint: ${item.name} — ${item.status}`;
+            }
         });
 
         ctx.ui.notify(`📋 ${plan.title}\n${lines.join("\n")}`, "info");
@@ -302,7 +479,7 @@ export default function workflowExtension(pi: ExtensionAPI): void {
                 case "plan": {
                     const goal = rest || "Plan the current project";
                     enterPlanningMode(goal, ctx);
-                    pi.sendUserMessage(`/skill:workflow\n\nPlanning goal: ${goal}\n\nExplore the codebase and create a detailed, phased plan. Each phase must have a clear validation strategy with executable test scripts.`);
+                    pi.sendUserMessage(`/skill:workflow\n\nPlanning goal: ${goal}\n\nExplore the codebase and design atomic steps. Each step must be sized so a fresh agent can complete it under 40% context usage. Think about token cost and reasoning complexity, not time.`);
                     break;
                 }
 
@@ -312,38 +489,37 @@ export default function workflowExtension(pi: ExtensionAPI): void {
                         return;
                     }
                     exitPlanningMode(ctx);
-                    pi.sendUserMessage(`Now write the plan to .plan/plan.md using the format from the workflow skill.\n\nRequirements:\n- Follow the exact markdown format: # Plan title, ### Phase N: Name, **Status:** pending, **Goal:**, **Tasks:**, **Validation:**\n- Each phase needs a validation script at .plan/validate-phase-N.sh\n- Write the validation scripts too (they should be executable bash scripts)\n- Make validation scripts thorough — they're the contract for automated execution\n- Mark all phases as **Status:** pending`);
+                    pi.sendUserMessage([
+                        "Now write the plan to .plan/plan.md using the exact format from the workflow skill.",
+                        "",
+                        "Requirements:",
+                        "- # Plan: [title]",
+                        "- ## Context section (200-500 words — project state, goal, enough for a fresh agent to orient)",
+                        "- ## Steps section with flat, ordered steps",
+                        "- ### Step N: [name] with **Status:** pending, **Do:** [instruction], **Check:** `[command]`",
+                        "- ### Checkpoint: [name] with **Status:** pending, **Script:** `.plan/validate-[name].sh` at integration boundaries",
+                        "- Write all checkpoint validation scripts (executable bash, exit 0 on success)",
+                        "- Each step must be atomic: one agent, one clean context window, <40% usage",
+                        "- Size by token cost and reasoning complexity — simple boilerplate can be bigger, complex logic must be smaller",
+                        "- Check commands: fast bash one-liners that return 0 on success",
+                        "- Mark everything **Status:** pending",
+                    ].join("\n"));
                     break;
                 }
 
                 case "exec": {
-                    const phaseNum = rest ? parseInt(rest, 10) : null;
-                    const content = readPlanFile(ctx.cwd);
-                    if (!content) {
+                    const stepNum = rest ? parseInt(rest, 10) : null;
+                    if (!readPlanFile(ctx.cwd)) {
                         ctx.ui.notify("No .plan/plan.md found. Create a plan first.", "error");
                         return;
                     }
-
-                    const plan = parsePlan(content);
-                    let targetPhase: number;
-
-                    if (phaseNum !== null && !isNaN(phaseNum)) {
-                        targetPhase = phaseNum;
-                    } else {
-                        const next = nextActionablePhase(plan);
-                        if (!next) {
-                            ctx.ui.notify("All phases are complete or validated!", "info");
-                            return;
-                        }
-                        targetPhase = next.number;
-                    }
-
-                    await executePhaseLoop(targetPhase, ctx.cwd, ctx);
+                    // null = run everything from the top, skip validated
+                    await executeLoop(stepNum ?? null, ctx.cwd, ctx);
                     break;
                 }
 
                 case "validate": {
-                    const phaseNum = rest ? parseInt(rest, 10) : null;
+                    const stepNum = rest ? parseInt(rest, 10) : null;
                     const content = readPlanFile(ctx.cwd);
                     if (!content) {
                         ctx.ui.notify("No .plan/plan.md found.", "error");
@@ -351,60 +527,47 @@ export default function workflowExtension(pi: ExtensionAPI): void {
                     }
 
                     const plan = parsePlan(content);
-                    let targetPhase: number;
 
-                    if (phaseNum !== null && !isNaN(phaseNum)) {
-                        targetPhase = phaseNum;
-                    } else {
-                        const next = nextActionablePhase(plan);
-                        if (!next) {
-                            ctx.ui.notify("No phases to validate.", "info");
+                    if (stepNum !== null && !isNaN(stepNum)) {
+                        // Validate specific step
+                        const step = getSteps(plan).find((s) => s.number === stepNum);
+                        if (!step) {
+                            ctx.ui.notify(`Step ${stepNum} not found.`, "error");
                             return;
                         }
-                        targetPhase = next.number;
-                    }
+                        if (!step.check) {
+                            ctx.ui.notify(`Step ${stepNum} has no check command.`, "warning");
+                            return;
+                        }
 
-                    const phase = plan.phases.find((p) => p.number === targetPhase);
-                    if (!phase) {
-                        ctx.ui.notify(`Phase ${targetPhase} not found.`, "error");
-                        return;
-                    }
+                        ctx.ui.notify(`🔍 Running check for Step ${stepNum}: ${step.name}`, "info");
+                        const result = await runCheck(step.check, ctx.cwd);
 
-                    const validatorDef = loadAgentDefinition("validator", AGENTS_DIR);
-                    if (!validatorDef) {
-                        ctx.ui.notify("validator agent not found. Run pi_setup.sh to deploy agents.", "error");
-                        return;
-                    }
-
-                    state.currentPhase = targetPhase;
-                    persistState();
-                    updateUI(ctx);
-
-                    ctx.ui.notify(`🔍 Validating Phase ${targetPhase}: ${phase.name}`, "info");
-                    const valResult = await dispatchAgent({
-                        agent: "validator",
-                        task: `Read the plan file at ${PLAN_FILE} and validate Phase ${targetPhase}: ${phase.name}.\n\nGoal: ${phase.goal}${phase.validationScript ? `\n\nRun the validation script: bash ${phase.validationScript}` : ""}\n\nAfter validation, output exactly one of:\n  Verdict: PASS\n  Verdict: FAIL\n\nIf FAIL, include a "## Failures" section describing what failed.`,
-                        cwd: ctx.cwd,
-                        model: validatorDef.model || undefined,
-                        tools: validatorDef.tools.length > 0 ? validatorDef.tools : undefined,
-                        systemPrompt: validatorDef.systemPrompt || undefined,
-                    });
-
-                    const verdict = parseVerdict(valResult.output);
-                    let planContent = readPlanFile(ctx.cwd) || content;
-
-                    if (verdict === "PASS") {
-                        planContent = updatePhaseStatus(planContent, targetPhase, "validated");
-                        writePlanFile(ctx.cwd, planContent);
-                        ctx.ui.notify(`✅ Phase ${targetPhase}: ${phase.name} — PASS`, "info");
+                        let planContent = content;
+                        if (result.exitCode === 0) {
+                            planContent = updateStepStatus(planContent, stepNum, "validated");
+                            writePlanFile(ctx.cwd, planContent);
+                            ctx.ui.notify(`✅ Step ${stepNum}: ${step.name} — PASS\n${result.output.slice(0, 300)}`, "info");
+                        } else {
+                            ctx.ui.notify(`❌ Step ${stepNum}: ${step.name} — FAIL\n${result.output.slice(0, 500)}`, "warning");
+                        }
                     } else {
-                        const failures = extractFailures(valResult.output);
-                        ctx.ui.notify(`❌ Phase ${targetPhase}: ${phase.name} — ${verdict}\n${failures}`, "warning");
+                        // Validate all: run every check/script and report
+                        ctx.ui.notify("🔍 Running all checks...", "info");
+                        const results: string[] = [];
+                        for (const item of plan.items) {
+                            if (isStep(item) && item.check) {
+                                const r = await runCheck(item.check, ctx.cwd);
+                                const icon = r.exitCode === 0 ? "✅" : "❌";
+                                results.push(`  ${icon} Step ${item.number}: ${item.name}`);
+                            } else if (isCheckpoint(item) && item.script) {
+                                const r = await runCheck(`bash ${item.script}`, ctx.cwd);
+                                const icon = r.exitCode === 0 ? "✅" : "❌";
+                                results.push(`  ${icon} Checkpoint: ${item.name}`);
+                            }
+                        }
+                        ctx.ui.notify(`📋 Validation results:\n${results.join("\n")}`, "info");
                     }
-
-                    state.currentPhase = null;
-                    persistState();
-                    updateUI(ctx);
                     break;
                 }
 
@@ -414,14 +577,13 @@ export default function workflowExtension(pi: ExtensionAPI): void {
                 }
 
                 default: {
-                    // No subcommand — if plan exists show status, else start planning
                     const content = readPlanFile(ctx.cwd);
                     if (content) {
                         showStatus(ctx.cwd, ctx);
                     } else {
                         const goal = (args || "").trim() || "Plan the current project";
                         enterPlanningMode(goal, ctx);
-                        pi.sendUserMessage(`/skill:workflow\n\nPlanning goal: ${goal}\n\nExplore the codebase and create a detailed, phased plan. Each phase must have a clear validation strategy with executable test scripts.`);
+                        pi.sendUserMessage(`/skill:workflow\n\nPlanning goal: ${goal}\n\nExplore the codebase and design atomic steps. Each step must be sized so a fresh agent can complete it under 40% context usage. Think about token cost and reasoning complexity, not time.`);
                     }
                     break;
                 }
@@ -463,11 +625,13 @@ Restrictions:
 
 Your task:
 1. Explore the codebase to understand the current state
-2. Design phases with clear testability boundaries
-3. Each phase must be independently verifiable
-4. Think about what validation scripts would prove each phase works
+2. Design atomic steps — each gets ONE agent with a clean context window
+3. Size steps by token cost and reasoning complexity — target <40% context per step
+4. Simple boilerplate steps can cover more ground; complex reasoning steps must be small
+5. Place checkpoints at integration boundaries
+6. Every step needs a check command (bash one-liner, exit 0 = pass)
 
-Use the workflow skill methodology: testability IS the architecture.
+Use the workflow skill methodology: clean context, atomic work.
 When ready, the user will run /wf write to have you produce the plan file.`,
                 display: false,
             },
@@ -479,13 +643,18 @@ When ready, the user will run /wf write to have you produce the plan file.`,
     pi.on("session_start", async (_event, ctx) => {
         const entries = ctx.sessionManager.getEntries();
 
-        // Find the last workflow-state entry
         const stateEntry = entries
             .filter((e: { type: string; customType?: string }) => e.type === "custom" && e.customType === "workflow-state")
-            .pop() as { data?: WorkflowState } | undefined;
+            .pop() as { data?: any } | undefined;
 
         if (stateEntry?.data) {
-            state = { ...stateEntry.data };
+            // Handle migration from old phase-based state
+            state = {
+                planningMode: stateEntry.data.planningMode ?? false,
+                currentStep: stateEntry.data.currentStep ?? stateEntry.data.currentPhase ?? null,
+                currentCheckpoint: stateEntry.data.currentCheckpoint ?? null,
+                retryCount: stateEntry.data.retryCount ?? 0,
+            };
         }
 
         if (state.planningMode) {

@@ -5,29 +5,51 @@
  * Pure functions — take plan/state/theme, return strings.
  */
 
-import type { Plan } from "./plan.js";
+import type { Plan, Step } from "./plan.js";
+import { isStep } from "./plan.js";
 
 // ─── Types ──────────────────────────────────────────────
 
 export interface WorkflowState {
     planningMode: boolean;
-    currentPhase: number | null;
+    currentStep: number | null;
+    currentCheckpoint: string | null;
     retryCount: number;
+}
+
+export interface WorkerInfo {
+    toolCalls: string[];
+    usage: { input: number; output: number; turns: number; cost: number };
+}
+
+// ─── Formatting ─────────────────────────────────────────
+
+function fmtTokens(n: number): string {
+    if (n >= 10_000) return (n / 1000).toFixed(0) + "k";
+    if (n >= 1_000) return (n / 1000).toFixed(1) + "k";
+    return String(n);
+}
+
+function fmtCost(n: number): string {
+    if (n < 0.001) return "";
+    return `$${n.toFixed(3)}`;
 }
 
 // ─── Status icons ───────────────────────────────────────
 
-const STATUS_ICONS: Record<string, string> = {
+const STEP_ICONS: Record<string, string> = {
     validated: "✓",
-    done: "✓",
     "in-progress": "⏳",
     pending: "·",
     failed: "✗",
 };
 
-function statusIcon(status: string): string {
-    return STATUS_ICONS[status] ?? "?";
-}
+const CHECKPOINT_ICONS: Record<string, string> = {
+    validated: "◆",
+    "in-progress": "◈",
+    pending: "◇",
+    failed: "✗",
+};
 
 // ─── Widget ─────────────────────────────────────────────
 
@@ -35,36 +57,54 @@ function statusIcon(status: string): string {
  * Render compact widget lines showing workflow progress.
  *
  * Example output:
- *   📋 Phase 2/4 [✓✓⏳·] — "API endpoints"
+ *   📋 Step 5/12 [✓✓✓✓⏳·····◇·] — "Add user routes"
  */
-export function renderWidget(plan: Plan, state: WorkflowState, theme: any): string[] {
-    if (!plan || plan.phases.length === 0) return [];
+export function renderWidget(plan: Plan, state: WorkflowState, theme: any, worker?: WorkerInfo | null): string[] {
+    if (!plan || plan.items.length === 0) return [];
 
-    const total = plan.phases.length;
-    const current = state.currentPhase;
-    const currentPhase = current !== null ? plan.phases.find((p) => p.number === current) : null;
+    const totalSteps = plan.items.filter(isStep).length;
+    const current = state.currentStep;
+    const currentItem = current !== null
+        ? plan.items.find((i): i is Step => isStep(i) && i.number === current)
+        : null;
 
-    // Build progress bar: [✓✓⏳·]
-    const icons = plan.phases.map((p) => {
-        const icon = statusIcon(p.status);
-        if (p.status === "validated") return theme.fg("success", icon);
-        if (p.status === "done") return theme.fg("accent", icon);
-        if (p.status === "in-progress") return theme.fg("warning", icon);
-        if (p.status === "failed") return theme.fg("error", icon);
+    // Build progress bar with step and checkpoint icons
+    const icons = plan.items.map((item) => {
+        const iconMap = isStep(item) ? STEP_ICONS : CHECKPOINT_ICONS;
+        const icon = iconMap[item.status] ?? "?";
+
+        if (item.status === "validated") return theme.fg("success", icon);
+        if (item.status === "in-progress") return theme.fg("warning", icon);
+        if (item.status === "failed") return theme.fg("error", icon);
         return theme.fg("dim", icon);
     });
     const bar = `[${icons.join("")}]`;
 
-    // Phase label
-    const phaseLabel = current !== null ? `Phase ${current}/${total}` : `${total} phases`;
-    const phaseName = currentPhase ? ` — "${currentPhase.name}"` : "";
+    // Label
+    const label = current !== null ? `Step ${current}/${totalSteps}` : `${totalSteps} steps`;
+    const name = currentItem ? ` — "${currentItem.name}"` : "";
 
     const lines: string[] = [];
-    lines.push(`📋 ${phaseLabel} ${bar}${theme.fg("muted", phaseName)}`);
+    lines.push(`📋 ${label} ${bar}${theme.fg("muted", name)}`);
 
-    // Show retry info if retrying
     if (state.retryCount > 0 && current !== null) {
         lines.push(theme.fg("warning", `   ⟳ Retry ${state.retryCount}/2`));
+    }
+
+    if (state.currentCheckpoint) {
+        lines.push(theme.fg("accent", `   🔍 Checkpoint: ${state.currentCheckpoint}`));
+    }
+
+    // Worker activity — tool chain + token usage
+    if (worker && worker.toolCalls.length > 0) {
+        const chain = worker.toolCalls.slice(-8).join("→");
+        const parts: string[] = [
+            `${fmtTokens(worker.usage.input)}↓ ${fmtTokens(worker.usage.output)}↑`,
+            `turn ${worker.usage.turns}`,
+        ];
+        const cost = fmtCost(worker.usage.cost);
+        if (cost) parts.push(cost);
+        lines.push(theme.fg("dim", `   ⚡ ${chain}  ${parts.join(" · ")}`));
     }
 
     return lines;
@@ -81,9 +121,13 @@ export function renderStatus(state: WorkflowState, theme: any): string | undefin
         return theme.fg("warning", "⏸ planning");
     }
 
-    if (state.currentPhase !== null) {
+    if (state.currentCheckpoint) {
+        return theme.fg("accent", `🔍 checkpoint: ${state.currentCheckpoint}`);
+    }
+
+    if (state.currentStep !== null) {
         const retryInfo = state.retryCount > 0 ? ` ⟳${state.retryCount}` : "";
-        return theme.fg("accent", `⚡ phase ${state.currentPhase}${retryInfo}`);
+        return theme.fg("accent", `⚡ step ${state.currentStep}${retryInfo}`);
     }
 
     return undefined;
