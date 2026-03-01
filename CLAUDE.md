@@ -83,9 +83,11 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 - **Setup script:** `./pi_setup.sh` (standalone, called by arch_setup.sh) — installs extensions package, clones pi-skills, sets up subagent extension, copies agent definitions
 - **Skills:** pi-skills git repo cloned to `~/.pi/agent/skills/pi-skills/` (brave-search, browser-tools, etc.)
 - **Research skill:** `pi-package/skills/research/` — structured research methodology with file-based notes that survive compaction. Invoked via `/skill:research`, `/research <topic>`, or `/deep-research <topic>` (subagent fan-out variant)
+- **Workflow extension:** `pi-package/extensions/workflow/` — plan→execute→validate development loop. Commands: `/wf plan <goal>` (read-only planning mode), `/wf write` (generate plan + validation scripts), `/wf exec [phase]` (autonomous execute→validate loop with retry), `/wf validate [phase]` (standalone validation), `/wf status`. Produces `.plan/plan.md` + `.plan/validate-phase-N.sh` scripts per project. Dispatches executor/validator agents as pi subprocesses with streaming progress.
+- **Workflow skill:** `pi-package/skills/workflow/` — methodology for planning agent-executable work. Core principle: testability IS the architecture. Guides phase design, validation script writing, context budgets.
 - **Subagent extension:** Symlinked from pi's examples to `~/.pi/agent/extensions/subagent/` (re-linked on pi version updates by pi_setup.sh)
-- **Agent definitions:** `pi-package/agents/` — subagent agent definitions (not auto-discovered by pi packages, copied to `~/.pi/agent/agents/` by pi_setup.sh). Contains `researcher.md` for parallel research extraction.
-- **Prompt templates:** `pi-package/prompts/` — `research.md` (single-agent), `deep-research.md` (subagent fan-out)
+- **Agent definitions:** `pi-package/agents/` — subagent agent definitions (not auto-discovered by pi packages, copied to `~/.pi/agent/agents/` by pi_setup.sh). Contains `researcher.md` (parallel research extraction), `executor.md` (phase implementation with self-validation), `validator.md` (independent verification, structured PASS/FAIL).
+- **Prompt templates:** `pi-package/prompts/` — `research.md` (single-agent), `deep-research.md` (subagent fan-out), `wf.md` (start workflow planning)
 - **Per-machine config:** Use `pi config` to enable/disable individual extensions or skills on each machine — no dotfiles changes needed
 - **Adding extensions:** Create new `.ts` files in `pi-package/extensions/`, they auto-load via the package manifest
 - **Adding skills:** Create new directories in `pi-package/skills/`, they auto-load via the package manifest
