@@ -2,69 +2,58 @@
 
 set -euo pipefail
 
-# Pi coding agent setup: install custom extensions package and skills
+# Pi coding agent setup: install extensions package, subagent, and agent definitions
 # Can be run standalone or called by arch_setup.sh / macos_setup.sh
 
-DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PI_PACKAGE_DIR="$DOTFILES_DIR/pi-package"
-PI_SKILLS_DIR="$HOME/.pi/agent/skills/pi-skills"
+PI_EXTENSIONS_DIR="$HOME/pi-extensions"
 PI_SETTINGS="$HOME/.pi/agent/settings.json"
 PI_AGENTS_DIR="$HOME/.pi/agent/agents"
+
+# --- Agent browser ---
+
+install_agent_browser() {
+    if command -v agent-browser &> /dev/null; then
+        echo "agent-browser already installed."
+    else
+        echo "Installing agent-browser..."
+        npm install -g agent-browser
+    fi
+
+    # Install Chromium if not already present
+    if [[ ! -d "$HOME/.cache/ms-playwright" ]] && [[ ! -d "$HOME/.cache/playwright" ]]; then
+        echo "Installing Chromium for agent-browser..."
+        agent-browser install
+    else
+        echo "Chromium already installed for agent-browser."
+    fi
+}
 
 # --- Extensions package ---
 
 install_extensions_package() {
-    local pi_package_path
-    pi_package_path="$(realpath "$PI_PACKAGE_DIR")"
+    if [[ ! -d "$PI_EXTENSIONS_DIR" ]]; then
+        echo "⚠ Pi extensions repo not found at $PI_EXTENSIONS_DIR"
+        echo "  Clone it: git clone https://github.com/user/pi-extensions ~/pi-extensions"
+        return 1
+    fi
+
+    local ext_path
+    ext_path="$(realpath "$PI_EXTENSIONS_DIR")"
 
     # Check if already installed by looking for the path in settings.json
-    if [[ -f "$PI_SETTINGS" ]] && grep -q "$pi_package_path" "$PI_SETTINGS" 2>/dev/null; then
+    if [[ -f "$PI_SETTINGS" ]] && grep -q "$ext_path" "$PI_SETTINGS" 2>/dev/null; then
         echo "Pi extensions package already installed."
-        return
-    fi
-
-    echo "Installing pi extensions package from $pi_package_path..."
-    pi install "$pi_package_path"
-}
-
-# --- Skills ---
-
-install_skills() {
-    if [[ ! -d "$PI_SKILLS_DIR" ]]; then
-        echo "Cloning pi-skills..."
-        mkdir -p "$(dirname "$PI_SKILLS_DIR")"
-        git clone https://github.com/badlogic/pi-skills "$PI_SKILLS_DIR"
     else
-        echo "Updating pi-skills..."
-        git -C "$PI_SKILLS_DIR" pull --ff-only || echo "⚠ pi-skills pull failed (offline or conflict)"
+        echo "Installing pi extensions package from $ext_path..."
+        pi install "$ext_path"
     fi
 
-    # Install npm dependencies for skills that need them
-    for dir in "$PI_SKILLS_DIR"/*/; do
-        if [[ -f "$dir/package.json" && ! -d "$dir/node_modules" ]]; then
-            echo "  npm install in $(basename "$dir")..."
-            (cd "$dir" && npm install --silent)
+    # Install npm deps for skills that need them
+    if [[ -f "$PI_EXTENSIONS_DIR/skills/brave-search/package.json" ]]; then
+        if [[ ! -d "$PI_EXTENSIONS_DIR/skills/brave-search/node_modules" ]]; then
+            echo "  Installing brave-search dependencies..."
+            (cd "$PI_EXTENSIONS_DIR/skills/brave-search" && npm install --silent)
         fi
-    done
-
-    # Disable unused skills (keep brave-search + browser-tools) if not already configured
-    if [[ -f "$PI_SETTINGS" ]] && ! grep -q '"skills"' "$PI_SETTINGS"; then
-        echo "Disabling unused pi skills (keeping brave-search, browser-tools)..."
-        local TMP_SETTINGS
-        TMP_SETTINGS=$(mktemp)
-        node -e "
-            const s = JSON.parse(require('fs').readFileSync('$PI_SETTINGS', 'utf8'));
-            s.skills = [
-                '-skills/pi-skills/gccli/SKILL.md',
-                '-skills/pi-skills/gdcli/SKILL.md',
-                '-skills/pi-skills/gmcli/SKILL.md',
-                '-skills/pi-skills/transcribe/SKILL.md',
-                '-skills/pi-skills/vscode/SKILL.md',
-                '-skills/pi-skills/youtube-transcript/SKILL.md'
-            ];
-            require('fs').writeFileSync('$TMP_SETTINGS', JSON.stringify(s, null, 2) + '\n');
-        "
-        mv "$TMP_SETTINGS" "$PI_SETTINGS"
     fi
 }
 
@@ -81,7 +70,7 @@ install_subagent_extension() {
         pi_pkg_dir="$(dirname "$(dirname "$pi_cli")")"
     fi
 
-    if [[ -z "$pi_pkg_dir" || ! -d "$pi_pkg_dir/examples/extensions/subagent" ]]; then
+    if [[ -z "${pi_pkg_dir:-}" || ! -d "$pi_pkg_dir/examples/extensions/subagent" ]]; then
         echo "⚠ Could not find pi subagent extension source, skipping"
         return
     fi
@@ -100,8 +89,7 @@ install_subagent_extension() {
 install_agent_definitions() {
     mkdir -p "$PI_AGENTS_DIR"
 
-    # Copy agent definitions from dotfiles (these are user-level agents for the subagent extension)
-    local agents_src="$PI_PACKAGE_DIR/agents"
+    local agents_src="$PI_EXTENSIONS_DIR/agents"
     if [[ -d "$agents_src" ]]; then
         for agent_file in "$agents_src"/*.md; do
             [[ -f "$agent_file" ]] || continue
@@ -125,8 +113,8 @@ main() {
     # Ensure ~/.pi/agent/ exists (pi creates it on first run, but we may run before that)
     mkdir -p "$HOME/.pi/agent"
 
+    install_agent_browser
     install_extensions_package
-    install_skills
     install_subagent_extension
     install_agent_definitions
 
