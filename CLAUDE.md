@@ -12,7 +12,7 @@
 - **macOS Setup:** `./macos_setup.sh` (installs required software for macOS)
 - **Stow dotfiles:** `./stow/stow_dotfiles.sh` (symlinks all config files per-package)
 - **Pi setup:** `./pi_setup.sh` (clones pi-extensions from GitHub, installs package, sets up subagent extension and agent definitions)
-- **Font cache refresh:** `fc-cache -f -v`
+- **Font cache refresh:** `fc-cache -f`
 
 ## Code Style
 - **Indentation:** 4 spaces (tabs expanded)
@@ -71,6 +71,7 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 
 ## Arch Linux / EndeavourOS Setup
 - **Setup script:** `./arch_setup.sh` (yay packages, keyd, greetd, sudoers, stow)
+- **Idempotent re-runs:** All setup scripts are safe to re-run. Packages check `pacman -Qi` before installing, config files use `cp -f`, stow uses `--restow`, `~/.zshrc` loader checks for its marker before writing (preserving machine-specific additions), optional sections (ASUS, gaming) skip their prompt if already installed, and `pkgfile -u` skips if updated within 24 hours.
 - **Noctalia patches:** `patch_noctalia.sh` (standalone, idempotent — workspace icons, calendar, weather, tooltips, NIcon raw glyphs). Called by arch_setup.sh via `sudo bash`. Each patch has a guard (grep for marker or patched pattern) and warns if upstream QML changed. Re-applied after `noctalia-shell-git` package updates. Patches are for **UI-only** changes; behavioral changes should use the plugin system instead.
 - **Deep sleep (S3):** `etc/systemd/sleep.conf.d/10-deep-sleep.conf` sets `MemorySleepMode=deep` for ASUS laptops (deployed by arch_setup.sh ASUS section only). GPD Win Max 2 only supports s2idle, so this is not deployed there.
 - Niri compositor with dynamic Material Design 3 colors via Noctalia/matugen
@@ -80,7 +81,7 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 
 ## Pi Coding Agent
 - **Extensions package:** `~/Workspace/pi-extensions/` — a standalone private GitHub repo ([tieoneease/pi-extensions](https://github.com/tieoneease/pi-extensions)) containing custom extensions, skills, and prompt templates. Installed via `pi install ~/Workspace/pi-extensions`, which adds it to `~/.pi/agent/settings.json` `packages` array.
-- **Setup script:** `./pi_setup.sh` (standalone, called by arch_setup.sh and macos_setup.sh) — clones pi-extensions from GitHub (requires `gh auth`), installs agent-browser, extensions package, sets up subagent extension, copies agent definitions
+- **Setup script:** `./pi_setup.sh` (standalone, called by arch_setup.sh and macos_setup.sh) — clones pi-extensions from GitHub (requires `gh auth`), installs agent-browser, extensions package, sets up subagent extension, copies agent definitions. Idempotent: cleans up stale package paths from `settings.json` (e.g., after repo moves) before installing.
 - **GitHub CLI:** `gh` (github-cli) installed by setup scripts, authenticated via `ensure_gh_auth` in `setup/common.sh`. Required to clone the private pi-extensions repo on new machines.
 - **Subagent extension:** Symlinked from pi's examples to `~/.pi/agent/extensions/subagent/` (re-linked on pi version updates by pi_setup.sh)
 - **Agent definitions:** `~/Workspace/pi-extensions/agents/` — subagent agent definitions (not auto-discovered by pi packages, copied to `~/.pi/agent/agents/` by pi_setup.sh). Contains `researcher.md`, `executor.md`, `validator.md`.

@@ -59,8 +59,15 @@ setup_zsh_default_shell() {
     fi
 }
 
-# Write ~/.zshrc loader (backs up existing non-symlink .zshrc)
+# Write ~/.zshrc loader (idempotent — skips if loader is already present)
 create_zshrc_loader() {
+    local marker="# Source base configuration (managed by dotfiles)"
+
+    if [ -f "$HOME/.zshrc" ] && grep -qF "$marker" "$HOME/.zshrc"; then
+        echo "~/.zshrc loader already present, skipping."
+        return
+    fi
+
     if [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ]; then
         echo "Backing up existing ~/.zshrc..."
         cp "$HOME/.zshrc" "$HOME/.zshrc.backup"

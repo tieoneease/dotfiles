@@ -143,14 +143,18 @@ install_packages ttf-hack-nerd ttf-jetbrains-mono-nerd ttf-firacode-nerd \
     ttf-iosevka-nerd ttf-cascadia-code-nerd ttf-sourcecodepro-nerd inter-font \
     ttf-inconsolata-go-nerd
 
-# Update pkgfile database (for command-not-found suggestions)
+# Update pkgfile database (skip if updated within the last 24 hours)
 if command -v pkgfile &>/dev/null; then
-    echo "Updating pkgfile database..."
-    sudo pkgfile -u
+    if [[ -d /var/cache/pkgfile ]] && find /var/cache/pkgfile -maxdepth 1 -type f -mmin -1440 -print -quit 2>/dev/null | grep -q .; then
+        echo "pkgfile database is recent, skipping update."
+    else
+        echo "Updating pkgfile database..."
+        sudo pkgfile -u
+    fi
 fi
 
 echo "Refreshing font cache..."
-fc-cache -f -v
+fc-cache -f
 
 # --- System configuration ---
 
@@ -342,12 +346,19 @@ mkdir -p "$HOME/Workspace"
 
 # --- ASUS Zenbook Duo setup (optional) ---
 
-echo ""
-echo "ASUS Zenbook Duo 2024 (UX8406MA) hardware setup."
-echo "This installs asusctl, wev, and configures the dual-screen layout for niri."
-read -rp "Enable ASUS Zenbook Duo setup? [y/N] " response
-if [[ "$response" =~ ^[Yy]$ ]]; then
-    echo "Installing ASUS Zenbook Duo packages..."
+# Skip prompt if already installed (re-run just re-applies configs)
+if pacman -Qi asusctl &>/dev/null; then
+    asus_setup=true
+else
+    echo ""
+    echo "ASUS Zenbook Duo 2024 (UX8406MA) hardware setup."
+    echo "This installs asusctl, wev, and configures the dual-screen layout for niri."
+    read -rp "Enable ASUS Zenbook Duo setup? [y/N] " response
+    [[ "$response" =~ ^[Yy]$ ]] && asus_setup=true || asus_setup=false
+fi
+
+if $asus_setup; then
+    echo "Configuring ASUS Zenbook Duo..."
     install_packages asusctl wev
 
     # asusd restart drop-in (work around hidraw FD leak)
@@ -375,10 +386,17 @@ if pacman -Si cachyos-gaming-meta &>/dev/null; then
     install_packages cachyos-gaming-meta cachyos-gaming-applications
     echo "Gaming setup complete (CachyOS meta-packages)."
 else
-    echo ""
-    echo "Gaming setup: Steam, gamescope, MangoHud, gamemode, AMD Vulkan drivers, and Proton manager."
-    read -rp "Install gaming tools? [y/N] " response
-    if [[ "$response" =~ ^[Yy]$ ]]; then
+    # Skip prompt if gaming tools already installed (re-run just ensures everything is present)
+    if pacman -Qi steam &>/dev/null; then
+        gaming_setup=true
+    else
+        echo ""
+        echo "Gaming setup: Steam, gamescope, MangoHud, gamemode, AMD Vulkan drivers, and Proton manager."
+        read -rp "Install gaming tools? [y/N] " response
+        [[ "$response" =~ ^[Yy]$ ]] && gaming_setup=true || gaming_setup=false
+    fi
+
+    if $gaming_setup; then
         echo "Installing gaming tools..."
         install_packages steam gamescope mangohud lib32-mangohud gamemode lib32-gamemode \
             vulkan-radeon lib32-vulkan-radeon vulkan-icd-loader lib32-vulkan-icd-loader \

@@ -63,6 +63,38 @@ clone_extensions_repo() {
     gh repo clone "$PI_EXTENSIONS_REPO" "$PI_EXTENSIONS_DIR"
 }
 
+# Remove package paths from settings.json that no longer exist on disk
+cleanup_stale_packages() {
+    if [[ ! -f "$PI_SETTINGS" ]]; then
+        return
+    fi
+
+    local settings_dir
+    settings_dir="$(dirname "$PI_SETTINGS")"
+    local changed=false
+
+    while IFS= read -r pkg_path; do
+        local resolved
+        # Resolve relative paths against settings.json directory
+        if [[ "$pkg_path" == /* ]]; then
+            resolved="$pkg_path"
+        else
+            resolved="$(cd "$settings_dir" && realpath -m "$pkg_path" 2>/dev/null)" || continue
+        fi
+        if [[ ! -d "$resolved" ]]; then
+            echo "  Removing stale package path: $pkg_path (resolved: $resolved)"
+            local tmp
+            tmp=$(jq --arg p "$pkg_path" '.packages = [.packages[] | select(. != $p)]' "$PI_SETTINGS")
+            echo "$tmp" > "$PI_SETTINGS"
+            changed=true
+        fi
+    done < <(jq -r '.packages[]? // empty' "$PI_SETTINGS" 2>/dev/null)
+
+    if $changed; then
+        echo "Cleaned up stale pi package paths."
+    fi
+}
+
 install_extensions_package() {
     if [[ ! -d "$PI_EXTENSIONS_DIR" ]]; then
         echo "⚠ Pi extensions repo not found at $PI_EXTENSIONS_DIR, skipping"
@@ -71,6 +103,9 @@ install_extensions_package() {
 
     local ext_path
     ext_path="$(realpath "$PI_EXTENSIONS_DIR")"
+
+    # Clean up any package paths pointing to directories that no longer exist
+    cleanup_stale_packages
 
     # Check if already installed by looking for the path in settings.json
     if [[ -f "$PI_SETTINGS" ]] && grep -q "$ext_path" "$PI_SETTINGS" 2>/dev/null; then
