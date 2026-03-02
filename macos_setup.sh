@@ -22,6 +22,7 @@ brew install docker direnv fd fontconfig fzf gh jq neovim ripgrep sketchybar sql
 
 # Create workspace directory for tmux-sessionizer
 mkdir -p "$HOME/Workspace"
+mkdir -p "$HOME/Workspace/Playground"
 
 # Install kitty terminal
 echo "Installing kitty terminal..."

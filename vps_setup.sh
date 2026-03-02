@@ -76,6 +76,7 @@ fi
 
 # --- Ensure tms search directories exist ---
 mkdir -p "$HOME/Workspace"
+mkdir -p "$HOME/Workspace/Playground"
 if [ "$DOTFILES_DIR" != "$HOME/dotfiles" ] && [ ! -e "$HOME/dotfiles" ]; then
     ln -s "$DOTFILES_DIR" "$HOME/dotfiles"
 fi

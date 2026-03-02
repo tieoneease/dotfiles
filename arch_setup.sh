@@ -349,6 +349,7 @@ $AUR_HELPER -S --needed --noconfirm openai-codex
 # --- Workspace directory ---
 
 mkdir -p "$HOME/Workspace"
+mkdir -p "$HOME/Workspace/Playground"
 
 # --- ASUS Zenbook Duo setup (optional) ---
 
