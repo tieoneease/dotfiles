@@ -67,7 +67,7 @@ Dynamic Material Design 3 colors generated from the current wallpaper:
 
 ## Noctalia Plugins (custom, stowed)
 Local plugins in `noctalia/.config/noctalia/plugins/`:
-- **sleep-inhibitor:** Replaces built-in KeepAwake. Uses `systemd-inhibit --what=sleep` to block suspend/hibernate while allowing screen blanking (swayidle timeout). The built-in KeepAwake uses `--what=idle` which also prevents screen off. Has CC widget (coffee icon) and IPC (`qs -c noctalia-shell ipc call plugin:sleep-inhibitor toggle`). Plugin `settings.json` files are gitignored (runtime state).
+- **sleep-inhibitor:** Replaces built-in KeepAwake. Uses `systemd-inhibit --what=sleep --mode=block` to block suspend/hibernate while allowing screen blanking (swayidle timeout). The built-in KeepAwake uses `--what=idle` which also prevents screen off. Combined with `LidSwitchIgnoreInhibited=no` in logind, this actually blocks lid-close suspend. A lid display handler (`lid-display-handler.sh`) powers off monitors on lid close when inhibited. Power button is the escape hatch: `force-suspend.sh` disables the inhibitor then triggers s2idle suspend. Has CC widget (coffee icon) and IPC (`qs -c noctalia-shell ipc call plugin:sleep-inhibitor toggle`). Plugin `settings.json` files are gitignored (runtime state).
 - **screen-toggle:** Toggles secondary screen (eDP-2) on Zenbook Duo devices. Self-hides when hardware not detected.
 - **lte-status:** LTE modem status indicator.
 
@@ -75,7 +75,7 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 - **Setup script:** `./arch_setup.sh` (yay packages, keyd, greetd, sudoers, stow)
 - **Idempotent re-runs:** All setup scripts are safe to re-run. Packages check `pacman -Qi` before installing, config files use `cp -f`, stow uses `--restow`, `~/.zshrc` loader checks for its marker before writing (preserving machine-specific additions), optional sections (ASUS, gaming) skip their prompt if already installed, and `pkgfile -u` skips if updated within 24 hours.
 - **Noctalia patches:** `patch_noctalia.sh` (standalone, idempotent — workspace icons, calendar, weather, tooltips, NIcon raw glyphs). Called by arch_setup.sh via `sudo bash`. Each patch has a guard (grep for marker or patched pattern) and warns if upstream QML changed. Re-applied after `noctalia-shell-git` package updates. Patches are for **UI-only** changes; behavioral changes should use the plugin system instead.
-- **Deep sleep (S3):** `etc/systemd/sleep.conf.d/10-deep-sleep.conf` sets `MemorySleepMode=deep` for ASUS laptops (deployed by arch_setup.sh ASUS section only). GPD Win Max 2 only supports s2idle, so this is not deployed there.
+- **Suspend:** Both the Zenbook Duo and GPD Win Max 2 use s2idle (Low-power S0 idle, the kernel/firmware default). S3 deep sleep is available on the Zenbook Duo but causes failed resume on lid close — the `10-deep-sleep.conf` override is kept in `etc/` for reference but is NOT deployed. The setup script removes it if found.
 - Niri compositor with dynamic Material Design 3 colors via Noctalia/matugen
 - Passwordless sudo setup for Claude Code (opt-in with confirmation prompt)
 - keyd keyboard layers (numpad, nav, media)

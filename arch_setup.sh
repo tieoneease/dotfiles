@@ -373,10 +373,20 @@ if $asus_setup; then
     sudo cp -f "$DOTFILES_DIR/etc/systemd/system/asusd.service.d/restart.conf" /etc/systemd/system/asusd.service.d/
     sudo systemctl daemon-reload
 
-    # Deep sleep (S3) instead of s2idle — much better battery life on ASUS laptops
-    echo "Configuring deep sleep (S3) for suspend..."
-    sudo mkdir -p /etc/systemd/sleep.conf.d
-    sudo cp -f "$DOTFILES_DIR/etc/systemd/sleep.conf.d/10-deep-sleep.conf" /etc/systemd/sleep.conf.d/
+    # Let sleep inhibitors block lid-close suspend (so the Noctalia sleep-inhibitor
+    # plugin actually prevents suspend when the user has it enabled)
+    echo "Configuring logind to respect sleep inhibitors on lid close..."
+    sudo mkdir -p /etc/systemd/logind.conf.d
+    sudo cp -f "$DOTFILES_DIR/etc/systemd/logind.conf.d/10-lid-inhibitor.conf" /etc/systemd/logind.conf.d/
+
+    # Deep sleep (S3) — REMOVED. The Zenbook Duo's firmware is designed for s2idle
+    # (Low-power S0 idle). Forcing S3 deep sleep causes failed resume on lid close,
+    # requiring a hard restart. Let the kernel use its default (s2idle).
+    # The old config is kept in etc/systemd/sleep.conf.d/ for reference but no longer deployed.
+    if [[ -f /etc/systemd/sleep.conf.d/10-deep-sleep.conf ]]; then
+        echo "Removing deep sleep override (S3 doesn't resume reliably on Zenbook Duo)..."
+        sudo rm -f /etc/systemd/sleep.conf.d/10-deep-sleep.conf
+    fi
 
     echo "ASUS Zenbook Duo setup complete."
     echo "  - asusctl manages fn keys, keyboard backlight, and platform profiles"
