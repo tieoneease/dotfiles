@@ -58,6 +58,11 @@ backup_existing_files() {
     fi
 }
 
+# Packages that touch shared system directories (e.g., ~/.local/share/icons/hicolor/).
+# --no-folding prevents stow from symlinking entire directory trees, which would cause
+# other apps (Steam, Lutris) to write their files into the dotfiles repo.
+NO_FOLDING_PACKAGES=(pencil)
+
 # Stow each package individually
 stow_packages() {
     echo "Stowing dotfiles..."
@@ -65,8 +70,15 @@ stow_packages() {
 
     for pkg in "${PACKAGES[@]}"; do
         if [ -d "$pkg" ]; then
-            echo "  Stowing $pkg..."
-            stow --restow "$pkg"
+            local flags=""
+            for nf in "${NO_FOLDING_PACKAGES[@]}"; do
+                if [[ "$pkg" == "$nf" ]]; then
+                    flags="--no-folding"
+                    break
+                fi
+            done
+            echo "  Stowing $pkg...${flags:+ (no-folding)}"
+            stow --restow $flags "$pkg"
         else
             echo "  Skipping $pkg (directory not found)"
         fi
