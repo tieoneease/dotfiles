@@ -18,7 +18,7 @@ echo "Installing applications via Homebrew..."
 
 # Install essential CLI tools
 echo "Installing essential CLI tools..."
-brew install docker direnv fd fontconfig fzf jq neovim ripgrep sketchybar sqlite starship stow superwhisper tmux tmux-sessionizer uv yazi
+brew install docker direnv fd fontconfig fzf gh jq neovim ripgrep sketchybar sqlite starship stow superwhisper tmux tmux-sessionizer uv yazi
 
 # Create workspace directory for tmux-sessionizer
 mkdir -p "$HOME/Workspace"
@@ -125,6 +125,14 @@ defaults write com.apple.dock expose-animation-duration -float 0
 # --- Stow dotfiles ---
 
 run_stow_dotfiles
+
+# --- GitHub CLI auth ---
+
+ensure_gh_auth || true
+
+# --- Pi Coding Agent ---
+
+"$DOTFILES_DIR/pi_setup.sh"
 
 echo ""
 echo "macOS setup completed! Please log out and back in for all changes to take effect."

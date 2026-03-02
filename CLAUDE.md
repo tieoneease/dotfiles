@@ -11,7 +11,7 @@
 - **Noctalia QML patches:** `sudo bash ./patch_noctalia.sh` (idempotent patches to system QML files; called by arch_setup.sh)
 - **macOS Setup:** `./macos_setup.sh` (installs required software for macOS)
 - **Stow dotfiles:** `./stow/stow_dotfiles.sh` (symlinks all config files per-package)
-- **Pi setup:** `./pi_setup.sh` (installs extensions package from ~/pi-extensions, sets up subagent extension and agent definitions)
+- **Pi setup:** `./pi_setup.sh` (clones pi-extensions from GitHub, installs package, sets up subagent extension and agent definitions)
 - **Font cache refresh:** `fc-cache -f -v`
 
 ## Code Style
@@ -50,7 +50,7 @@ Each package mirrors the home directory:
 - **Keyboard:** keyd (tap-hold layers, system-level)
 - **Login:** greetd + tuigreet → niri-session
 - **Claude Code:** Settings + statusline script (stow package targeting `~/.claude/`)
-- **Pi Coding Agent:** Custom extensions package + skills (see `~/pi-extensions/`, `pi_setup.sh`)
+- **Pi Coding Agent:** Custom extensions package + skills (see `~/Workspace/pi-extensions/`, `pi_setup.sh`)
 - **macOS Tools:** Aerospace, Sketchybar, Karabiner-Elements
 
 ## Theming (Noctalia + matugen)
@@ -79,9 +79,10 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 - See `NIRI-SETUP.md` for detailed architecture docs
 
 ## Pi Coding Agent
-- **Extensions package:** `~/pi-extensions/` — a standalone pi package repo (separate from dotfiles) containing custom extensions, skills, and prompt templates. Installed via `pi install ~/pi-extensions`, which adds it to `~/.pi/agent/settings.json` `packages` array.
-- **Setup script:** `./pi_setup.sh` (standalone, called by arch_setup.sh) — installs agent-browser, extensions package, sets up subagent extension, copies agent definitions
+- **Extensions package:** `~/Workspace/pi-extensions/` — a standalone private GitHub repo ([tieoneease/pi-extensions](https://github.com/tieoneease/pi-extensions)) containing custom extensions, skills, and prompt templates. Installed via `pi install ~/Workspace/pi-extensions`, which adds it to `~/.pi/agent/settings.json` `packages` array.
+- **Setup script:** `./pi_setup.sh` (standalone, called by arch_setup.sh and macos_setup.sh) — clones pi-extensions from GitHub (requires `gh auth`), installs agent-browser, extensions package, sets up subagent extension, copies agent definitions
+- **GitHub CLI:** `gh` (github-cli) installed by setup scripts, authenticated via `ensure_gh_auth` in `setup/common.sh`. Required to clone the private pi-extensions repo on new machines.
 - **Subagent extension:** Symlinked from pi's examples to `~/.pi/agent/extensions/subagent/` (re-linked on pi version updates by pi_setup.sh)
-- **Agent definitions:** `~/pi-extensions/agents/` — subagent agent definitions (not auto-discovered by pi packages, copied to `~/.pi/agent/agents/` by pi_setup.sh). Contains `researcher.md`, `executor.md`, `validator.md`.
+- **Agent definitions:** `~/Workspace/pi-extensions/agents/` — subagent agent definitions (not auto-discovered by pi packages, copied to `~/.pi/agent/agents/` by pi_setup.sh). Contains `researcher.md`, `executor.md`, `validator.md`.
 - **Per-machine config:** Use `pi config` to enable/disable individual extensions or skills on each machine — no dotfiles changes needed
-- **Adding extensions/skills/agents:** Edit `~/pi-extensions/` directly — extensions and skills auto-load via the package manifest, agents need `pi_setup.sh` to deploy
+- **Adding extensions/skills/agents:** Edit `~/Workspace/pi-extensions/` directly — extensions and skills auto-load via the package manifest, agents need `pi_setup.sh` to deploy

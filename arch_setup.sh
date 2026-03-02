@@ -47,7 +47,7 @@ fi
 
 # Core CLI tools
 echo "Installing core CLI tools..."
-install_packages stow git zsh neovim tmux wget curl direnv fzf ripgrep fd unzip fontconfig starship jq pkgfile expac
+install_packages stow git zsh neovim tmux wget curl direnv fzf ripgrep fd unzip fontconfig starship jq pkgfile expac github-cli
 
 # File manager
 echo "Installing file manager..."
@@ -413,6 +413,9 @@ systemctl --user enable --now vdirsyncer.timer
 
 # Install mise-managed tools (needs stow-deployed config)
 run_mise_install
+
+# GitHub CLI auth (needed for private repos like pi-extensions)
+ensure_gh_auth || true
 
 # Pi Coding Agent - install extensions package and skills
 "$DOTFILES_DIR/pi_setup.sh"

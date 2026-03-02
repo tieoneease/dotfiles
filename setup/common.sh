@@ -112,6 +112,28 @@ copy_secrets_template() {
     fi
 }
 
+# --- GitHub CLI ---
+
+ensure_gh_auth() {
+    if ! command -v gh &> /dev/null; then
+        echo "⚠ GitHub CLI (gh) not installed, skipping auth check"
+        return 1
+    fi
+    if gh auth status &> /dev/null; then
+        return 0
+    fi
+    echo ""
+    echo "GitHub CLI is installed but not authenticated."
+    echo "This is needed to clone private repos (e.g. pi-extensions)."
+    read -rp "Run 'gh auth login' now? [Y/n] " response
+    if [[ ! "$response" =~ ^[Nn]$ ]]; then
+        gh auth login
+        return $?
+    fi
+    echo "Skipped. Run 'gh auth login' later to enable private repo access."
+    return 1
+}
+
 # --- Stow ---
 
 # Run stow_dotfiles.sh with optional flags (e.g. --vps)

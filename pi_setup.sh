@@ -5,7 +5,11 @@ set -euo pipefail
 # Pi coding agent setup: install extensions package, subagent, and agent definitions
 # Can be run standalone or called by arch_setup.sh / macos_setup.sh
 
-PI_EXTENSIONS_DIR="$HOME/pi-extensions"
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$DOTFILES_DIR/setup/common.sh"
+
+PI_EXTENSIONS_REPO="tieoneease/pi-extensions"
+PI_EXTENSIONS_DIR="$HOME/Workspace/pi-extensions"
 PI_SETTINGS="$HOME/.pi/agent/settings.json"
 PI_AGENTS_DIR="$HOME/.pi/agent/agents"
 
@@ -30,10 +34,38 @@ install_agent_browser() {
 
 # --- Extensions package ---
 
+clone_extensions_repo() {
+    if [[ -d "$PI_EXTENSIONS_DIR" ]]; then
+        echo "Pi extensions repo already present at $PI_EXTENSIONS_DIR"
+        # Pull latest if it's a git repo
+        if [[ -d "$PI_EXTENSIONS_DIR/.git" ]]; then
+            echo "  Pulling latest..."
+            git -C "$PI_EXTENSIONS_DIR" pull --ff-only 2>/dev/null || echo "  ⚠ Pull failed (offline or diverged)"
+        fi
+        return 0
+    fi
+
+    echo "Cloning pi-extensions to $PI_EXTENSIONS_DIR..."
+    if ! command -v gh &> /dev/null; then
+        echo "⚠ GitHub CLI (gh) not installed — cannot clone private repo"
+        echo "  Install gh and run: gh auth login && gh repo clone $PI_EXTENSIONS_REPO $PI_EXTENSIONS_DIR"
+        return 1
+    fi
+
+    if ! gh auth status &> /dev/null; then
+        echo "⚠ GitHub CLI not authenticated — cannot clone private repo"
+        echo "  Run: gh auth login"
+        echo "  Then: gh repo clone $PI_EXTENSIONS_REPO $PI_EXTENSIONS_DIR"
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$PI_EXTENSIONS_DIR")"
+    gh repo clone "$PI_EXTENSIONS_REPO" "$PI_EXTENSIONS_DIR"
+}
+
 install_extensions_package() {
     if [[ ! -d "$PI_EXTENSIONS_DIR" ]]; then
-        echo "⚠ Pi extensions repo not found at $PI_EXTENSIONS_DIR"
-        echo "  Clone it: git clone https://github.com/user/pi-extensions ~/pi-extensions"
+        echo "⚠ Pi extensions repo not found at $PI_EXTENSIONS_DIR, skipping"
         return 1
     fi
 
@@ -114,6 +146,7 @@ main() {
     mkdir -p "$HOME/.pi/agent"
 
     install_agent_browser
+    clone_extensions_repo
     install_extensions_package
     install_subagent_extension
     install_agent_definitions
