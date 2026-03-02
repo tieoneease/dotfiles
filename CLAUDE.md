@@ -7,12 +7,14 @@
 - **Secondary platform:** macOS (Aerospace, Sketchybar, Karabiner-Elements)
 
 ## Commands
-- **Arch/EndeavourOS Setup:** `./arch_setup.sh` (installs packages, configures system, stows dotfiles)
-- **Noctalia QML patches:** `sudo bash ./patch_noctalia.sh` (idempotent patches to system QML files; called by arch_setup.sh)
-- **macOS Setup:** `./macos_setup.sh` (installs required software for macOS)
-- **Stow dotfiles:** `./stow/stow_dotfiles.sh` (symlinks all config files per-package)
-- **Pi setup:** `./pi_setup.sh` (clones pi-extensions from GitHub, installs package, sets up subagent extension and agent definitions)
-- **Font cache refresh:** `fc-cache -f`
+- **Full setup:** `just setup` (auto-detects platform, runs the right setup script)
+- **Arch/EndeavourOS Setup:** `just setup` or `./arch_setup.sh` (installs packages, configures system, stows dotfiles)
+- **macOS Setup:** `just setup` or `./macos_setup.sh` (installs required software for macOS)
+- **VPS Setup:** `just setup` or `./vps_setup.sh` (headless server dev environment)
+- **Stow dotfiles:** `just stow` or `./stow/stow_dotfiles.sh` (symlinks all config files per-package)
+- **Pi setup:** `just pi` or `./pi_setup.sh` (clones pi-extensions from GitHub, installs package, sets up subagent extension and agent definitions)
+- **Noctalia QML patches:** `just patch-noctalia` or `sudo bash ./patch_noctalia.sh` (idempotent patches to system QML files; called by arch_setup.sh)
+- **Font cache refresh:** `just fonts` or `fc-cache -f`
 
 ## Code Style
 - **Indentation:** 4 spaces (tabs expanded)
