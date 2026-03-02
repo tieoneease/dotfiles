@@ -251,6 +251,12 @@ if tailscale status &> /dev/null; then
     sudo tailscale set --operator="$USER"
 fi
 
+# systemd-resolved is required for Tailscale MagicDNS (hostname resolution of tailnet peers)
+sudo systemctl enable --now systemd-resolved
+if [[ "$(readlink -f /etc/resolv.conf)" != "/run/systemd/resolve/stub-resolv.conf" ]]; then
+    sudo ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+fi
+
 echo "Enabling user services..."
 systemctl --user enable noctalia.service
 if command -v elephant &> /dev/null; then
