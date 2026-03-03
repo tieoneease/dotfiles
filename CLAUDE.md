@@ -82,10 +82,10 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 - See `NIRI-SETUP.md` for detailed architecture docs
 
 ## Pi Coding Agent
-- **Extensions package:** `~/Workspace/pi-extensions/` — a standalone private GitHub repo ([tieoneease/pi-extensions](https://github.com/tieoneease/pi-extensions)) containing custom extensions, skills, and prompt templates. Installed via `pi install ~/Workspace/pi-extensions`, which adds it to `~/.pi/agent/settings.json` `packages` array.
+- **Extensions package:** `~/Workspace/pi-extensions/` — a standalone private GitHub repo ([tieoneease/pi-extensions](https://github.com/tieoneease/pi-extensions)) containing custom extensions, skills, prompt templates, and agent definitions. Installed via `pi install ~/Workspace/pi-extensions`, which adds it to `~/.pi/agent/settings.json` `packages` array.
 - **Setup script:** `./pi_setup.sh` (standalone, called by arch_setup.sh and macos_setup.sh) — clones pi-extensions from GitHub (requires `gh auth`), installs agent-browser, extensions package, sets up subagent extension, copies agent definitions. Idempotent: cleans up stale package paths from `settings.json` (e.g., after repo moves) before installing.
 - **GitHub CLI:** `gh` (github-cli) installed by setup scripts, authenticated via `ensure_gh_auth` in `setup/common.sh`. Required to clone the private pi-extensions repo on new machines.
 - **Subagent extension:** Symlinked from pi's examples to `~/.pi/agent/extensions/subagent/` (re-linked on pi version updates by pi_setup.sh)
 - **Agent definitions:** `~/Workspace/pi-extensions/agents/` — subagent agent definitions (not auto-discovered by pi packages, copied to `~/.pi/agent/agents/` by pi_setup.sh). Contains `researcher.md`.
 - **Per-machine config:** Use `pi config` to enable/disable individual extensions or skills on each machine — no dotfiles changes needed
-- **Adding extensions/skills/agents:** Edit `~/Workspace/pi-extensions/` directly — extensions and skills auto-load via the package manifest, agents need `pi_setup.sh` to deploy
+- **Adding extensions/skills/agents:** Edit `~/Workspace/pi-extensions/` directly — extensions, skills, and prompt templates auto-load via the package manifest; agents need `pi_setup.sh` to deploy
