@@ -305,6 +305,13 @@ window-rule {
     open-focused true
 }
 
+// Pencil → workspace 5 (design)
+window-rule {
+    match app-id="Pencil"
+    open-on-workspace "󰅴"
+    open-focused true
+}
+
 // Steam → workspace 9 (gaming)
 window-rule {
     match app-id="steam"
