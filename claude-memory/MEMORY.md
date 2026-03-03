@@ -93,11 +93,11 @@ See `zenbook-duo.md` for: detachable keyboard (DWT/palm rejection, DKMS), phanto
 
 ## Screen Lock Configuration
 
-**Swaylock Removed**:
-- Removed swaylock screen locker from the setup (not needed for personal device)
-- Simplified idle management: swayidle now only powers off monitors after 5 minutes
-- Super+Alt+L keybind changed from screen lock to manual monitor power-off
-- OLED burn-in protection maintained via monitor power-off without locking
+**Noctalia built-in lock screen** (not swaylock):
+- swayidle calls `qs -c noctalia-shell ipc call lockScreen lock` for locking
+- 5 min idle → Noctalia lock screen, 10 min idle → monitors power off, before suspend → lock
+- Super+Alt+L is manual monitor power-off (OLED burn-in protection)
+- No external screen locker installed (swaylock not needed)
 
 ## Workspace Nerd Font Icon Size Fix
 
