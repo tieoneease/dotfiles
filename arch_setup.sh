@@ -374,20 +374,16 @@ if $asus_setup; then
     sudo cp -f "$DOTFILES_DIR/etc/systemd/system/asusd.service.d/restart.conf" /etc/systemd/system/asusd.service.d/
     sudo systemctl daemon-reload
 
-    # Let sleep inhibitors block lid-close suspend (so the Noctalia sleep-inhibitor
-    # plugin actually prevents suspend when the user has it enabled)
-    echo "Configuring logind to respect sleep inhibitors on lid close..."
+    # Power button + lid close + sleep inhibitor configuration.
+    # - HandlePowerKey=suspend: power button suspends (not poweroff)
+    # - PowerKeyIgnoreInhibited=yes: power button always works (escape hatch)
+    # - LidSwitchIgnoreInhibited=no: sleep-inhibitor plugin can block lid-close suspend
+    echo "Configuring logind power button and lid switch handling..."
     sudo mkdir -p /etc/systemd/logind.conf.d
-    sudo cp -f "$DOTFILES_DIR/etc/systemd/logind.conf.d/10-lid-inhibitor.conf" /etc/systemd/logind.conf.d/
-
-    # Deep sleep (S3) — REMOVED. The Zenbook Duo's firmware is designed for s2idle
-    # (Low-power S0 idle). Forcing S3 deep sleep causes failed resume on lid close,
-    # requiring a hard restart. Let the kernel use its default (s2idle).
-    # The old config is kept in etc/systemd/sleep.conf.d/ for reference but no longer deployed.
-    if [[ -f /etc/systemd/sleep.conf.d/10-deep-sleep.conf ]]; then
-        echo "Removing deep sleep override (S3 doesn't resume reliably on Zenbook Duo)..."
-        sudo rm -f /etc/systemd/sleep.conf.d/10-deep-sleep.conf
-    fi
+    sudo cp -f "$DOTFILES_DIR/etc/systemd/logind.conf.d/10-power-and-lid.conf" /etc/systemd/logind.conf.d/
+    # Clean up old configs from previous setup
+    sudo rm -f /etc/systemd/logind.conf.d/10-lid-inhibitor.conf
+    sudo rm -f /etc/systemd/sleep.conf.d/10-deep-sleep.conf
 
     echo "ASUS Zenbook Duo setup complete."
     echo "  - asusctl manages fn keys, keyboard backlight, and platform profiles"

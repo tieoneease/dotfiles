@@ -60,6 +60,11 @@ input {
     // Focus windows and outputs automatically when moving the mouse into them.
     // Setting max-scroll-amount="0%" makes it work only on windows already fully on screen.
     // focus-follows-mouse max-scroll-amount="0%"
+
+    // Let logind handle the power button (HandlePowerKey=suspend) instead of niri.
+    // Fixes the re-suspend bug where niri sees the wake-from-suspend power key event
+    // and immediately re-suspends (niri issue #2233).
+    disable-power-key-handling
 }
 
 // Device-specific input overrides (tablet/touch mappings, etc.)
@@ -167,7 +172,7 @@ layout {
 spawn-at-startup "nm-applet" "--indicator"
 spawn-at-startup "fcitx5"
 spawn-at-startup "xwayland-satellite"
-spawn-sh-at-startup "swayidle -w timeout 300 'niri msg action power-off-monitors' resume 'niri msg action power-on-monitors'"
+spawn-sh-at-startup "swayidle -w timeout 300 'qs -c noctalia-shell ipc call lockScreen lock' timeout 600 'niri msg action power-off-monitors' resume 'niri msg action power-on-monitors' before-sleep 'qs -c noctalia-shell ipc call lockScreen lock'"
 spawn-sh-at-startup "~/.config/niri/lid-display-handler.sh"
 spawn-sh-at-startup "~/.config/niri/zenbook-duo-dock.sh"
 
@@ -618,9 +623,9 @@ binds {
     Mod+Shift+E { quit; }
     Ctrl+Alt+Delete { quit; }
 
-    // Power button → force suspend (disables sleep inhibitor first, then s2idle).
-    // Safe "I'm packing up" escape hatch that always works regardless of keep-awake.
-    XF86PowerOff allow-when-locked=true { spawn-sh "~/.config/niri/force-suspend.sh"; }
+    // Power button is handled by logind (HandlePowerKey=suspend) with
+    // PowerKeyIgnoreInhibited=yes so it always suspends, even with keep-awake.
+    // See /etc/systemd/logind.conf.d/10-power-and-lid.conf
 
     // Powers off the monitors. To turn them back on, do any input like
     // moving the mouse or pressing any other key.
