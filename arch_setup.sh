@@ -47,11 +47,11 @@ fi
 
 # Core CLI tools
 echo "Installing core CLI tools..."
-install_packages stow git zsh neovim tmux wget curl direnv fzf ripgrep fd unzip fontconfig starship jq pkgfile expac github-cli
+install_packages stow git zsh neovim tmux wget curl direnv fzf ripgrep fd unzip fontconfig starship jq pkgfile expac github-cli glow
 
 # File manager
 echo "Installing file manager..."
-install_packages yazi imagemagick poppler ueberzugpp chafa
+install_packages yazi imagemagick poppler ueberzugpp chafa imv
 
 # Desktop environment
 echo "Installing desktop environment..."

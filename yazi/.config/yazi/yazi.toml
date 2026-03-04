@@ -44,10 +44,24 @@ pdf = [
 browser = [
     { run = 'google-chrome-stable "$@"', desc = "Open in Chrome", orphan = true },
 ]
+markdown = [
+    { run = 'glow -p "$@"', desc = "Render Markdown (terminal)", block = true },
+]
+md_browser = [
+    { run = 'md-browser "$1"', desc = "Render Markdown (browser + mermaid)", orphan = true },
+]
+mermaid = [
+    { run = 'md-browser "$1"', desc = "Render Mermaid diagram (browser)", orphan = true },
+    { run = '''tmpf=$(mktemp /tmp/mermaid-XXXX.png) && mmdc -i "$1" -o "$tmpf" && imv "$tmpf" && rm "$tmpf"''', desc = "Render Mermaid → PNG (imv)", orphan = true },
+]
 
 [open]
 rules = [
     { name = "*/", use = ["edit"] },
+    { name = "*.md", use = ["markdown", "md_browser", "edit"] },
+    { name = "*.mdx", use = ["markdown", "md_browser", "edit"] },
+    { name = "*.mmd", use = ["mermaid", "edit"] },
+    { name = "*.mermaid", use = ["mermaid", "edit"] },
     { mime = "text/*", use = ["edit", "open"] },
     { mime = "image/*", use = ["view", "edit", "open"] },
     { mime = "video/*", use = ["play", "open"] },

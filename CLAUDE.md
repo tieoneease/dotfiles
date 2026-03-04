@@ -53,6 +53,7 @@ Each package mirrors the home directory:
 - **Login:** greetd + tuigreet → niri-session
 - **Claude Code:** Settings + statusline script (stow package targeting `~/.claude/`)
 - **Pi Coding Agent:** Custom extensions package + skills (see `~/Workspace/pi-extensions/`, `pi_setup.sh`)
+- **File Manager:** Yazi (terminal file manager, imv for images, glow + md-browser for markdown/mermaid)
 - **macOS Tools:** Aerospace, Sketchybar, Karabiner-Elements
 
 ## Theming (Noctalia + matugen)
@@ -70,6 +71,13 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 - **sleep-inhibitor:** Replaces built-in KeepAwake. Uses `systemd-inhibit --what=sleep --mode=block` to block suspend/hibernate while allowing screen blanking (swayidle timeout). The built-in KeepAwake uses `--what=idle` which also prevents screen off. Combined with `LidSwitchIgnoreInhibited=no` in logind, this actually blocks lid-close suspend. A lid display handler (`lid-display-handler.sh`) powers off monitors on lid close when inhibited. Power button always suspends via logind (`PowerKeyIgnoreInhibited=yes`). Has CC widget (coffee icon) and IPC (`qs -c noctalia-shell ipc call plugin:sleep-inhibitor toggle`). Plugin `settings.json` files are gitignored (runtime state).
 - **screen-toggle:** Toggles secondary screen (eDP-2) on Zenbook Duo devices. Self-hides when hardware not detected.
 - **lte-status:** LTE modem status indicator.
+
+## Yazi (file manager)
+- **Image viewer:** imv (Wayland-native, lightweight)
+- **Markdown preview:** Enter on `.md` → glow (terminal render, `q` to quit). Press `o` → "Render Markdown (browser + mermaid)" for full Chrome preview with mermaid diagrams, syntax highlighting.
+- **Mermaid diagrams:** Standalone `.mmd`/`.mermaid` files render in Chrome via `md-browser`. Alternative: `mmdc` (mermaid-cli, via mise) renders to PNG → imv.
+- **`md-browser` script:** `yazi/.local/bin/md-browser` — generates self-contained HTML using marked.js + mermaid.js + highlight.js from CDN, opens in Chrome. No server-side tools needed.
+- **Open rules:** `.md`/`.mdx` and `.mmd`/`.mermaid` rules are placed before the `text/*` catch-all in `yazi.toml`.
 
 ## Arch Linux / EndeavourOS Setup
 - **Setup script:** `./arch_setup.sh` (yay packages, keyd, greetd, sudoers, stow)
