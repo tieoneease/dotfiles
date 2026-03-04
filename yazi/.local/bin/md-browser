@@ -25,13 +25,13 @@ if [[ "$EXT" == "mmd" || "$EXT" == "mermaid" ]]; then
     # Standalone mermaid file — render diagram only
     cat > "$OUTFILE" << HTMLEOF
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-color-mode="dark" data-dark-theme="dark">
 <head>
     <meta charset="utf-8">
     <title>${FILENAME} — Mermaid Preview</title>
     <style>
         body {
-            background: #0d1117; color: #c9d1d9;
+            background: #0d1117; color: #e6edf3;
             display: flex; justify-content: center; align-items: center;
             min-height: 100vh; margin: 0; padding: 20px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
@@ -56,38 +56,61 @@ else
     # Markdown file — render with marked + mermaid + highlight.js
     cat > "$OUTFILE" << HTMLEOF
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-color-mode="dark" data-dark-theme="dark">
 <head>
     <meta charset="utf-8">
     <title>${FILENAME}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/github-dark.min.css">
     <style>
+        html, body { background: #0d1117; }
         body {
-            background: #0d1117; color: #c9d1d9;
             max-width: 980px; margin: 0 auto; padding: 40px 20px;
         }
-        .markdown-body { background: transparent; }
+        .markdown-body {
+            background: transparent;
+            color: #e6edf3;
+            font-size: 16px;
+        }
+        .markdown-body p, .markdown-body li, .markdown-body td, .markdown-body th,
+        .markdown-body blockquote, .markdown-body dl, .markdown-body details {
+            color: #e6edf3;
+        }
+        .markdown-body a { color: #58a6ff; }
+        .markdown-body strong { color: #f0f6fc; }
+        .markdown-body h1, .markdown-body h2 { border-bottom-color: #30363d; }
+        .markdown-body hr { background-color: #30363d; }
+        .markdown-body table tr { background-color: #0d1117; border-color: #30363d; }
+        .markdown-body table tr:nth-child(2n) { background-color: #161b22; }
+        .markdown-body table td, .markdown-body table th { border-color: #30363d; }
+        .markdown-body code { background-color: rgba(110,118,129,0.4); color: #e6edf3; }
+        .markdown-body pre { background-color: #161b22; }
+        .markdown-body pre code { background: transparent; }
+        .markdown-body blockquote { border-left-color: #30363d; color: #9198a1; }
         .mermaid { background: transparent; text-align: center; margin: 16px 0; }
         .mermaid svg { max-width: 100%; height: auto; }
     </style>
 </head>
-<body class="markdown-body">
-    <div id="content"></div>
+<body>
+    <article class="markdown-body">
+        <div id="content"></div>
+    </article>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/highlight.min.js"></script>
     <script type="module">
         import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
         mermaid.initialize({ startOnLoad: false, theme: 'dark' });
 
-        // Render markdown normally
+        // Render markdown
         marked.setOptions({ gfm: true, breaks: false });
         const raw = atob('${CONTENT_B64}');
         document.getElementById('content').innerHTML = marked.parse(raw);
 
         // Syntax highlight code blocks
         document.querySelectorAll('pre code[class*="language-"]').forEach(el => {
-            hljs.highlightElement(el);
+            if (!el.classList.contains('language-mermaid')) {
+                hljs.highlightElement(el);
+            }
         });
 
         // Post-process: convert mermaid code blocks to rendered diagrams
