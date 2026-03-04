@@ -73,11 +73,12 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 - **lte-status:** LTE modem status indicator.
 
 ## Yazi (file manager)
+- **Config schema:** yazi v26+ uses `url` (not `name`) for filename patterns, `[mgr]` (not `[manager]`), and `prepend_rules`/`prepend_preloaders`/`prepend_previewers` to extend built-in defaults.
 - **Image viewer:** imv (Wayland-native, lightweight)
-- **Markdown preview:** Enter on `.md` → glow (terminal render, `q` to quit). Press `o` → "Render Markdown (browser + mermaid)" for full Chrome preview with mermaid diagrams, syntax highlighting.
+- **Markdown preview:** Enter on `.md` → glow (terminal render, `q` to quit). Shift+O → pick "Render Markdown (browser + mermaid)" for full Chrome preview with mermaid diagrams, syntax highlighting.
 - **Mermaid diagrams:** Standalone `.mmd`/`.mermaid` files render in Chrome via `md-browser`. Alternative: `mmdc` (mermaid-cli, via mise) renders to PNG → imv.
 - **`md-browser` script:** `yazi/.local/bin/md-browser` — generates self-contained HTML using marked.js + mermaid.js + highlight.js from CDN, opens in Chrome. No server-side tools needed.
-- **Open rules:** `.md`/`.mdx` and `.mmd`/`.mermaid` rules are placed before the `text/*` catch-all in `yazi.toml`.
+- **Open rules:** `.md`/`.mdx` and `.mmd`/`.mermaid` `url` rules are prepended before the `text/*` catch-all in `yazi.toml`.
 
 ## Arch Linux / EndeavourOS Setup
 - **Setup script:** `./arch_setup.sh` (yay packages, keyd, greetd, sudoers, stow)
