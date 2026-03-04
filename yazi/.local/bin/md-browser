@@ -3,7 +3,6 @@
 # md-browser — Render markdown (with mermaid diagrams) or standalone mermaid files in Chrome
 # Used as a yazi opener for rich previewing of .md, .mmd, and .mermaid files.
 # Dependencies: google-chrome-stable (or chromium), base64
-# No server-side tools needed — uses marked.js + mermaid.js from CDN.
 
 set -euo pipefail
 
@@ -37,32 +36,32 @@ if [[ "$EXT" == "mmd" || "$EXT" == "mermaid" ]]; then
             min-height: 100vh; margin: 0; padding: 20px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
         }
-        .mermaid { max-width: 100%; }
         .mermaid svg { max-width: 100%; height: auto; }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-</head>
-<body>
-    <div class="mermaid" id="diagram"></div>
-    <script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
         mermaid.initialize({ startOnLoad: false, theme: 'dark' });
         const raw = atob('${CONTENT_B64}');
-        document.getElementById('diagram').textContent = raw;
-        mermaid.run();
+        const el = document.getElementById('diagram');
+        const { svg } = await mermaid.render('d', raw);
+        el.innerHTML = svg;
     </script>
+</head>
+<body>
+    <div id="diagram"></div>
 </body>
 </html>
 HTMLEOF
 else
-    # Markdown file — render with marked.js + mermaid.js + highlight.js
+    # Markdown file — render with marked + mermaid + highlight.js
     cat > "$OUTFILE" << HTMLEOF
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>${FILENAME} — Markdown Preview</title>
+    <title>${FILENAME}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github-dark.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/github-dark.min.css">
     <style>
         body {
             background: #0d1117; color: #c9d1d9;
@@ -72,52 +71,47 @@ else
         .mermaid { background: transparent; text-align: center; margin: 16px 0; }
         .mermaid svg { max-width: 100%; height: auto; }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/core.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/javascript.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/typescript.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/python.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/bash.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/json.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/yaml.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/css.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/xml.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/sql.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/rust.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/lua.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/toml.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 </head>
 <body class="markdown-body">
     <div id="content"></div>
-    <script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/highlight.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
         mermaid.initialize({ startOnLoad: false, theme: 'dark' });
 
-        // Custom marked renderer: mermaid code blocks → <div class="mermaid">
-        const renderer = new marked.Renderer();
-        renderer.code = function({ text, lang }) {
-            if (lang === 'mermaid') {
-                return '<div class="mermaid">' + text + '</div>';
-            }
-            if (lang && hljs.getLanguage(lang)) {
-                const highlighted = hljs.highlight(text, { language: lang }).value;
-                return '<pre><code class="hljs language-' + lang + '">' + highlighted + '</code></pre>';
-            }
-            return '<pre><code>' + text + '</code></pre>';
-        };
-
-        marked.setOptions({ renderer, gfm: true, breaks: false });
-
+        // Render markdown normally
+        marked.setOptions({ gfm: true, breaks: false });
         const raw = atob('${CONTENT_B64}');
         document.getElementById('content').innerHTML = marked.parse(raw);
-        mermaid.run();
+
+        // Syntax highlight code blocks
+        document.querySelectorAll('pre code[class*="language-"]').forEach(el => {
+            hljs.highlightElement(el);
+        });
+
+        // Post-process: convert mermaid code blocks to rendered diagrams
+        const mermaidBlocks = document.querySelectorAll('code.language-mermaid');
+        for (let i = 0; i < mermaidBlocks.length; i++) {
+            const code = mermaidBlocks[i].textContent;
+            const pre = mermaidBlocks[i].closest('pre');
+            const div = document.createElement('div');
+            div.className = 'mermaid';
+            try {
+                const { svg } = await mermaid.render('m' + i, code);
+                div.innerHTML = svg;
+            } catch (e) {
+                div.textContent = 'Mermaid error: ' + e.message;
+            }
+            pre.replaceWith(div);
+        }
     </script>
 </body>
 </html>
 HTMLEOF
 fi
 
-# Open in Chrome (reuse existing window if possible)
+# Open in Chrome
 if command -v google-chrome-stable &>/dev/null; then
     google-chrome-stable "file://$OUTFILE" &
 elif command -v chromium &>/dev/null; then
