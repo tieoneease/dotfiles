@@ -124,33 +124,6 @@ install_extensions_package() {
     fi
 }
 
-# --- Disable colliding pi-skills ---
-
-# pi-skills (badlogic/pi-skills) ships brave-search, which collides with our
-# pi-extensions package's brave-search (same name). Disable the pi-skills copy
-# so only the pi-extensions version is active.
-disable_colliding_skills() {
-    if [[ ! -f "$PI_SETTINGS" ]]; then
-        return
-    fi
-
-    local colliding_skills=(
-        "skills/pi-skills/brave-search/SKILL.md"
-    )
-
-    for skill in "${colliding_skills[@]}"; do
-        local disabled="-${skill}"
-        # Skip if already disabled (or not present at all)
-        if jq -e --arg s "$disabled" '.skills // [] | index($s) != null' "$PI_SETTINGS" &>/dev/null; then
-            continue
-        fi
-        echo "  Disabling colliding pi-skill: $skill"
-        local tmp
-        tmp=$(jq --arg s "$disabled" '.skills = (.skills // []) + [$s]' "$PI_SETTINGS")
-        echo "$tmp" > "$PI_SETTINGS"
-    done
-}
-
 # --- Subagent extension ---
 
 install_subagent_extension() {
@@ -210,7 +183,6 @@ main() {
     install_agent_browser
     clone_extensions_repo
     install_extensions_package
-    disable_colliding_skills
     install_subagent_extension
     install_agent_definitions
 
