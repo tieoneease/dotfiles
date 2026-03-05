@@ -127,6 +127,9 @@ defaults write com.apple.dock expose-animation-duration -float 0
 
 run_stow_dotfiles
 
+# Sync nvim plugins with deployed config (lock file may have changed after pull)
+sync_nvim_plugins
+
 # --- GitHub CLI auth ---
 
 ensure_gh_auth || true

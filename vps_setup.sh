@@ -135,6 +135,9 @@ configure_git_identity
 
 run_mise_install
 
+# Sync nvim plugins with deployed config (lock file may have changed after pull)
+sync_nvim_plugins
+
 # --- VPS-specific aliases ---
 
 LOCAL_ZSH="$HOME/.config/zsh/local.zsh"

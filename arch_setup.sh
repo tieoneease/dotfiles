@@ -87,7 +87,8 @@ install_packages kitty
 # Desktop utilities
 echo "Installing desktop utilities..."
 install_packages swayidle playerctl network-manager-applet brightnessctl wl-clipboard bluez bluez-utils \
-    xdg-desktop-portal xdg-desktop-portal-gtk wlsunset localsend-bin libinput-tools fuse2 xdg-utils
+    xdg-desktop-portal xdg-desktop-portal-gtk wlsunset localsend-bin libinput-tools fuse2 xdg-utils \
+    modemmanager
 
 # Calendar sync (khal + vdirsyncer for Noctalia calendar events)
 echo "Installing calendar sync tools..."
@@ -233,6 +234,22 @@ if [[ "$(hostname)" == "sam-ganymede" ]]; then
 
     echo "Enabling Handheld Daemon (HHD)..."
     sudo systemctl enable hhd@"$USER"
+
+    # LTE modem (Quectel EC25) — create GSM connection if none exists
+    if ! nmcli connection show | grep -q ' gsm '; then
+        echo ""
+        echo "No GSM/LTE connection profile found."
+        echo "The GPD Win Max 2 has a Quectel EC25 LTE modem."
+        read -rp "Enter mobile APN (e.g. 'internet' for TW Mobile) or press Enter to skip: " lte_apn
+        if [[ -n "$lte_apn" ]]; then
+            nmcli connection add type gsm ifname '*' con-name 'LTE' apn "$lte_apn" \
+                connection.autoconnect yes connection.autoconnect-priority -1 \
+                ipv4.route-metric 1000 ipv6.route-metric 1000
+            echo "LTE connection profile created (autoconnect, wifi-preferred)."
+        else
+            echo "Skipped. Create manually: nmcli connection add type gsm ifname '*' con-name 'LTE' apn '<APN>'"
+        fi
+    fi
 fi
 
 # Set environment variables (merge into existing /etc/environment, don't overwrite)
@@ -246,6 +263,7 @@ echo "Enabling system services..."
 sudo systemctl enable --now keyd.service
 sudo systemctl enable greetd.service
 sudo systemctl enable --now bluetooth.service
+sudo systemctl enable --now ModemManager.service
 sudo systemctl enable --now tailscaled.service
 if tailscale status &> /dev/null; then
     sudo tailscale set --operator="$USER"
@@ -444,6 +462,9 @@ systemctl --user enable --now vdirsyncer.timer
 
 # Install mise-managed tools (needs stow-deployed config)
 run_mise_install
+
+# Sync nvim plugins with deployed config (lock file may have changed after pull)
+sync_nvim_plugins
 
 # GitHub CLI auth (needed for private repos like pi-extensions)
 ensure_gh_auth || true

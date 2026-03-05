@@ -141,6 +141,21 @@ ensure_gh_auth() {
     return 1
 }
 
+# --- Neovim ---
+
+# Sync nvim plugins + treesitter parsers with the deployed config.
+# Called after stow so that a new lazy-lock.json from another machine
+# is reconciled before the user opens nvim.
+sync_nvim_plugins() {
+    if ! command -v nvim &> /dev/null; then return; fi
+
+    echo "Syncing nvim plugins to lock file..."
+    timeout 120 nvim --headless "+Lazy! restore" +qa 2>/dev/null || true
+
+    echo "Syncing treesitter parsers..."
+    timeout 120 nvim --headless "+TSUpdateSync" +qa 2>/dev/null || true
+}
+
 # --- Stow ---
 
 # Run stow_dotfiles.sh with optional flags (e.g. --vps)
