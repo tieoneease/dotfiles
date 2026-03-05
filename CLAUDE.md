@@ -68,9 +68,10 @@ Dynamic Material Design 3 colors generated from the current wallpaper:
 
 ## Noctalia Plugins (custom, stowed)
 Local plugins in `noctalia/.config/noctalia/plugins/`:
-- **sleep-inhibitor:** Replaces built-in KeepAwake. Uses `systemd-inhibit --what=sleep --mode=block` to block suspend/hibernate while allowing screen blanking (swayidle timeout). The built-in KeepAwake uses `--what=idle` which also prevents screen off. Combined with `LidSwitchIgnoreInhibited=no` in logind, this actually blocks lid-close suspend. A lid display handler (`lid-display-handler.sh`) powers off monitors on lid close when inhibited. Power button always suspends via logind (`PowerKeyIgnoreInhibited=yes`). Has CC widget (coffee icon), IPC (`qs -c noctalia-shell ipc call plugin:sleep-inhibitor toggle`), and hotkey (RCtrl+K → keyd F16 → XF86Launch7). Plugin `settings.json` files are gitignored (runtime state).
+
 - **screen-toggle:** Toggles secondary screen (eDP-2) on Zenbook Duo devices. Self-hides when hardware not detected.
 - **lte-status:** LTE modem status indicator. Requires `ModemManager.service` enabled (polls via `mmcli`).
+- Keep-awake uses built-in Noctalia KeepAwake (`--what=idle`, blocks swayidle idle detection). Plugin `settings.json` files are gitignored (runtime state).
 
 ## Yazi (file manager)
 - **Config schema:** yazi v26+ uses `url` (not `name`) for filename patterns, `[mgr]` (not `[manager]`), and `prepend_rules`/`prepend_preloaders`/`prepend_previewers` to extend built-in defaults.
@@ -92,7 +93,7 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 - **Setup script:** `./arch_setup.sh` (yay packages, keyd, greetd, sudoers, stow)
 - **Idempotent re-runs:** All setup scripts are safe to re-run. Packages check `pacman -Qi` before installing, config files use `cp -f`, stow uses `--restow`, `~/.zshrc` loader checks for its marker before writing (preserving machine-specific additions), optional sections (ASUS, gaming) skip their prompt if already installed, `pkgfile -u` skips if updated within 24 hours, and nvim plugins are synced to the deployed lock file (`Lazy! restore` + `TSUpdateSync`) after stow.
 - **Noctalia patches:** `patch_noctalia.sh` (standalone, idempotent — workspace icons, calendar, weather, tooltips, NIcon raw glyphs). Called by arch_setup.sh via `sudo bash`. Each patch has a guard (grep for marker or patched pattern) and warns if upstream QML changed. Re-applied after `noctalia-shell-git` package updates. Patches are for **UI-only** changes; behavioral changes should use the plugin system instead.
-- **Suspend:** Both the Zenbook Duo and GPD Win Max 2 use s2idle (Low-power S0 idle, the kernel/firmware default). S3 deep sleep is available on the Zenbook Duo but causes failed resume on lid close. Power button handling is done by logind (not niri) to avoid the re-suspend bug (niri #2233). swayidle locks screen on 5min idle and before suspend.
+- **Suspend:** Zenbook Duo uses s2idle. GPD Win Max 2 uses suspend-then-hibernate (s2idle for 15min, then hibernate to disk) because AMD Phoenix S0ix is broken. Power button handling is done by logind (not niri) to avoid the re-suspend bug (niri #2233). Noctalia `lockOnSuspend` locks screen before suspend. swayidle handles idle lock (5min) and DPMS (10min). See `POWER-MANAGEMENT.md` for full architecture and config details.
 - **GPD Win Max 2 (`sam-ganymede`):** CachyOS, Quectel EC25 LTE modem (USB, `qmi_wwan`+`option` drivers). Setup installs `modemmanager`, enables `ModemManager.service`, and prompts for APN to create a GSM connection profile (`nmcli connection add type gsm`). LTE is configured as fallback: `autoconnect-priority -1`, `route-metric 1000` — wifi is always preferred when available. Also installs `bmi260-dkms` (IMU), `hhd` (handheld daemon), and amdgpu stability configs.
 - Niri compositor with dynamic Material Design 3 colors via Noctalia/matugen
 - Passwordless sudo setup for Claude Code (opt-in with confirmation prompt)

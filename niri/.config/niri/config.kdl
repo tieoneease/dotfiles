@@ -172,8 +172,7 @@ layout {
 spawn-at-startup "nm-applet" "--indicator"
 spawn-at-startup "fcitx5"
 spawn-at-startup "xwayland-satellite"
-spawn-sh-at-startup "swayidle -w timeout 300 'qs -c noctalia-shell ipc call lockScreen lock' timeout 600 'niri msg action power-off-monitors' resume 'niri msg action power-on-monitors' before-sleep 'qs -c noctalia-shell ipc call lockScreen lock'"
-spawn-sh-at-startup "~/.config/niri/lid-display-handler.sh"
+spawn-sh-at-startup "swayidle -w timeout 300 'qs -c noctalia-shell ipc call lockScreen lock' timeout 600 'niri msg action power-off-monitors' resume 'niri msg action power-on-monitors'"
 spawn-sh-at-startup "~/.config/niri/zenbook-duo-dock.sh"
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:

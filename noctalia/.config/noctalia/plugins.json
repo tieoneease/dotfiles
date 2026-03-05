@@ -14,10 +14,6 @@
         "screen-toggle": {
             "enabled": true,
             "sourceUrl": "https://github.com/noctalia-dev/noctalia-plugins"
-        },
-        "sleep-inhibitor": {
-            "enabled": true,
-            "sourceUrl": "local"
         }
     },
     "version": 2

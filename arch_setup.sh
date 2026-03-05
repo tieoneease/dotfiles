@@ -195,6 +195,14 @@ echo "Configuring xdg-desktop-portal..."
 sudo mkdir -p /etc/xdg-desktop-portal
 sudo cp -f "$DOTFILES_DIR/etc/xdg-desktop-portal/portals.conf" /etc/xdg-desktop-portal/portals.conf
 
+# Power button + lid switch: suspend instead of poweroff (all laptops)
+echo "Configuring logind power button and lid switch handling..."
+sudo mkdir -p /etc/systemd/logind.conf.d
+sudo cp -f "$DOTFILES_DIR/etc/systemd/logind.conf.d/10-power-and-lid.conf" /etc/systemd/logind.conf.d/
+# Clean up old configs from previous setup
+sudo rm -f /etc/systemd/logind.conf.d/10-lid-inhibitor.conf
+sudo rm -f /etc/systemd/sleep.conf.d/10-deep-sleep.conf
+
 # Copy libinput quirks for Zenbook Duo (DWT fix for keyd + detachable keyboard touchpad)
 if [[ "$(hostname)" == "sam-duomoon" ]]; then
     echo "Configuring libinput quirks for Zenbook Duo..."
@@ -234,6 +242,48 @@ if [[ "$(hostname)" == "sam-ganymede" ]]; then
 
     echo "Enabling Handheld Daemon (HHD)..."
     sudo systemctl enable hhd@"$USER"
+
+    # Suspend-then-hibernate: s2idle for 15min then hibernate to disk.
+    # AMD Phoenix S0ix is broken (CPU never enters deep idle during s2idle),
+    # so the machine drains battery at near-active rates while "suspended".
+    # After 15 minutes, systemd auto-hibernates to disk (0W, indefinite standby).
+    echo "Configuring suspend-then-hibernate..."
+    sudo cp -f "$DOTFILES_DIR/etc/systemd/logind.conf.d/20-suspend-then-hibernate.conf" /etc/systemd/logind.conf.d/
+    sudo mkdir -p /etc/systemd/sleep.conf.d
+    sudo cp -f "$DOTFILES_DIR/etc/systemd/sleep.conf.d/10-suspend-then-hibernate.conf" /etc/systemd/sleep.conf.d/
+
+    # Create btrfs swap file for hibernate (16GB, needs to be >= RAM for full state)
+    if [ ! -f /swap/swapfile ]; then
+        echo "Creating 16GB swap file for hibernate..."
+        sudo mkdir -p /swap
+        sudo btrfs filesystem mkswapfile --size 16G /swap/swapfile
+        echo "Swap file created."
+    fi
+    if ! swapon --show | grep -q '/swap/swapfile'; then
+        sudo swapon /swap/swapfile
+    fi
+    if ! grep -q '/swap/swapfile' /etc/fstab; then
+        echo '/swap/swapfile none swap defaults 0 0' | sudo tee -a /etc/fstab > /dev/null
+        echo "Added swap file to /etc/fstab."
+    fi
+
+    # Add resume= kernel parameters for hibernate (Limine bootloader)
+    SWAP_OFFSET=$(sudo btrfs inspect-internal map-swapfile -r /swap/swapfile 2>/dev/null || echo "")
+    ROOT_UUID="$(findmnt -no UUID /)"
+    if [[ -n "$SWAP_OFFSET" && -n "$ROOT_UUID" ]]; then
+        RESUME_PARAMS="resume=UUID=${ROOT_UUID} resume_offset=${SWAP_OFFSET}"
+        LIMINE_DROPIN="/etc/limine-entry-tool.d/10-hibernate.conf"
+        if [ ! -f "$LIMINE_DROPIN" ] || ! grep -q "resume_offset=${SWAP_OFFSET}" "$LIMINE_DROPIN" 2>/dev/null; then
+            sudo mkdir -p /etc/limine-entry-tool.d
+            echo "KERNEL_CMDLINE[default]+=\"${RESUME_PARAMS}\"" | sudo tee "$LIMINE_DROPIN" > /dev/null
+            echo "Added hibernate kernel params: $RESUME_PARAMS"
+            echo "Regenerating boot entries..."
+            sudo limine-entry-tool
+        fi
+    else
+        echo "⚠ Could not determine swap offset — hibernate kernel params not added."
+        echo "  Run manually: sudo btrfs inspect-internal map-swapfile -r /swap/swapfile"
+    fi
 
     # LTE modem (Quectel EC25) — create GSM connection if none exists
     if ! nmcli connection show | grep -q ' gsm '; then
@@ -391,17 +441,6 @@ if $asus_setup; then
     sudo mkdir -p /etc/systemd/system/asusd.service.d
     sudo cp -f "$DOTFILES_DIR/etc/systemd/system/asusd.service.d/restart.conf" /etc/systemd/system/asusd.service.d/
     sudo systemctl daemon-reload
-
-    # Power button + lid close + sleep inhibitor configuration.
-    # - HandlePowerKey=suspend: power button suspends (not poweroff)
-    # - PowerKeyIgnoreInhibited=yes: power button always works (escape hatch)
-    # - LidSwitchIgnoreInhibited=no: sleep-inhibitor plugin can block lid-close suspend
-    echo "Configuring logind power button and lid switch handling..."
-    sudo mkdir -p /etc/systemd/logind.conf.d
-    sudo cp -f "$DOTFILES_DIR/etc/systemd/logind.conf.d/10-power-and-lid.conf" /etc/systemd/logind.conf.d/
-    # Clean up old configs from previous setup
-    sudo rm -f /etc/systemd/logind.conf.d/10-lid-inhibitor.conf
-    sudo rm -f /etc/systemd/sleep.conf.d/10-deep-sleep.conf
 
     echo "ASUS Zenbook Duo setup complete."
     echo "  - asusctl manages fn keys, keyboard backlight, and platform profiles"
