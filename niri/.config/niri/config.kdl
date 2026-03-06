@@ -408,6 +408,9 @@ binds {
     // Toggle eDP-2 bottom screen (physical F13 key → XKB maps to XF86Tools)
     XF86Tools { spawn-sh "~/.local/bin/toggle-edp2"; }
 
+    // Toggle sleep inhibitor (RCtrl + K → keyd emits F16 → XKB maps to XF86Launch7)
+    XF86Launch7 { spawn "qs" "-c" "noctalia-shell" "ipc" "call" "plugin:sleep-inhibitor" "toggle"; }
+
     // Cycle power profile (RCtrl + P → keyd emits F15 → XKB maps to XF86Launch6)
     XF86Launch6 { spawn "qs" "msg" "-p" "/etc/xdg/quickshell/noctalia-shell" "powerProfile" "cycle"; }
 

@@ -68,7 +68,7 @@ Dynamic Material Design 3 colors generated from the current wallpaper:
 
 ## Noctalia Plugins (custom, stowed)
 Local plugins in `noctalia/.config/noctalia/plugins/`:
-- **sleep-inhibitor:** Replaces built-in KeepAwake. Uses `systemd-inhibit --what=sleep --mode=block` to block suspend/hibernate while allowing screen blanking (swayidle timeout). The built-in KeepAwake uses `--what=idle` which also prevents screen off. Combined with `LidSwitchIgnoreInhibited=no` in logind, this actually blocks lid-close suspend. A lid display handler (`lid-display-handler.sh`) powers off monitors on lid close when inhibited. Power button always suspends via logind (`PowerKeyIgnoreInhibited=yes`). Has CC widget (coffee icon) and IPC (`qs -c noctalia-shell ipc call plugin:sleep-inhibitor toggle`). Plugin `settings.json` files are gitignored (runtime state).
+- **sleep-inhibitor:** Replaces built-in KeepAwake. Uses `systemd-inhibit --what=sleep --mode=block` to block suspend/hibernate while allowing screen blanking (swayidle timeout). The built-in KeepAwake uses `--what=idle` which also prevents screen off. Combined with `LidSwitchIgnoreInhibited=no` in logind, this actually blocks lid-close suspend. A lid display handler (`lid-display-handler.sh`) powers off monitors on lid close when inhibited. Power button always suspends via logind (`PowerKeyIgnoreInhibited=yes`). Has CC widget (coffee icon), IPC (`qs -c noctalia-shell ipc call plugin:sleep-inhibitor toggle`), and hotkey (RCtrl+K → keyd F16 → XF86Launch7). Plugin `settings.json` files are gitignored (runtime state).
 - **screen-toggle:** Toggles secondary screen (eDP-2) on Zenbook Duo devices. Self-hides when hardware not detected.
 - **lte-status:** LTE modem status indicator. Requires `ModemManager.service` enabled (polls via `mmcli`).
 
@@ -88,7 +88,7 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 - **GPD Win Max 2 (`sam-ganymede`):** CachyOS, Quectel EC25 LTE modem (USB, `qmi_wwan`+`option` drivers). Setup installs `modemmanager`, enables `ModemManager.service`, and prompts for APN to create a GSM connection profile (`nmcli connection add type gsm`). LTE is configured as fallback: `autoconnect-priority -1`, `route-metric 1000` — wifi is always preferred when available. Also installs `bmi260-dkms` (IMU), `hhd` (handheld daemon), and amdgpu stability configs.
 - Niri compositor with dynamic Material Design 3 colors via Noctalia/matugen
 - Passwordless sudo setup for Claude Code (opt-in with confirmation prompt)
-- keyd keyboard layers (numpad, nav, media)
+- keyd keyboard layers (numpad, nav, media, sleep-inhibitor toggle via RCtrl+K)
 - See `NIRI-SETUP.md` for detailed architecture docs
 
 ## Pi Coding Agent
