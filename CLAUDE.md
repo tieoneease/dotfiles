@@ -97,5 +97,6 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 - **GitHub CLI:** `gh` (github-cli) installed by setup scripts, authenticated via `ensure_gh_auth` in `setup/common.sh`. Required to clone the private pi-extensions repo on new machines.
 - **Subagent extension:** Symlinked from pi's examples to `~/.pi/agent/extensions/subagent/` (re-linked on pi version updates by pi_setup.sh)
 - **Agent definitions:** `~/Workspace/pi-extensions/agents/` — subagent agent definitions (not auto-discovered by pi packages, copied to `~/.pi/agent/agents/` by pi_setup.sh). Contains `researcher.md`.
+- **Dev server extension:** `dev_server` tool for non-blocking dev server lifecycle (start/status/logs/stop). State at `/tmp/pi-dev-server/<name>/` (pid, url, status, output.log) — readable by any process. Transparent [Portless](https://github.com/vercel-labs/portless) integration when installed (`<name>.localhost:1355`), otherwise `localhost:<port>`. Use this instead of running dev servers via bash (which blocks forever).
 - **Per-machine config:** Use `pi config` to enable/disable individual extensions or skills on each machine — no dotfiles changes needed
 - **Adding extensions/skills/agents:** Edit `~/Workspace/pi-extensions/` directly — extensions, skills, and prompt templates auto-load via the package manifest; agents need `pi_setup.sh` to deploy
