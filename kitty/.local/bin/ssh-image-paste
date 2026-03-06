@@ -11,20 +11,30 @@ set -euo pipefail
 # Both true  → scp image to remote /tmp, type path into terminal
 # Either false → passthrough raw Ctrl+V to the application
 #
+# SSH options (-i, -p, -o, -F) are extracted from the SSH cmdline and
+# forwarded to scp, so connections via gcloud/IAP/custom keys work.
+# For best reliability, enable SSH ControlMaster (see ssh config).
+#
 # Requires: wl-paste (wl-clipboard), jq, scp
 # Kitty config: allow_remote_control socket-only, listen_on unix:/tmp/kitty
 
 REMOTE_DIR="/tmp"
-KITTY_SOCKET="unix:/tmp/kitty"
+KITTY_SOCKET="${KITTY_LISTEN_ON:-unix:/tmp/kitty}"
+LOG="/tmp/ssh-image-paste.log"
+
+log() { printf '[%s] %s\n' "$(date '+%H:%M:%S')" "$*" >> "$LOG"; }
 
 # --- Passthrough: send raw Ctrl+V (0x16) to the active window ---
 passthrough() {
+    [[ -n "${1:-}" ]] && log "passthrough: $1"
     kitty @ --to "$KITTY_SOCKET" send-text --match=recent:0 '\x16'
     exit 0
 }
 
+log "--- Ctrl+V pressed (socket=$KITTY_SOCKET) ---"
+
 # --- 1. Does the clipboard contain an image? ---
-TYPES=$(wl-paste --list-types 2>/dev/null) || passthrough
+TYPES=$(wl-paste --list-types 2>/dev/null) || passthrough "wl-paste --list-types failed"
 
 MIME=""
 for t in image/png image/jpeg image/webp image/gif; do
@@ -33,10 +43,12 @@ for t in image/png image/jpeg image/webp image/gif; do
         break
     fi
 done
-[[ -z "$MIME" ]] && passthrough
+[[ -z "$MIME" ]] && passthrough "no image in clipboard (types: $(echo "$TYPES" | tr '\n' ' '))"
+
+log "clipboard has $MIME"
 
 # --- 2. Is the active Kitty window an SSH session? ---
-INFO=$(kitty @ --to "$KITTY_SOCKET" ls 2>/dev/null) || passthrough
+INFO=$(kitty @ --to "$KITTY_SOCKET" ls 2>/dev/null) || passthrough "kitty @ ls failed"
 
 # Get cmdline of each foreground process in the focused window
 # Look for any process whose basename is "ssh"
@@ -45,16 +57,20 @@ SSH_CMDLINE=$(echo "$INFO" | jq -r '
     .[0].foreground_processes // [] |
     map(select(.cmdline[0] | test("(^|/)ssh$"))) |
     .[0].cmdline // empty | .[]
-') || passthrough
+') || passthrough "jq parse failed"
 
-[[ -z "$SSH_CMDLINE" ]] && passthrough
+[[ -z "$SSH_CMDLINE" ]] && passthrough "no ssh process in focused window"
 
-# --- 3. Parse SSH destination (first non-option argument) ---
+log "SSH cmdline: $(echo "$SSH_CMDLINE" | tr '\n' ' ')"
+
+# --- 3. Parse SSH destination and collect options for scp ---
 # Options that consume the next argument:
 #   -b -c -D -E -e -F -I -i -J -L -l -m -O -o -p -Q -R -S -W -w
 OPTS_WITH_ARG="bcDEeFIiJLlmOopQRSWw"
 SSH_DEST=""
+SCP_OPTS=()
 SKIP_NEXT=false
+PREV_FLAG=""
 FIRST=true
 
 while IFS= read -r arg; do
@@ -66,17 +82,33 @@ while IFS= read -r arg; do
 
     if $SKIP_NEXT; then
         SKIP_NEXT=false
+        # Forward relevant options to scp
+        case "$PREV_FLAG" in
+            -i) SCP_OPTS+=("-i" "$arg") ;;
+            -p) SCP_OPTS+=("-P" "$arg") ;;   # ssh -p → scp -P
+            -o) SCP_OPTS+=("-o" "$arg") ;;
+            -F) SCP_OPTS+=("-F" "$arg") ;;
+        esac
         continue
     fi
 
     # Flag that takes a separate argument: -p 22
     if [[ "$arg" =~ ^-[$OPTS_WITH_ARG]$ ]]; then
         SKIP_NEXT=true
+        PREV_FLAG="$arg"
         continue
     fi
 
-    # Combined flag+value: -p22, -oStrictHostKeyChecking=no
+    # Combined flag+value: -p22, -oStrictHostKeyChecking=no, -i/path/to/key
     if [[ "$arg" =~ ^-[$OPTS_WITH_ARG]. ]]; then
+        flag="${arg:0:2}"
+        val="${arg:2}"
+        case "$flag" in
+            -i) SCP_OPTS+=("-i" "$val") ;;
+            -p) SCP_OPTS+=("-P" "$val") ;;
+            -o) SCP_OPTS+=("-o" "$val") ;;
+            -F) SCP_OPTS+=("-F" "$val") ;;
+        esac
         continue
     fi
 
@@ -90,7 +122,9 @@ while IFS= read -r arg; do
     break
 done <<< "$SSH_CMDLINE"
 
-[[ -z "$SSH_DEST" ]] && passthrough
+[[ -z "$SSH_DEST" ]] && passthrough "could not parse SSH destination"
+
+log "dest=$SSH_DEST scp_opts=(${SCP_OPTS[*]:-})"
 
 # --- 4. Grab image, scp to remote, type path ---
 EXT="png"
@@ -107,17 +141,26 @@ REMOTE_FILE="${REMOTE_DIR}/${FILENAME}"
 # Grab image from clipboard
 wl-paste --type "$MIME" --no-newline > "$LOCAL_FILE" 2>/dev/null || {
     rm -f "$LOCAL_FILE"
-    passthrough
+    passthrough "wl-paste image grab failed"
 }
 
-# Transfer to remote (reuses existing SSH connection via ControlMaster if configured)
-scp -q -o ConnectTimeout=5 -o BatchMode=yes "$LOCAL_FILE" "${SSH_DEST}:${REMOTE_FILE}" 2>/dev/null || {
+FILESIZE=$(wc -c < "$LOCAL_FILE")
+log "saved clipboard image to $LOCAL_FILE ($FILESIZE bytes)"
+
+# Transfer to remote (uses ControlMaster if configured, forwards SSH options)
+scp -q -o ConnectTimeout=5 -o BatchMode=yes \
+    ${SCP_OPTS[@]+"${SCP_OPTS[@]}"} \
+    "$LOCAL_FILE" "${SSH_DEST}:${REMOTE_FILE}" 2>>"$LOG" || {
+    log "scp FAILED (exit $?)"
     rm -f "$LOCAL_FILE"
-    passthrough
+    passthrough "scp to ${SSH_DEST} failed"
 }
+
+log "transferred to ${SSH_DEST}:${REMOTE_FILE}"
 
 # Clean up local temp file
 rm -f "$LOCAL_FILE"
 
 # Type the remote path into the terminal
 kitty @ --to "$KITTY_SOCKET" send-text --match=recent:0 "$REMOTE_FILE"
+log "typed path into terminal — done"

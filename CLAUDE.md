@@ -80,8 +80,13 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 - **`md-browser` script:** `yazi/.local/bin/md-browser` — generates self-contained HTML using marked.js + mermaid.js + highlight.js from CDN, opens in Chrome. No server-side tools needed.
 - **Open rules:** `.md`/`.mdx` and `.mmd`/`.mermaid` `url` rules are prepended before the `text/*` catch-all in `yazi.toml`.
 
+## SSH
+- **Config:** `ssh/.ssh/config` (stowed to `~/.ssh/config`)
+- **ControlMaster:** `Host *` enables connection multiplexing (`ControlMaster auto`, `ControlPath /tmp/ssh_mux_%r@%h-%p`, `ControlPersist 600`). First SSH connection becomes the master; subsequent SSH/SCP connections reuse it (no extra auth). Critical for `ssh-image-paste` — `scp` piggybacks on the existing session.
+- **ServerAliveInterval:** 60s keepalive prevents idle disconnects.
+
 ## Kitty (terminal)
-- **SSH image paste:** `ssh-image-paste` script (`kitty/.local/bin/`) bound to Ctrl+V in kitty.conf. Auto-detects: (1) clipboard contains an image (`wl-paste --list-types`), (2) active Kitty window is an SSH session (`kitty @ ls` + jq to inspect `foreground_processes`). Both true → `wl-paste` grabs image → `scp` to remote `/tmp` → types the path into the terminal. Either false → passthrough raw Ctrl+V to the application (pi's `pasteImage`, etc.). SSH destination is parsed from the `ssh` cmdline (handles `user@host`, SSH config aliases, flags with arguments). Requires: `wl-clipboard`, `jq`, `kitty` with `allow_remote_control socket-only` + `listen_on unix:/tmp/kitty`. Tip: SSH `ControlMaster` multiplexing makes the `scp` near-instant.
+- **SSH image paste:** `ssh-image-paste` script (`kitty/.local/bin/`) bound to Ctrl+V in kitty.conf. Auto-detects: (1) clipboard contains an image (`wl-paste --list-types`), (2) active Kitty window is an SSH session (`kitty @ ls` + jq to inspect `foreground_processes`). Both true → `wl-paste` grabs image → `scp` to remote `/tmp` → types the path into the terminal. Either false → passthrough raw Ctrl+V to the application (pi's `pasteImage`, etc.). SSH destination is parsed from the `ssh` cmdline (handles `user@host`, SSH config aliases, flags with arguments). SSH options (`-i`, `-p`, `-o`, `-F`) are forwarded to `scp` so connections via gcloud/IAP/custom keys work. Debug log at `/tmp/ssh-image-paste.log`. Requires: `wl-clipboard`, `jq`, `kitty` with `allow_remote_control socket-only` + `listen_on unix:/tmp/kitty`.
 
 ## Arch Linux / EndeavourOS Setup
 - **Setup script:** `./arch_setup.sh` (yay packages, keyd, greetd, sudoers, stow)
