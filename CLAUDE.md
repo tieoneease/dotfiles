@@ -44,7 +44,7 @@ Each package mirrors the home directory:
 
 ## Main Components
 - **Shell:** Zsh with Starship prompt (layered: .zshenv + base.zsh + aliases.zsh)
-- **Terminals:** Kitty
+- **Terminals:** Kitty (with `ssh-image-paste` for transparent image forwarding over SSH)
 - **Editor:** Neovim (base16-nvim for dynamic theming)
 - **Multiplexer:** Tmux with tmux-sessionizer
 - **Compositor:** Niri (scrollable tiling Wayland)
@@ -79,6 +79,9 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 - **Mermaid diagrams:** Standalone `.mmd`/`.mermaid` files render in Chrome via `md-browser`. Alternative: `mmdc` (mermaid-cli, via mise) renders to PNG → imv.
 - **`md-browser` script:** `yazi/.local/bin/md-browser` — generates self-contained HTML using marked.js + mermaid.js + highlight.js from CDN, opens in Chrome. No server-side tools needed.
 - **Open rules:** `.md`/`.mdx` and `.mmd`/`.mermaid` `url` rules are prepended before the `text/*` catch-all in `yazi.toml`.
+
+## Kitty (terminal)
+- **SSH image paste:** `ssh-image-paste` script (`kitty/.local/bin/`) bound to Ctrl+V in kitty.conf. Auto-detects: (1) clipboard contains an image (`wl-paste --list-types`), (2) active Kitty window is an SSH session (`kitty @ ls` + jq to inspect `foreground_processes`). Both true → `wl-paste` grabs image → `scp` to remote `/tmp` → types the path into the terminal. Either false → passthrough raw Ctrl+V to the application (pi's `pasteImage`, etc.). SSH destination is parsed from the `ssh` cmdline (handles `user@host`, SSH config aliases, flags with arguments). Requires: `wl-clipboard`, `jq`, `kitty` with `allow_remote_control socket-only` + `listen_on unix:/tmp/kitty`. Tip: SSH `ControlMaster` multiplexing makes the `scp` near-instant.
 
 ## Arch Linux / EndeavourOS Setup
 - **Setup script:** `./arch_setup.sh` (yay packages, keyd, greetd, sudoers, stow)

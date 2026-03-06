@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# ssh-image-paste — Kitty Ctrl+V handler
+#
+# Bound to Ctrl+V in kitty.conf. Auto-detects two conditions:
+#   1. Clipboard contains an image (via wl-paste)
+#   2. Active Kitty window is an SSH session
+#
+# Both true  → scp image to remote /tmp, type path into terminal
+# Either false → passthrough raw Ctrl+V to the application
+#
+# Requires: wl-paste (wl-clipboard), jq, scp
+# Kitty config: allow_remote_control socket-only, listen_on unix:/tmp/kitty
+
+REMOTE_DIR="/tmp"
+KITTY_SOCKET="unix:/tmp/kitty"
+
+# --- Passthrough: send raw Ctrl+V (0x16) to the active window ---
+passthrough() {
+    kitty @ --to "$KITTY_SOCKET" send-text --match=recent:0 '\x16'
+    exit 0
+}
+
+# --- 1. Does the clipboard contain an image? ---
+TYPES=$(wl-paste --list-types 2>/dev/null) || passthrough
+
+MIME=""
+for t in image/png image/jpeg image/webp image/gif; do
+    if grep -qx "$t" <<< "$TYPES"; then
+        MIME="$t"
+        break
+    fi
+done
+[[ -z "$MIME" ]] && passthrough
+
+# --- 2. Is the active Kitty window an SSH session? ---
+INFO=$(kitty @ --to "$KITTY_SOCKET" ls 2>/dev/null) || passthrough
+
+# Get cmdline of each foreground process in the focused window
+# Look for any process whose basename is "ssh"
+SSH_CMDLINE=$(echo "$INFO" | jq -r '
+    [.[].tabs[].windows[] | select(.is_focused == true)] |
+    .[0].foreground_processes // [] |
+    map(select(.cmdline[0] | test("(^|/)ssh$"))) |
+    .[0].cmdline // empty | .[]
+') || passthrough
+
+[[ -z "$SSH_CMDLINE" ]] && passthrough
+
+# --- 3. Parse SSH destination (first non-option argument) ---
+# Options that consume the next argument:
+#   -b -c -D -E -e -F -I -i -J -L -l -m -O -o -p -Q -R -S -W -w
+OPTS_WITH_ARG="bcDEeFIiJLlmOopQRSWw"
+SSH_DEST=""
+SKIP_NEXT=false
+FIRST=true
+
+while IFS= read -r arg; do
+    # Skip "ssh" itself
+    if $FIRST; then
+        FIRST=false
+        continue
+    fi
+
+    if $SKIP_NEXT; then
+        SKIP_NEXT=false
+        continue
+    fi
+
+    # Flag that takes a separate argument: -p 22
+    if [[ "$arg" =~ ^-[$OPTS_WITH_ARG]$ ]]; then
+        SKIP_NEXT=true
+        continue
+    fi
+
+    # Combined flag+value: -p22, -oStrictHostKeyChecking=no
+    if [[ "$arg" =~ ^-[$OPTS_WITH_ARG]. ]]; then
+        continue
+    fi
+
+    # Simple flag: -v, -N, -T, etc.
+    if [[ "$arg" == -* ]]; then
+        continue
+    fi
+
+    # First non-flag argument is the destination
+    SSH_DEST="$arg"
+    break
+done <<< "$SSH_CMDLINE"
+
+[[ -z "$SSH_DEST" ]] && passthrough
+
+# --- 4. Grab image, scp to remote, type path ---
+EXT="png"
+case "$MIME" in
+    image/jpeg) EXT="jpg" ;;
+    image/webp) EXT="webp" ;;
+    image/gif)  EXT="gif" ;;
+esac
+
+FILENAME="ssh-paste-$(date +%s%N).${EXT}"
+LOCAL_FILE="/tmp/${FILENAME}"
+REMOTE_FILE="${REMOTE_DIR}/${FILENAME}"
+
+# Grab image from clipboard
+wl-paste --type "$MIME" --no-newline > "$LOCAL_FILE" 2>/dev/null || {
+    rm -f "$LOCAL_FILE"
+    passthrough
+}
+
+# Transfer to remote (reuses existing SSH connection via ControlMaster if configured)
+scp -q -o ConnectTimeout=5 -o BatchMode=yes "$LOCAL_FILE" "${SSH_DEST}:${REMOTE_FILE}" 2>/dev/null || {
+    rm -f "$LOCAL_FILE"
+    passthrough
+}
+
+# Clean up local temp file
+rm -f "$LOCAL_FILE"
+
+# Type the remote path into the terminal
+kitty @ --to "$KITTY_SOCKET" send-text --match=recent:0 "$REMOTE_FILE"
