@@ -124,33 +124,6 @@ install_extensions_package() {
     fi
 }
 
-# --- Subagent extension ---
-
-install_subagent_extension() {
-    local subagent_ext_dir="$HOME/.pi/agent/extensions/subagent"
-
-    # Find pi's installed package path by following the pi binary symlink
-    local pi_bin pi_cli pi_pkg_dir
-    pi_bin="$(command -v pi 2>/dev/null)" || true
-    if [[ -n "$pi_bin" ]]; then
-        pi_cli="$(readlink -f "$pi_bin")"
-        pi_pkg_dir="$(dirname "$(dirname "$pi_cli")")"
-    fi
-
-    if [[ -z "${pi_pkg_dir:-}" || ! -d "$pi_pkg_dir/examples/extensions/subagent" ]]; then
-        echo "⚠ Could not find pi subagent extension source, skipping"
-        return
-    fi
-
-    local subagent_src="$pi_pkg_dir/examples/extensions/subagent"
-    mkdir -p "$subagent_ext_dir"
-
-    # Symlink extension files (re-link on each run to follow pi version updates)
-    ln -sf "$subagent_src/index.ts" "$subagent_ext_dir/index.ts"
-    ln -sf "$subagent_src/agents.ts" "$subagent_ext_dir/agents.ts"
-    echo "Subagent extension linked from $subagent_src"
-}
-
 # --- Agent definitions ---
 
 install_agent_definitions() {
@@ -183,8 +156,13 @@ main() {
     install_agent_browser
     clone_extensions_repo
     install_extensions_package
-    install_subagent_extension
     install_agent_definitions
+
+    # Clean up legacy subagent symlinks (now part of pi-extensions package)
+    if [[ -d "$HOME/.pi/agent/extensions/subagent" ]]; then
+        rm -rf "$HOME/.pi/agent/extensions/subagent"
+        echo "Cleaned up legacy subagent symlinks."
+    fi
 
     echo "Pi setup complete."
     echo "  Extensions: pi list"
