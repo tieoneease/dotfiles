@@ -43,7 +43,7 @@ Each package mirrors the home directory:
 - `claude/.claude/settings.json` → `~/.claude/settings.json`
 
 ## Main Components
-- **Shell:** Zsh with Starship prompt (layered: .zshenv + base.zsh + aliases.zsh)
+- **Shell:** Zsh with Starship prompt (layered: .zshenv + base.zsh + aliases.zsh). `EDITOR`/`VISUAL` set to nvim in base.zsh (portable — don't rely on `/etc/environment`).
 - **Terminals:** Kitty (with `ssh-image-paste` for transparent image forwarding over SSH)
 - **Editor:** Neovim (base16-nvim for dynamic theming)
 - **Multiplexer:** Tmux with tmux-sessionizer
@@ -83,7 +83,7 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 
 ## SSH
 - **Config:** `ssh/.ssh/config` (stowed to `~/.ssh/config`)
-- **ControlMaster:** `Host *` enables connection multiplexing (`ControlMaster auto`, `ControlPath /tmp/ssh_mux_%r@%h-%p`, `ControlPersist 600`). First SSH connection becomes the master; subsequent SSH/SCP connections reuse it (no extra auth). Critical for `ssh-image-paste` — `scp` piggybacks on the existing session.
+- **ControlMaster:** `Host *` enables connection multiplexing (`ControlMaster auto`, `ControlPath /tmp/ssh_mux_%r@%h-%p`, `ControlPersist 600`). First SSH connection becomes the master; subsequent SSH/SCP connections reuse it (no extra auth). Critical for `ssh-image-paste` — `scp` piggybacks on the existing session. **Incompatible with `kitten ssh`** — Kitty's SSH kitten bootstrap protocol breaks with multiplexed connections (partial terminal setup, broken key sequences in remote tmux). Use regular `ssh` instead; Kitty already forwards `TERM=xterm-kitty` and remotes have the terminfo installed.
 - **ServerAliveInterval:** 60s keepalive prevents idle disconnects.
 
 ## Kitty (terminal)

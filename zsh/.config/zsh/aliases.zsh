@@ -75,10 +75,9 @@ if command -v nproc &>/dev/null; then
     alias ninja="ninja -j\$(nproc)"
 fi
 
-# SSH (use kitten ssh in kitty to auto-copy terminfo and avoid TERM issues)
-if [[ "$TERM" == "xterm-kitty" ]]; then
-    alias ssh="kitten ssh"
-fi
+# NOTE: kitten ssh is NOT used — it conflicts with SSH ControlMaster
+# (needed for ssh-image-paste). Regular ssh from Kitty already forwards
+# TERM=xterm-kitty and remotes have the terminfo installed.
 
 # Other
 alias todos="nvim ~/todos.todo"
