@@ -1,0 +1,469 @@
+#!/usr/bin/python3
+
+"""
+Translate clipboard text to English with romanization.
+
+One-shot script (not a daemon): reads clipboard, translates via translate-shell,
+shows result in a GTK4 layer-shell overlay, auto-saves to word bank.
+
+Hotkey: both alts + R (keyd emits F17 → XKB XF86Launch8 → niri spawns this).
+"""
+
+import os
+import sys
+
+# GTK4 Layer Shell must be preloaded before libwayland to work correctly.
+# Re-exec with LD_PRELOAD if not already set.
+_LAYER_SHELL_LIB = "/usr/lib/libgtk4-layer-shell.so"
+if os.path.exists(_LAYER_SHELL_LIB) and _LAYER_SHELL_LIB not in os.environ.get("LD_PRELOAD", ""):
+    os.environ["LD_PRELOAD"] = _LAYER_SHELL_LIB
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+
+import json
+import re
+import subprocess
+import threading
+import time
+import unicodedata
+
+import gi
+gi.require_version("Gtk", "4.0")
+gi.require_version("Gtk4LayerShell", "1.0")
+from gi.repository import Gtk, Gdk, GLib, Gtk4LayerShell
+
+WORDS_DIR = os.path.expanduser("~/.local/share/translate")
+WORDS_FILE = os.path.join(WORDS_DIR, "words.json")
+COLORS_FILE = os.path.expanduser("~/.config/noctalia/colors.json")
+DISMISS_SECONDS = 8
+
+
+# --- Colors ---
+
+def hex_to_rgb(hex_color):
+    """Convert '#rrggbb' to (r, g, b) ints 0–255."""
+    h = hex_color.lstrip("#")
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+def load_colors():
+    """Load theme colors from noctalia colors.json, with fallbacks."""
+    colors = {
+        "surface": "#121316",
+        "on_surface": "#e2e2e9",
+        "on_surface_variant": "#c3c6cf",
+        "primary": "#9fcaff",
+        "outline": "#8d9199",
+    }
+    try:
+        with open(COLORS_FILE) as f:
+            data = json.load(f)
+        colors["surface"] = data.get("mSurface", colors["surface"])
+        colors["on_surface"] = data.get("mOnSurface", colors["on_surface"])
+        colors["on_surface_variant"] = data.get("mOnSurfaceVariant", colors["on_surface_variant"])
+        colors["primary"] = data.get("mPrimary", colors["primary"])
+        colors["outline"] = data.get("mOutline", colors["outline"])
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        pass
+    return colors
+
+
+# --- Language detection ---
+
+def has_chinese_chars(text):
+    """Check if text contains CJK Unified Ideograph characters (Chinese)."""
+    for ch in text:
+        name = unicodedata.name(ch, "")
+        if "CJK" in name:
+            return True
+    return False
+
+
+def detect_source_lang(text):
+    """Return translate-shell source language spec. Defaults Chinese to zh-TW."""
+    if has_chinese_chars(text):
+        return "zh-TW"
+    return ""  # auto-detect
+
+
+# --- Clipboard ---
+
+def get_clipboard_text():
+    """Read plain text from Wayland clipboard."""
+    try:
+        result = subprocess.run(
+            ["wl-paste", "--no-newline", "--type", "text/plain"],
+            capture_output=True, text=True, timeout=5
+        )
+        return result.stdout.strip() if result.returncode == 0 else ""
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return ""
+
+
+def set_clipboard_text(text):
+    """Write text to Wayland clipboard."""
+    try:
+        subprocess.run(["wl-copy", "--", text], timeout=5)
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+
+
+# --- Translation ---
+
+def translate(text):
+    """Translate text to English using translate-shell. Returns dict."""
+    result = {
+        "original": text,
+        "romanization": "",
+        "translation": "",
+        "source_lang": "",
+    }
+
+    src = detect_source_lang(text)
+    lang_spec = f"{src}:en" if src else ":en"
+
+    try:
+        # Get full verbose output (includes romanization + language)
+        proc = subprocess.run(
+            ["trans", "-no-ansi", lang_spec, text],
+            capture_output=True, text=True, timeout=30
+        )
+        output = proc.stdout.strip()
+        lines = output.split("\n")
+
+        # Line 0: original text (echoed back)
+        # Line 1: (Romanization) — if present
+        # Then blank line, then translation, then details with [ Lang -> English ]
+        if len(lines) >= 2:
+            line1 = lines[1].strip()
+            if line1.startswith("(") and line1.endswith(")"):
+                result["romanization"] = line1[1:-1]
+
+        # Extract source language from [ Lang -> English ]
+        for line in lines:
+            match = re.search(r"\[\s*(.+?)\s*->\s*English\s*\]", line)
+            if match:
+                result["source_lang"] = match.group(1)
+                break
+
+        # Get clean brief translation
+        brief = subprocess.run(
+            ["trans", "-no-ansi", "-b", lang_spec, text],
+            capture_output=True, text=True, timeout=30
+        )
+        result["translation"] = brief.stdout.strip()
+
+    except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        result["translation"] = f"[Error: {e}]"
+
+    return result
+
+
+# --- Word Bank ---
+
+def load_words():
+    """Load saved words from JSON file."""
+    if not os.path.exists(WORDS_FILE):
+        return []
+    try:
+        with open(WORDS_FILE) as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return []
+
+
+def save_word(entry):
+    """Append or update a word in the word bank. Deduplicates by original text."""
+    os.makedirs(WORDS_DIR, exist_ok=True)
+    words = load_words()
+
+    # Check for existing entry
+    for i, w in enumerate(words):
+        if w.get("original") == entry["original"]:
+            words[i] = entry  # update
+            break
+    else:
+        words.append(entry)
+
+    with open(WORDS_FILE, "w") as f:
+        json.dump(words, f, ensure_ascii=False, indent=2)
+
+
+# --- Notification fallback ---
+
+def notify(title, message):
+    """Desktop notification."""
+    try:
+        subprocess.Popen(
+            ["notify-send", "-a", "Translate", "-t", "3000", title, message],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+    except FileNotFoundError:
+        pass
+
+
+# --- GTK4 Layer Shell Overlay ---
+
+class TranslateOverlay:
+    def __init__(self, app, text):
+        self.app = app
+        self.text = text
+        self.colors = load_colors()
+        self.window = None
+        self.css_provider = None
+        self.content_box = None
+        self.status_label = None
+        self.dismiss_timer = None
+        self.start_time = time.monotonic()
+        self.dot_timer = None
+
+    def build(self):
+        """Build the overlay and start translation."""
+        window = Gtk.ApplicationWindow(application=self.app)
+        self.window = window
+
+        # Layer shell
+        Gtk4LayerShell.init_for_window(window)
+        Gtk4LayerShell.set_layer(window, Gtk4LayerShell.Layer.OVERLAY)
+        Gtk4LayerShell.set_keyboard_mode(window, Gtk4LayerShell.KeyboardMode.ON_DEMAND)
+        Gtk4LayerShell.set_anchor(window, Gtk4LayerShell.Edge.BOTTOM, True)
+        Gtk4LayerShell.set_margin(window, Gtk4LayerShell.Edge.BOTTOM, 80)
+        Gtk4LayerShell.set_namespace(window, "translate-clipboard")
+
+        window.set_default_size(420, -1)
+        window.set_resizable(False)
+        header = Gtk.Box()
+        header.set_visible(False)
+        window.set_titlebar(header)
+
+        # CSS
+        c = self.colors
+        sr, sg, sb = hex_to_rgb(c["surface"])
+        self.css_provider = Gtk.CssProvider()
+        self.css_provider.load_from_string(f"""
+            window, window.csd, window.background.csd {{
+                background: transparent;
+                box-shadow: none;
+                border: none;
+                border-radius: 0;
+                margin: 0;
+                padding: 0;
+            }}
+            .pill {{
+                background-color: rgba({sr}, {sg}, {sb}, 0.92);
+                border-radius: 12px;
+                padding: 16px 20px;
+            }}
+            .status-label {{
+                color: {c['on_surface_variant']};
+                font-size: 13px;
+            }}
+            .lang-badge {{
+                color: {c['outline']};
+                font-size: 11px;
+            }}
+            .original-text {{
+                color: {c['on_surface']};
+                font-size: 20px;
+            }}
+            .romanization {{
+                color: {c['on_surface_variant']};
+                font-size: 15px;
+                font-style: italic;
+            }}
+            .separator {{
+                min-height: 1px;
+                background-color: alpha({c['outline']}, 0.25);
+            }}
+            .translation-text {{
+                color: {c['primary']};
+                font-size: 18px;
+                font-weight: bold;
+            }}
+            .saved-label {{
+                color: {c['outline']};
+                font-size: 11px;
+            }}
+        """)
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(), self.css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+        # Main container
+        self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        self.content_box.add_css_class("pill")
+
+        # Initial: just the status label
+        self.status_label = Gtk.Label(label="Translating…")
+        self.status_label.add_css_class("status-label")
+        self.status_label.set_halign(Gtk.Align.START)
+        self.content_box.append(self.status_label)
+
+        window.set_child(self.content_box)
+
+        # Escape to dismiss
+        key_controller = Gtk.EventControllerKey()
+        key_controller.connect("key-pressed", self.on_key_pressed)
+        window.add_controller(key_controller)
+
+        window.present()
+
+        # Animate dots while translating
+        self.dot_timer = GLib.timeout_add(400, self.animate_dots)
+
+        # Translate in background
+        t = threading.Thread(target=self.do_translate, daemon=True)
+        t.start()
+
+    def animate_dots(self):
+        """Animate 'Translating...' dots."""
+        if self.status_label is None or not self.status_label.get_visible():
+            return False
+        elapsed = time.monotonic() - self.start_time
+        ndots = int(elapsed * 2.5) % 4
+        self.status_label.set_text("Translating" + "·" * ndots + " " * (3 - ndots))
+        return True
+
+    def do_translate(self):
+        """Run translation in background thread."""
+        result = translate(self.text)
+        GLib.idle_add(self.show_result, result)
+
+    def show_result(self, result):
+        """Replace loading state with full result layout."""
+        if self.window is None:
+            return False
+
+        # Stop dot animation
+        if self.dot_timer is not None:
+            GLib.source_remove(self.dot_timer)
+            self.dot_timer = None
+
+        # Clear the container and rebuild with results
+        # Remove existing children
+        while True:
+            child = self.content_box.get_first_child()
+            if child is None:
+                break
+            self.content_box.remove(child)
+
+        # Language badge
+        if result["source_lang"]:
+            lang = Gtk.Label(label=f"🌐 {result['source_lang']}")
+            lang.add_css_class("lang-badge")
+            lang.set_halign(Gtk.Align.START)
+            self.content_box.append(lang)
+
+        # Original text
+        original = Gtk.Label(label=result["original"])
+        original.add_css_class("original-text")
+        original.set_halign(Gtk.Align.START)
+        original.set_wrap(True)
+        original.set_max_width_chars(40)
+        original.set_selectable(True)
+        self.content_box.append(original)
+
+        # Romanization
+        if result["romanization"]:
+            roman = Gtk.Label(label=result["romanization"])
+            roman.add_css_class("romanization")
+            roman.set_halign(Gtk.Align.START)
+            roman.set_wrap(True)
+            roman.set_max_width_chars(50)
+            roman.set_selectable(True)
+            self.content_box.append(roman)
+
+        # Separator line
+        sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        sep.add_css_class("separator")
+        self.content_box.append(sep)
+
+        # Translation
+        translation = Gtk.Label(label=result["translation"])
+        translation.add_css_class("translation-text")
+        translation.set_halign(Gtk.Align.START)
+        translation.set_wrap(True)
+        translation.set_max_width_chars(50)
+        translation.set_selectable(True)
+        self.content_box.append(translation)
+
+        # Save to word bank
+        from datetime import datetime, timezone
+        entry = {
+            "original": result["original"],
+            "romanization": result["romanization"],
+            "translation": result["translation"],
+            "source_lang": result["source_lang"],
+            "saved_at": datetime.now(timezone.utc).astimezone().isoformat(),
+        }
+        save_word(entry)
+
+        # Bottom: saved indicator
+        word_count = len(load_words())
+        saved = Gtk.Label(label=f"📋 Saved  ·  {word_count} words")
+        saved.add_css_class("saved-label")
+        saved.set_halign(Gtk.Align.START)
+        self.content_box.append(saved)
+
+        # Copy translation to clipboard
+        set_clipboard_text(result["translation"])
+
+        # Auto-dismiss
+        self.dismiss_timer = GLib.timeout_add_seconds(DISMISS_SECONDS, self.dismiss)
+
+        return False
+
+    def on_key_pressed(self, controller, keyval, keycode, state):
+        """Escape dismisses the overlay."""
+        if keyval == Gdk.KEY_Escape:
+            self.dismiss()
+            return True
+        return False
+
+    def dismiss(self):
+        """Tear down and quit."""
+        if self.dot_timer is not None:
+            GLib.source_remove(self.dot_timer)
+            self.dot_timer = None
+        if self.dismiss_timer is not None:
+            GLib.source_remove(self.dismiss_timer)
+            self.dismiss_timer = None
+        if self.css_provider is not None:
+            Gtk.StyleContext.remove_provider_for_display(
+                Gdk.Display.get_default(), self.css_provider
+            )
+            self.css_provider = None
+        if self.window is not None:
+            self.window.destroy()
+            self.window = None
+        self.app.quit()
+        return False
+
+
+def main():
+    GLib.set_prgname("translate-clipboard")
+    GLib.set_application_name("Translate Clipboard")
+
+    text = get_clipboard_text()
+    if not text:
+        notify("Translate", "Clipboard is empty")
+        return
+
+    # Truncate very long text (translation works but UI would be unwieldy)
+    if len(text) > 500:
+        text = text[:500]
+
+    overlay = None
+
+    def on_activate(app):
+        nonlocal overlay
+        overlay = TranslateOverlay(app, text)
+        overlay.build()
+
+    app = Gtk.Application(application_id="dev.dotfiles.translate-clipboard")
+    app.connect("activate", on_activate)
+    app.run(None)
+
+
+if __name__ == "__main__":
+    main()

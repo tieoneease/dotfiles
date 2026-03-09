@@ -134,6 +134,10 @@ fi
 echo "Installing voice-to-text tools..."
 install_packages whisper.cpp dotool gtk4-layer-shell python-sounddevice python-numpy python-gobject
 
+# Clipboard translation
+echo "Installing translation tools..."
+install_packages translate-shell
+
 # Zsh plugins (system-wide, sourced from /usr/share/zsh/plugins/)
 echo "Installing zsh plugins..."
 install_packages zsh-autosuggestions zsh-syntax-highlighting zsh-history-substring-search

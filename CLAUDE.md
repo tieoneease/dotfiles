@@ -97,7 +97,8 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 - **GPD Win Max 2 (`sam-ganymede`):** CachyOS, Quectel EC25 LTE modem (USB, `qmi_wwan`+`option` drivers). Setup installs `modemmanager`, enables `ModemManager.service`, and prompts for APN to create a GSM connection profile (`nmcli connection add type gsm`). LTE is configured as fallback: `autoconnect-priority -1`, `route-metric 1000` — wifi is always preferred when available. Also installs `bmi260-dkms` (IMU), `hhd` (handheld daemon), and amdgpu stability configs.
 - Niri compositor with dynamic Material Design 3 colors via Noctalia/matugen
 - Passwordless sudo setup for Claude Code (opt-in with confirmation prompt)
-- keyd keyboard layers (numpad, nav, media, sleep-inhibitor toggle via RCtrl+K)
+- keyd keyboard layers (numpad, nav, media, sleep-inhibitor toggle via RCtrl+K, translate via both-alts+R)
+- **Translate clipboard:** `translate/` stow package — both alts + R (keyd F17 → XF86Launch8) reads clipboard, translates to English via `translate-shell` with romanization, shows GTK4 layer-shell overlay themed with noctalia colors, auto-saves to word bank at `~/.local/share/translate/words.json`. Chinese defaults to zh-TW. Deduplicates by original text.
 - See `NIRI-SETUP.md` for detailed architecture docs
 
 ## Pi Coding Agent

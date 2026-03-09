@@ -249,6 +249,15 @@ window-rule {
     border { off; }
 }
 
+// Translate overlay — fallback if layer-shell falls through to regular toplevel
+window-rule {
+    match app-id="dev.dotfiles.translate-clipboard"
+    open-floating true
+    draw-border-with-background false
+    focus-ring { off; }
+    border { off; }
+}
+
 // Example: block out two password managers from screen capture.
 // (This example rule is commented out with a "/-" in front.)
 /-window-rule {
@@ -415,6 +424,9 @@ binds {
 
     // Voice-to-text toggle (both alts + t → keyd emits F14 → XKB maps to XF86Launch5)
     XF86Launch5 { spawn-sh "~/.local/bin/voice-toggle"; }
+
+    // Translate clipboard (both alts + r → keyd emits F17 → XKB maps to XF86Launch8)
+    XF86Launch8 { spawn-sh "~/.local/bin/translate-clipboard"; }
 
     // Open/close the Overview: a zoomed-out view of workspaces and windows.
     // You can also move the mouse into the top-left hot corner,
