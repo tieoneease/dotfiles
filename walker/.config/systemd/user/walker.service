@@ -1,5 +1,6 @@
 [Unit]
 Description=Walker Launcher Service
+After=graphical-session.target
 
 [Service]
 Type=simple
