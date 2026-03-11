@@ -85,6 +85,15 @@ fi
 
 run_stow_dotfiles --vps
 
+# --- Kitty terminfo ---
+# SSH from kitty sets TERM=xterm-kitty; install the terminfo so
+# curses apps and zsh rendering work correctly on headless servers.
+
+if ! infocmp xterm-kitty &>/dev/null; then
+    echo "Installing kitty terminfo..."
+    curl -sL https://raw.githubusercontent.com/kovidgoyal/kitty/master/terminfo/kitty.terminfo | tic -x -o ~/.terminfo /dev/stdin
+fi
+
 # --- tmux colors fallback ---
 # On desktop, Noctalia generates colors.conf dynamically.
 # On VPS, provide a static dark theme fallback for the status bar.
