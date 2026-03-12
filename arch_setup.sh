@@ -114,7 +114,7 @@ install_packages vesktop-bin
 
 # Networking / VPN
 echo "Installing networking tools..."
-install_packages tailscale
+install_packages tailscale caddy
 
 # Productivity applications
 echo "Installing productivity applications..."
@@ -198,6 +198,11 @@ sudo bash "$DOTFILES_DIR/patch_noctalia.sh"
 echo "Configuring xdg-desktop-portal..."
 sudo mkdir -p /etc/xdg-desktop-portal
 sudo cp -f "$DOTFILES_DIR/etc/xdg-desktop-portal/portals.conf" /etc/xdg-desktop-portal/portals.conf
+
+# Copy Caddy config (local Portless router for SSH-forwarded dev servers)
+echo "Configuring Caddy (local Portless router)..."
+sudo mkdir -p /etc/caddy
+sudo cp -f "$DOTFILES_DIR/etc/caddy/Caddyfile" /etc/caddy/Caddyfile
 
 # Power button + lid switch: suspend instead of poweroff (all laptops)
 echo "Configuring logind power button and lid switch handling..."
@@ -319,6 +324,7 @@ sudo systemctl enable greetd.service
 sudo systemctl enable --now bluetooth.service
 sudo systemctl enable --now ModemManager.service
 sudo systemctl enable --now tailscaled.service
+sudo systemctl enable --now caddy.service
 if tailscale status &> /dev/null; then
     sudo tailscale set --operator="$USER"
 fi

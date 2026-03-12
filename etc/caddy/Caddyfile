@@ -1,0 +1,23 @@
+# Local Portless router
+# Maps *.{vps}.localhost → SSH-forwarded Portless ports
+# Access remote dev servers as http://myapi.sambot.localhost (no port to remember)
+#
+# Each SSH host forwards its remote Portless (port 1355) to a unique local port.
+# Caddy rewrites the Host header so the remote Portless routes correctly.
+#
+# To add a new VPS:
+#   1. Add SSH host with LocalForward <port> localhost:1355
+#   2. Add a block below mapping *.{name}.localhost → localhost:<port>
+#   3. Run: sudo cp etc/caddy/Caddyfile /etc/caddy/Caddyfile && sudo systemctl reload caddy
+
+http://*.sambot.localhost {
+    reverse_proxy localhost:1355 {
+        header_up Host {http.request.host.labels.2}.localhost:1355
+    }
+}
+
+http://*.peachy-data.localhost {
+    reverse_proxy localhost:1356 {
+        header_up Host {http.request.host.labels.2}.localhost:1356
+    }
+}
