@@ -89,7 +89,7 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 
 ## Caddy (local Portless router)
 - **Purpose:** Routes `http://<service>.<vps>.localhost` → SSH-forwarded Portless ports, so remote dev servers are accessible with clean URLs (e.g., `http://api.sambot.localhost` instead of `http://api.localhost:1355`).
-- **Config:** `etc/caddy/Caddyfile` — copied to `/etc/caddy/Caddyfile` by setup script (Arch) or `$(brew --prefix)/etc/Caddyfile` (macOS). Rewrites the Host header so the remote Portless routes correctly.
+- **Config:** `etc/caddy/Caddyfile` — copied to `/etc/caddy/Caddyfile` (Arch) or `$(brew --prefix)/etc/Caddyfile` (macOS). Copied not symlinked because caddy runs as its own user and can't traverse `$HOME` (700).
 - **DNS:** `*.localhost` resolves to 127.0.0.1 automatically — systemd-resolved (Arch) and macOS handle this per RFC 6761.
 - **Adding a VPS:** (1) Add SSH host with `LocalForward <port> localhost:1355`, (2) add a `http://*.<name>.localhost` block to the Caddyfile, (3) copy config and reload (`sudo systemctl reload caddy`).
 

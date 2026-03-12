@@ -81,7 +81,7 @@ mkdir -p ~/.config/sketchybar
 # Start Sketchybar
 brew services start felixkratz/formulae/sketchybar
 
-# Configure Caddy (local Portless router for SSH-forwarded dev servers)
+# Copy Caddy config (local Portless router for SSH-forwarded dev servers)
 echo "Configuring Caddy (local Portless router)..."
 CADDY_ETC="$(brew --prefix)/etc"
 mkdir -p "$CADDY_ETC"

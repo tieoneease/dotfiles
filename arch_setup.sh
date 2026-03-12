@@ -200,6 +200,7 @@ sudo mkdir -p /etc/xdg-desktop-portal
 sudo cp -f "$DOTFILES_DIR/etc/xdg-desktop-portal/portals.conf" /etc/xdg-desktop-portal/portals.conf
 
 # Copy Caddy config (local Portless router for SSH-forwarded dev servers)
+# Copied (not symlinked) because caddy runs as the caddy user and can't traverse $HOME (700)
 echo "Configuring Caddy (local Portless router)..."
 sudo mkdir -p /etc/caddy
 sudo cp -f "$DOTFILES_DIR/etc/caddy/Caddyfile" /etc/caddy/Caddyfile
