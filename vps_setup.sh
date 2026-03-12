@@ -53,11 +53,11 @@ echo "Configuring Tailscale..."
 sudo systemctl enable --now tailscaled.service
 
 if ! tailscale status &> /dev/null; then
-    echo "Authenticating Tailscale (sets operator=$USER for sudo-free management)..."
-    sudo tailscale up --operator="$USER"
+    echo "Authenticating Tailscale (sets operator=$USER, enables Tailscale SSH)..."
+    sudo tailscale up --ssh --operator="$USER"
 else
-    # Already connected — ensure operator is set
-    sudo tailscale set --operator="$USER"
+    # Already connected — ensure operator and SSH are set
+    sudo tailscale set --ssh --operator="$USER"
 fi
 
 # --- Rust + cargo tools ---
