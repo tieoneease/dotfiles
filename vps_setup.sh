@@ -148,9 +148,9 @@ run_mise_install
 # Dev server proxy — lets pi dev_server expose services as <name>.localhost:1355.
 # Runs as a systemd user service so it survives reboots.
 
-if ! command -v portless &> /dev/null; then
+if ! ~/.local/share/mise/shims/portless --version &> /dev/null; then
     echo "Installing Portless..."
-    npm install -g portless
+    ~/.local/share/mise/shims/npm install -g portless
 fi
 
 mkdir -p "$HOME/.portless"
