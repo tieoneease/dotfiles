@@ -144,6 +144,47 @@ configure_git_identity
 
 run_mise_install
 
+# --- Portless ---
+# Dev server proxy — lets pi dev_server expose services as <name>.localhost:1355.
+# Runs as a systemd user service so it survives reboots.
+
+if ! command -v portless &> /dev/null; then
+    echo "Installing Portless..."
+    npm install -g portless
+fi
+
+mkdir -p "$HOME/.portless"
+
+# Install and enable systemd user service
+PORTLESS_SERVICE="$HOME/.config/systemd/user/portless.service"
+if [ ! -f "$PORTLESS_SERVICE" ]; then
+    echo "Creating Portless systemd user service..."
+    mkdir -p "$(dirname "$PORTLESS_SERVICE")"
+    cat > "$PORTLESS_SERVICE" << 'SERVICE'
+[Unit]
+Description=Portless dev server proxy
+After=network.target
+
+[Service]
+ExecStart=%h/.local/share/mise/shims/portless proxy start --foreground
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+SERVICE
+    systemctl --user daemon-reload
+fi
+
+if ! systemctl --user is-enabled portless.service &> /dev/null; then
+    echo "Enabling Portless service..."
+    systemctl --user enable --now portless.service
+    # Enable lingering so user services run without an active login session
+    sudo loginctl enable-linger "$USER"
+else
+    echo "Portless service already enabled"
+fi
+
 # Sync nvim plugins with deployed config (lock file may have changed after pull)
 sync_nvim_plugins
 
