@@ -112,6 +112,10 @@ echo "Installing communication tools..."
 install_packages slack-desktop  # XWayland version for better stability
 install_packages vesktop-bin
 
+# Docker
+echo "Installing Docker..."
+install_packages docker docker-compose docker-buildx
+
 # Networking / VPN
 echo "Installing networking tools..."
 install_packages tailscale caddy
@@ -324,6 +328,7 @@ sudo systemctl enable --now keyd.service
 sudo systemctl enable greetd.service
 sudo systemctl enable --now bluetooth.service
 sudo systemctl enable --now ModemManager.service
+sudo systemctl enable --now docker.service
 sudo systemctl enable --now tailscaled.service
 sudo systemctl enable --now caddy.service
 if tailscale status &> /dev/null; then
@@ -347,6 +352,13 @@ else
     echo "Error: elephant binary not found after package installation."
     echo "Expected package: elephant-all"
     exit 1
+fi
+
+# Add user to docker group (rootless docker access)
+if ! groups "$USER" | grep -qw docker; then
+    echo "Adding $USER to docker group..."
+    sudo usermod -aG docker "$USER"
+    echo "Note: Log out and back in for docker group membership to take effect."
 fi
 
 # --- Shell setup ---

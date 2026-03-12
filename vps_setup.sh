@@ -35,7 +35,17 @@ fi
 
 # CLI tools
 echo "Installing CLI tools..."
-install_packages stow zsh neovim fzf ripgrep fd less direnv starship jq zsh-autosuggestions zsh-syntax-highlighting openai-codex tailscale
+install_packages stow zsh neovim fzf ripgrep fd less direnv starship jq zsh-autosuggestions zsh-syntax-highlighting openai-codex tailscale docker docker-compose
+
+# --- Docker ---
+
+echo "Configuring Docker..."
+sudo systemctl enable --now docker.service
+if ! groups "$USER" | grep -qw docker; then
+    echo "Adding $USER to docker group..."
+    sudo usermod -aG docker "$USER"
+    echo "Note: Log out and back in for docker group membership to take effect."
+fi
 
 # --- Tailscale ---
 

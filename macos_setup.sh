@@ -53,6 +53,10 @@ brew install font-hack-nerd-font font-inconsolata-go-nerd-font font-jetbrains-mo
 echo "Refreshing font cache..."
 fc-cache -f -v
 
+# Install Docker Desktop (daemon + GUI; docker CLI already in brew install line above)
+echo "Installing Docker Desktop..."
+brew install --cask docker
+
 # Install karabiner-elements
 echo "Installing karabiner-elements..."
 brew install --cask karabiner-elements
