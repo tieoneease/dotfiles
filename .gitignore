@@ -57,6 +57,11 @@ zsh/.config/zsh/local.zsh
 .dev/
 .worktrees/
 
+# Dev workflow artifacts (transient)
+.dev/
+.plan/
+.research/
+
 # Pi runtime data
 .pi/learnings.json
 .pi/rules/learnings.md
