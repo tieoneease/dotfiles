@@ -214,7 +214,7 @@ Services with unit files from stow packages must be enabled **after** stow runs 
 
 ## Google Calendar Sync (khal + vdirsyncer)
 
-See `calendar-sync.md` for full details. GCP project `vdirsyncer-cal-859530`, CalDAV API (not JSON), 3 accounts (tieoneease, chungsam95, peachystudio). Stow package: `vdirsyncer/`. Timer syncs every 5min. Noctalia auto-detects khal.
+See `calendar-sync.md` for full details. GCP project `vdirsyncer-cal-859530`, CalDAV API (not JSON), 2 accounts (tieoneease, chungsam95). Stow package: `vdirsyncer/`. Timer syncs every 5min. Noctalia auto-detects khal.
 
 ## Noctalia Calendar Tooltip Patches
 

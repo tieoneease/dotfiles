@@ -8,7 +8,7 @@
 ## GCP Project
 - **Owner**: Personal account (`tieoneease@gmail.com`) — portable across machines
 - **Project ID**: Dynamic, persisted at `~/.config/vdirsyncer/gcp_project_id` (date-based, e.g. `vdirsyncer-cal-260224`)
-- **Old project**: `vdirsyncer-cal-859530` was owned by work account (`sam.chung@peachystudio.com`) — migrated away
+- **Old project**: `vdirsyncer-cal-859530` was owned by a previous work account — migrated away
 - **API**: `caldav.googleapis.com` (NOT `calendar-json.googleapis.com` — vdirsyncer uses CalDAV)
 - **OAuth**: Desktop app client, credentials at `~/.config/vdirsyncer/client_id` / `client_secret`
 - **Consent screen**: External, testing mode. All sync accounts must be added as test users.
@@ -25,7 +25,6 @@
 ## Accounts
 - `tieoneease` → tieoneease@gmail.com (3 calendars: primary, Family, US Holidays)
 - `chungsam` → chungsam95@gmail.com (1 calendar)
-- `work` → sam.chung@peachystudio.com (3 calendars)
 
 ## Noctalia Calendar Widget Patches
 Applied via `arch_setup.sh` sed patches to `CalendarMonthCard.qml` (re-applied on Noctalia updates):
