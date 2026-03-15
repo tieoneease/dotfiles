@@ -18,7 +18,7 @@
 :80 {
 	@sambot header_regexp samhost Host ^(.+)\.sambot\.localhost(?::\d+)?$
 	handle @sambot {
-		reverse_proxy localhost:1355 {
+		reverse_proxy localhost:1357 {
 			header_up Host {re.samhost.1}.localhost:1355
 		}
 	}

@@ -85,7 +85,7 @@ Local plugins in `noctalia/.config/noctalia/plugins/`:
 - **Config:** `ssh/.ssh/config` (stowed to `~/.ssh/config`)
 - **ControlMaster:** `Host *` enables connection multiplexing (`ControlMaster auto`, `ControlPath /tmp/ssh_mux_%r@%h-%p`, `ControlPersist 600`). First SSH connection becomes the master; subsequent SSH/SCP connections reuse it (no extra auth). Critical for `ssh-image-paste` — `scp` piggybacks on the existing session. **Incompatible with `kitten ssh`** — Kitty's SSH kitten bootstrap protocol breaks with multiplexed connections (partial terminal setup, broken key sequences in remote tmux). Use regular `ssh` instead; Kitty already forwards `TERM=xterm-kitty` and remotes have the terminfo installed.
 - **ServerAliveInterval:** 60s keepalive prevents idle disconnects.
-- **Portless forwarding:** Each VPS forwards its remote Portless (port 1355) to a unique local port: sambot→1355, peachy-data→1356. A local Caddy reverse proxy (see below) maps these to clean hostnames so you never need to remember ports.
+- **Portless forwarding:** Each VPS forwards its remote Portless (port 1355) to a unique local port: sambot→1357, peachy-data→1356. Local ports must not collide with the local Portless proxy (1355). A local Caddy reverse proxy (see below) maps these to clean hostnames so you never need to remember ports.
 
 ## Caddy (local Portless router)
 - **Purpose:** Routes `http://<service>.<vps>.localhost` → SSH-forwarded Portless ports, so remote dev servers are accessible with clean URLs (e.g., `http://api.sambot.localhost` instead of `http://api.localhost:1355`).
