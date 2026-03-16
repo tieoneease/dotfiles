@@ -118,7 +118,7 @@ install_packages docker docker-compose docker-buildx
 
 # Networking / VPN
 echo "Installing networking tools..."
-install_packages tailscale caddy
+install_packages tailscale
 
 # Productivity applications
 echo "Installing productivity applications..."
@@ -202,12 +202,6 @@ sudo bash "$DOTFILES_DIR/patch_noctalia.sh"
 echo "Configuring xdg-desktop-portal..."
 sudo mkdir -p /etc/xdg-desktop-portal
 sudo cp -f "$DOTFILES_DIR/etc/xdg-desktop-portal/portals.conf" /etc/xdg-desktop-portal/portals.conf
-
-# Copy Caddy config (local Portless router for SSH-forwarded dev servers)
-# Copied (not symlinked) because caddy runs as the caddy user and can't traverse $HOME (700)
-echo "Configuring Caddy (local Portless router)..."
-sudo mkdir -p /etc/caddy
-sudo cp -f "$DOTFILES_DIR/etc/caddy/Caddyfile" /etc/caddy/Caddyfile
 
 # Power button + lid switch: suspend instead of poweroff (all laptops)
 echo "Configuring logind power button and lid switch handling..."
@@ -330,7 +324,6 @@ sudo systemctl enable --now bluetooth.service
 sudo systemctl enable --now ModemManager.service
 sudo systemctl enable --now docker.service
 sudo systemctl enable --now tailscaled.service
-sudo systemctl enable --now caddy.service
 if tailscale status &> /dev/null; then
     sudo tailscale set --operator="$USER"
 fi

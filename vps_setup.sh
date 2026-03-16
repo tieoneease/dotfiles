@@ -155,8 +155,8 @@ configure_git_identity
 run_mise_install
 
 # --- Portless ---
-# Dev server proxy — lets pi dev_server expose services as <name>.localhost:1355.
-# Runs as a systemd user service so it survives reboots.
+# Dev server proxy — optional, gives named .localhost URLs when working on the VPS directly.
+# Not required for remote access (Tailscale MagicDNS handles that).
 
 if ! ~/.local/share/mise/shims/portless --version &> /dev/null; then
     echo "Installing Portless..."
@@ -165,7 +165,6 @@ fi
 
 mkdir -p "$HOME/.portless"
 
-# Install and enable systemd user service
 PORTLESS_SERVICE="$HOME/.config/systemd/user/portless.service"
 if [ ! -f "$PORTLESS_SERVICE" ]; then
     echo "Creating Portless systemd user service..."
@@ -189,7 +188,6 @@ fi
 if ! systemctl --user is-enabled portless.service &> /dev/null; then
     echo "Enabling Portless service..."
     systemctl --user enable --now portless.service
-    # Enable lingering so user services run without an active login session
     sudo loginctl enable-linger "$USER"
 else
     echo "Portless service already enabled"

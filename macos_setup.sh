@@ -18,7 +18,7 @@ echo "Installing applications via Homebrew..."
 
 # Install essential CLI tools
 echo "Installing essential CLI tools..."
-brew install caddy docker direnv fd fontconfig fzf gh jq neovim ripgrep sketchybar sqlite starship stow superwhisper tmux tmux-sessionizer uv yazi
+brew install docker direnv fd fontconfig fzf gh jq neovim ripgrep sketchybar sqlite starship stow superwhisper tmux tmux-sessionizer uv yazi
 
 # Create workspace directory for tmux-sessionizer
 mkdir -p "$HOME/Workspace"
@@ -84,13 +84,6 @@ mkdir -p ~/.config/sketchybar
 
 # Start Sketchybar
 brew services start felixkratz/formulae/sketchybar
-
-# Copy Caddy config (local Portless router for SSH-forwarded dev servers)
-echo "Configuring Caddy (local Portless router)..."
-CADDY_ETC="$(brew --prefix)/etc"
-mkdir -p "$CADDY_ETC"
-cp -f "$DOTFILES_DIR/etc/caddy/Caddyfile" "$CADDY_ETC/Caddyfile"
-brew services start caddy
 
 # Configure menu bar to auto-hide
 defaults write NSGlobalDomain _HIHideMenuBar -bool false
