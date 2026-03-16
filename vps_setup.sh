@@ -33,6 +33,9 @@ if ! command -v yay &> /dev/null; then
     exit 1
 fi
 
+# Sync package database to avoid stale version 404s
+sudo pacman -Sy
+
 # CLI tools
 echo "Installing CLI tools..."
 install_packages stow zsh neovim fzf ripgrep fd less direnv starship jq zsh-autosuggestions zsh-syntax-highlighting openai-codex tailscale docker docker-compose

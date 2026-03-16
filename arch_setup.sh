@@ -45,6 +45,9 @@ if pacman -Qi cachyos-zsh-config &>/dev/null; then
     sudo pacman -Rns --noconfirm cachyos-zsh-config || sudo pacman -Rd --noconfirm cachyos-zsh-config
 fi
 
+# Sync package database to avoid stale version 404s
+sudo pacman -Sy
+
 # Core CLI tools
 echo "Installing core CLI tools..."
 install_packages stow git zsh neovim tmux wget curl direnv fzf ripgrep fd unzip fontconfig starship jq pkgfile expac github-cli glow
