@@ -43,6 +43,10 @@ pi:
 patch-noctalia:
     sudo bash ./patch_noctalia.sh
 
+# Upgrade pi coding agent to latest version
+upgrade-pi:
+    npm install -g @mariozechner/pi-coding-agent
+
 # Refresh font cache
 fonts:
     fc-cache -f

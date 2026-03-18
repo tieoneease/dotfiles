@@ -13,6 +13,7 @@
 - **VPS Setup:** `just setup` or `./vps_setup.sh` (headless server dev environment — zsh, nvim, tmux, mise, Rust, Claude Code, kitty terminfo, Tailscale SSH)
 - **Stow dotfiles:** `just stow` or `./stow/stow_dotfiles.sh` (symlinks all config files per-package)
 - **Pi setup:** `just pi` or `./pi_setup.sh` (clones pi-extensions from GitHub, installs package, sets up subagent extension and agent definitions)
+- **Upgrade pi:** `just upgrade-pi` (installs latest pi coding agent globally via npm)
 - **Noctalia QML patches:** `just patch-noctalia` or `sudo bash ./patch_noctalia.sh` (idempotent patches to system QML files; called by arch_setup.sh)
 - **Font cache refresh:** `just fonts` or `fc-cache -f`
 
