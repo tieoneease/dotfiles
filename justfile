@@ -35,8 +35,9 @@ setup:
 stow *FLAGS:
     ./stow/stow_dotfiles.sh {{FLAGS}}
 
-# Pi coding agent setup (extensions, subagent, agents)
+# Pi coding agent setup (upgrade + extensions, subagent, agents)
 pi:
+    npm install -g @mariozechner/pi-coding-agent
     ./pi_setup.sh
 
 # Patch Noctalia Shell QML files (requires sudo, Arch only)
